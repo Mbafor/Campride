@@ -35,12 +35,12 @@ The KNUST Shuttle Route Finder allows students to track campus shuttles in real 
 
 1. Clone the repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/knust-shuttle-route-finder.git
+git clone https://github.com/mbafor/campride.git
 ```
 
 2. Navigate to the frontend folder
 ```bash
-cd knust-shuttle-route-finder/frontend
+cd Frontend\campride
 ```
 
 3. Install dependencies
