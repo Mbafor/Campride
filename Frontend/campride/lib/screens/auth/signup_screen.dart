@@ -1,48 +1,68 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../../constants/app_constants.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/authentication_provider.dart';
 import '../../providers/user_role_provider.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_colors.dart';
 import 'otp_screen.dart';
-import 'signup_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class SignupScreen extends StatefulWidget {
   final String role;
-  const LoginScreen({super.key, required this.role});
+  const SignupScreen({super.key, required this.role});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
   bool _googleLoading = false;
   String? _emailError;
+  String? _passwordError;
 
-  bool get _isStudent => widget.role == AppConstants.studentRole;
+  bool get _isStudent => widget.role == 'student';
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
-  void _handleContinue() {
+  void _handleCreate() {
     final email = _emailCtrl.text.trim();
-    final valid = RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$').hasMatch(email);
-    if (!valid) {
-      setState(() => _emailError = 'Enter a valid email address');
-      return;
+    final password = _passwordCtrl.text;
+    final confirm = _confirmCtrl.text;
+
+    String? emailErr;
+    String? passErr;
+
+    final validEmail =
+        RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$').hasMatch(email);
+    if (!validEmail) emailErr = 'Enter a valid email address';
+
+    if (password.length < 6) {
+      passErr = 'Password must be at least 6 characters';
+    } else if (password != confirm) {
+      passErr = 'Passwords do not match';
     }
-    setState(() => _emailError = null);
+
+    setState(() {
+      _emailError = emailErr;
+      _passwordError = passErr;
+    });
+
+    if (emailErr != null || passErr != null) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => OtpScreen(email: email)),
@@ -77,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // Back arrow
                 GestureDetector(
-                  onTap: () => context.go(RouteNames.welcome),
+                  onTap: () => Navigator.pop(context),
                   child: Container(
                     width: 40,
                     height: 40,
@@ -93,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Title
                 Text(
-                  'Sign in to Campride',
+                  'Create account',
                   style: GoogleFonts.poppins(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -102,7 +122,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // Email field
+                // Full name
+                _GreyField(
+                  controller: _nameCtrl,
+                  hint: 'Full name',
+                  keyboardType: TextInputType.name,
+                ),
+                const SizedBox(height: 12),
+
+                // Email
                 _GreyField(
                   controller: _emailCtrl,
                   hint: 'Email address',
@@ -111,11 +139,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Password field
+                // Password
                 _GreyField(
                   controller: _passwordCtrl,
                   hint: 'Password',
                   obscureText: _obscurePassword,
+                  errorText: _passwordError,
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
@@ -128,11 +157,30 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
+                const SizedBox(height: 12),
+
+                // Confirm password
+                _GreyField(
+                  controller: _confirmCtrl,
+                  hint: 'Confirm password',
+                  obscureText: _obscureConfirm,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirm
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: Colors.grey[500],
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscureConfirm = !_obscureConfirm),
+                  ),
+                ),
                 const SizedBox(height: 28),
 
-                // Continue button
+                // Create account button
                 _PrimaryButton(
-                    label: 'Continue', onPressed: _handleContinue),
+                    label: 'Create account', onPressed: _handleCreate),
                 const SizedBox(height: 24),
 
                 // OR divider
@@ -144,28 +192,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   isLoading: _googleLoading,
                   onPressed: _googleLoading ? null : _handleGoogleSignIn,
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 32),
 
-                // Terms & conditions
-                Center(child: _TermsText()),
-                const SizedBox(height: 20),
-
-                // Sign up link
+                // Sign in link
                 Center(
                   child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => SignupScreen(role: widget.role)),
-                    ),
+                    onTap: () => Navigator.pop(context),
                     child: RichText(
                       text: TextSpan(
                         style: GoogleFonts.poppins(
                             fontSize: 13, color: Colors.grey[600]),
                         children: [
-                          const TextSpan(text: "Don't have an account? "),
+                          const TextSpan(text: 'Already have an account? '),
                           TextSpan(
-                            text: 'Sign up',
+                            text: 'Sign in',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -186,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ─── Grey input field ─────────────────────────────────────────────────────────
+// ─── Shared widgets (local copies) ───────────────────────────────────────────
 
 class _GreyField extends StatelessWidget {
   final TextEditingController controller;
@@ -224,13 +264,13 @@ class _GreyField extends StatelessWidget {
             style: GoogleFonts.poppins(fontSize: 15, color: Colors.black87),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: GoogleFonts.poppins(
-                  fontSize: 15, color: Colors.grey[500]),
+              hintStyle:
+                  GoogleFonts.poppins(fontSize: 15, color: Colors.grey[500]),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 16),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               suffixIcon: suffixIcon,
             ),
           ),
@@ -241,8 +281,8 @@ class _GreyField extends StatelessWidget {
             padding: const EdgeInsets.only(left: 4),
             child: Text(
               errorText!,
-              style: GoogleFonts.poppins(
-                  fontSize: 12, color: Colors.red[600]),
+              style:
+                  GoogleFonts.poppins(fontSize: 12, color: Colors.red[600]),
             ),
           ),
         ],
@@ -250,8 +290,6 @@ class _GreyField extends StatelessWidget {
     );
   }
 }
-
-// ─── Primary green button ─────────────────────────────────────────────────────
 
 class _PrimaryButton extends StatelessWidget {
   final String label;
@@ -275,24 +313,19 @@ class _PrimaryButton extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white),
+              fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
         ),
       ),
     );
   }
 }
 
-// ─── OR divider ───────────────────────────────────────────────────────────────
-
 class _OrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-            child: Divider(color: Colors.grey[300], thickness: 1)),
+        Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
@@ -303,14 +336,11 @@ class _OrDivider extends StatelessWidget {
                 color: Colors.grey[500]),
           ),
         ),
-        Expanded(
-            child: Divider(color: Colors.grey[300], thickness: 1)),
+        Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
       ],
     );
   }
 }
-
-// ─── Continue with Google button ──────────────────────────────────────────────
 
 class _GoogleButton extends StatelessWidget {
   final bool isLoading;
@@ -354,13 +384,13 @@ class _GoogleButton extends StatelessWidget {
   }
 }
 
-// ─── Google "G" icon ──────────────────────────────────────────────────────────
-
 class _GoogleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-        width: 22, height: 22, child: CustomPaint(painter: _GIconPainter()));
+        width: 22,
+        height: 22,
+        child: CustomPaint(painter: _GIconPainter()));
   }
 }
 
@@ -386,68 +416,12 @@ class _GIconPainter extends CustomPainter {
     arc(3.3, 1.6, AppColors.googleRed);
     arc(2.0, 1.3, AppColors.googleYellow);
     canvas.drawRect(
-      Rect.fromLTWH(c.dx, c.dy - size.height * 0.1, r * 0.95, size.height * 0.2),
+      Rect.fromLTWH(
+          c.dx, c.dy - size.height * 0.1, r * 0.95, size.height * 0.2),
       Paint()..color = AppColors.googleBlue,
     );
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter _) => false;
-}
-
-// ─── Terms & conditions text ──────────────────────────────────────────────────
-
-class _TermsText extends StatefulWidget {
-  const _TermsText();
-
-  @override
-  State<_TermsText> createState() => _TermsTextState();
-}
-
-class _TermsTextState extends State<_TermsText> {
-  late final TapGestureRecognizer _termsTap;
-  late final TapGestureRecognizer _privacyTap;
-
-  @override
-  void initState() {
-    super.initState();
-    _termsTap = TapGestureRecognizer()..onTap = () {};
-    _privacyTap = TapGestureRecognizer()..onTap = () {};
-  }
-
-  @override
-  void dispose() {
-    _termsTap.dispose();
-    _privacyTap.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final base = GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500]);
-    final link = GoogleFonts.poppins(
-      fontSize: 12,
-      color: AppColors.primaryGreenLight,
-      decoration: TextDecoration.underline,
-      decorationColor: AppColors.primaryGreenLight,
-    );
-
-    return RichText(
-      textAlign: TextAlign.center,
-      text: TextSpan(
-        style: base,
-        children: [
-          const TextSpan(text: 'By continuing, you agree to our '),
-          TextSpan(
-              text: 'Terms & Conditions',
-              style: link,
-              recognizer: _termsTap),
-          const TextSpan(text: ' and '),
-          TextSpan(
-              text: 'Privacy Policy', style: link, recognizer: _privacyTap),
-          const TextSpan(text: '.'),
-        ],
-      ),
-    );
-  }
 }

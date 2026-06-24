@@ -1,134 +1,278 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../models/shuttle_model.dart';
-import '../../../services/mock_shuttle_service.dart';
 import '../../../theme/app_colors.dart';
-import '../../../widgets/common/empty_state_widget.dart';
-import '../../../widgets/common/section_header.dart';
+import '../route/route_screen.dart';
 
-class LiveMapScreen extends StatefulWidget {
+class LiveMapScreen extends StatelessWidget {
   const LiveMapScreen({super.key});
 
   @override
-  State<LiveMapScreen> createState() => _LiveMapScreenState();
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const Positioned.fill(child: _MapCanvas()),
+        Positioned(
+          right: 16,
+          bottom: 220,
+          child: _NavArrowButton(),
+        ),
+        const Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _BottomCard(),
+        ),
+      ],
+    );
+  }
 }
 
-class _LiveMapScreenState extends State<LiveMapScreen>
-    with SingleTickerProviderStateMixin {
-  final _shuttleService = MockShuttleService();
-  List<ShuttleModel> _shuttles = [];
-  bool _loading = true;
-  late AnimationController _pulseController;
+// ─── Bottom card (always visible, no "Recents" label) ────────────────────────
 
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-    _loadShuttles();
-  }
+class _BottomCard extends StatelessWidget {
+  const _BottomCard();
 
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadShuttles() async {
-    final data = await _shuttleService.getActiveShuttles();
-    if (mounted) setState(() { _shuttles = data; _loading = false; });
+  void _openRouteScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const RouteScreen()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: _loadShuttles,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _MapPlaceholder(pulseController: _pulseController),
-            const SizedBox(height: 24),
-            const SectionHeader(title: 'Active Shuttles'),
-            const SizedBox(height: 12),
-            if (_loading)
-              const Center(child: Padding(
-                padding: EdgeInsets.all(32),
-                child: CircularProgressIndicator(),
-              ))
-            else if (_shuttles.isEmpty)
-              const EmptyStateWidget(
-                icon: Icons.directions_bus_outlined,
-                title: 'No Active Shuttles',
-                subtitle: 'Check back later for live shuttle updates',
-              )
-            else
-              ..._shuttles.map((s) => _ShuttleCard(shuttle: s)),
-          ],
-        ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black12, blurRadius: 16, offset: Offset(0, -3)),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Drag handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // "Where to?" pill — opens draggable route sheet
+          GestureDetector(
+            onTap: () => _openRouteScreen(context),
+            child: Container(
+              height: 54,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.grey[300]!),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 18),
+                  Icon(Icons.search, color: Colors.grey[600], size: 22),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Where to ?',
+                    style: GoogleFonts.poppins(
+                      fontSize: 17,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Recent items — no label, just the rows
+          const _RecentItem(label: 'Brunei Bus Stop'),
+          const SizedBox(height: 12),
+          const _RecentItem(label: 'Kotei Bus Stop'),
+        ],
       ),
     );
   }
 }
 
-class _MapPlaceholder extends StatelessWidget {
-  final AnimationController pulseController;
-  const _MapPlaceholder({required this.pulseController});
+class _RecentItem extends StatelessWidget {
+  final String label;
+  const _RecentItem({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.access_time, color: Colors.grey[600], size: 20),
+        ),
+        const SizedBox(width: 14),
+        Text(
+          label,
+          style: GoogleFonts.poppins(fontSize: 15, color: Colors.black87),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Map canvas (unchanged) ───────────────────────────────────────────────────
+
+class _MapCanvas extends StatelessWidget {
+  const _MapCanvas();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      height: 220,
-      decoration: BoxDecoration(
-        color: AppColors.primaryGreen.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryGreen.withOpacity(0.2)),
-      ),
+      color: AppColors.mapBackground,
       child: Stack(
-        alignment: Alignment.center,
+        fit: StackFit.expand,
         children: [
-          // Grid lines
-          CustomPaint(
-            size: const Size(double.infinity, 220),
-            painter: _GridPainter(),
+          Positioned.fill(child: CustomPaint(painter: _RoadPainter())),
+          Positioned(
+            left: 0,
+            top: 0,
+            width: 200,
+            height: 300,
+            child: Container(color: AppColors.mapPark.withValues(alpha: 0.5)),
           ),
-          AnimatedBuilder(
-            animation: pulseController,
-            builder: (context, child) => Container(
-              width: 80 + pulseController.value * 30,
-              height: 80 + pulseController.value * 30,
+          Positioned(
+            left: 18,
+            top: 110,
+            child: Container(
+              width: 65,
+              height: 65,
               decoration: BoxDecoration(
+                color: AppColors.mapPark,
                 shape: BoxShape.circle,
-                color: AppColors.primaryGreen.withOpacity(0.1 - pulseController.value * 0.08),
+                border: Border.all(color: Colors.green[300]!, width: 1),
+              ),
+              child: Center(
+                child: Icon(Icons.sports, size: 20, color: Colors.green[800]),
               ),
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.map_outlined, size: 48, color: AppColors.primaryGreen.withOpacity(0.6)),
-              const SizedBox(height: 8),
-              Text(
-                'Live Map',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryGreen,
-                ),
+          Positioned(
+            left: 18,
+            top: 150,
+            child: Text(
+              'KWAME\nNKRUMAH\nUNIVERSITY OF\nSCIENCE AND\nTECHNOLOGY',
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: Colors.black54,
+                height: 1.5,
               ),
-              Text(
-                'Real-time tracking coming soon',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: AppColors.textSecondaryLight,
-                ),
+            ),
+          ),
+          Positioned(
+            left: 30,
+            top: 30,
+            child: _MapMarker(color: Colors.blue[700]!, label: 'Unity Hall'),
+          ),
+          Positioned(
+            right: 70,
+            top: 55,
+            child: _RoundMarker(color: Colors.orange, icon: Icons.restaurant),
+          ),
+          Positioned(
+            right: 30,
+            top: 95,
+            child: _RoundMarker(
+                color: Colors.blue, icon: Icons.local_grocery_store),
+          ),
+          Positioned(
+            right: 55,
+            top: 160,
+            child: _RoundMarker(color: Colors.orange, icon: Icons.restaurant),
+          ),
+          Positioned(
+            right: 85,
+            top: 25,
+            child: Text(
+              'Mango Rd',
+              style: GoogleFonts.poppins(fontSize: 9, color: Colors.black45),
+            ),
+          ),
+          Positioned(
+            left: 130,
+            top: 78,
+            child: RotationTransition(
+              turns: const AlwaysStoppedAnimation(-0.05),
+              child: Text(
+                'Ayeduase Rd',
+                style:
+                    GoogleFonts.poppins(fontSize: 9, color: Colors.black45),
               ),
-            ],
+            ),
+          ),
+          Positioned(
+            right: 40,
+            top: 240,
+            child: RotationTransition(
+              turns: const AlwaysStoppedAnimation(0.12),
+              child: Text(
+                'Kotei Rd',
+                style:
+                    GoogleFonts.poppins(fontSize: 9, color: Colors.black45),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 50,
+            bottom: 130,
+            child: Text(
+              'Emena Community',
+              style: GoogleFonts.poppins(fontSize: 9, color: Colors.black45),
+            ),
+          ),
+          Positioned(
+            left: 18,
+            bottom: 155,
+            child:
+                _RoundMarker(color: Colors.red[400]!, icon: Icons.place),
+          ),
+          Positioned(
+            right: 10,
+            top: 290,
+            child: Text(
+              'KOTEI',
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Colors.black45,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 100,
+            bottom: 200,
+            child: _MapMarker(
+                color: Colors.green[700]!, label: 'Kotei AstroTurf'),
           ),
         ],
       ),
@@ -136,127 +280,110 @@ class _MapPlaceholder extends StatelessWidget {
   }
 }
 
-class _GridPainter extends CustomPainter {
+class _RoadPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.primaryGreen.withOpacity(0.06)
-      ..strokeWidth = 1;
-    const step = 30.0;
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
+    final main = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 14
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final minor = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 7
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawLine(
+        Offset(0, size.height * 0.32),
+        Offset(size.width, size.height * 0.28),
+        main);
+    canvas.drawLine(
+        Offset(0, size.height * 0.55),
+        Offset(size.width, size.height * 0.60),
+        minor);
+    canvas.drawLine(
+        Offset(size.width * 0.44, 0),
+        Offset(size.width * 0.41, size.height),
+        main);
+    canvas.drawLine(
+        Offset(size.width * 0.76, 0),
+        Offset(size.width * 0.74, size.height),
+        minor);
+    canvas.drawLine(
+        Offset(size.width * 0.30, 0),
+        Offset(size.width * 0.50, size.height * 0.35),
+        minor);
+    canvas.drawLine(
+        Offset(0, size.height * 0.80),
+        Offset(size.width, size.height * 0.78),
+        minor);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _ShuttleCard extends StatelessWidget {
-  final ShuttleModel shuttle;
-  const _ShuttleCard({required this.shuttle});
+class _MapMarker extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _MapMarker({required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    final occupancyColor = shuttle.occupancyRate > 0.8
-        ? AppColors.error
-        : shuttle.occupancyRate > 0.6
-            ? AppColors.warning
-            : AppColors.success;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.directions_bus, color: AppColors.primaryGreen, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        shuttle.plateNumber,
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15),
-                      ),
-                      Text(
-                        shuttle.driverName,
-                        style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${shuttle.minutesAway} min',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryGreen,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondaryLight),
-                const SizedBox(width: 4),
-                Text(
-                  shuttle.currentLocation,
-                  style: GoogleFonts.poppins(fontSize: 13),
-                ),
-                const Icon(Icons.arrow_forward, size: 14, color: AppColors.textSecondaryLight),
-                Text(
-                  shuttle.nextStop,
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: shuttle.occupancyRate,
-                      backgroundColor: Colors.grey.shade200,
-                      color: occupancyColor,
-                      minHeight: 6,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${shuttle.occupancy}/${shuttle.capacity}',
-                  style: GoogleFonts.poppins(fontSize: 12, color: occupancyColor, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ],
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          child: const Icon(Icons.location_on, color: Colors.white, size: 12),
         ),
+        const SizedBox(width: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(label,
+              style: GoogleFonts.poppins(
+                  fontSize: 9, fontWeight: FontWeight.w500)),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoundMarker extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  const _RoundMarker({required this.color, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+          color: color, borderRadius: BorderRadius.circular(8)),
+      child: Icon(icon, color: Colors.white, size: 13),
+    );
+  }
+}
+
+class _NavArrowButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(8),
       ),
+      child: const Icon(Icons.navigation, color: Colors.white, size: 22),
     );
   }
 }

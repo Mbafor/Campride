@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../constants/app_constants.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/buttons/custom_button.dart';
@@ -39,10 +38,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     super.dispose();
   }
 
-  void _navigateToLogin(String role) {
-    context.go('${RouteNames.login}?role=$role');
-  }
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -71,51 +66,72 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         topRight: Radius.circular(32),
                       ),
                     ),
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          AppConstants.appTagline,
-                          style: GoogleFonts.poppins(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryGreenDark,
-                            height: 1.2,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final h = constraints.maxHeight;
+                        return Padding(
+                          padding: EdgeInsets.fromLTRB(32, h * 0.075, 32, h * 0.055),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Welcome to Campride',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryGreenDark,
+                                  height: 1.2,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: h * 0.055),
+                              const _FeatureItem(
+                                icon: Icons.gps_fixed,
+                                label: 'Real time tracking',
+                              ),
+                              SizedBox(height: h * 0.032),
+                              const _FeatureItem(
+                                icon: Icons.notifications_outlined,
+                                label: 'Smart notifications',
+                              ),
+                              SizedBox(height: h * 0.032),
+                              const _FeatureItem(
+                                icon: Icons.access_time_outlined,
+                                label: 'ETA',
+                              ),
+                              const Spacer(),
+                              CustomButton(
+                                label: 'Get Started',
+                                onPressed: () => context.go(RouteNames.login),
+                              ),
+                              SizedBox(height: h * 0.037),
+                              GestureDetector(
+                                onTap: () => context.go(RouteNames.login),
+                                child: Text.rich(
+                                  TextSpan(
+                                    text: 'Already have an account? ',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      color: AppColors.textSecondaryLight,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: 'Sign in',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primaryGreenDark,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          AppConstants.appSubtitle,
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            color: AppColors.textSecondaryLight,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 36),
-                        CustomButton(
-                          label: 'I am a Student',
-                          icon: const Icon(Icons.school_outlined),
-                          onPressed: () => _navigateToLogin(AppConstants.studentRole),
-                        ),
-                        const SizedBox(height: 16),
-                        CustomButton(
-                          label: 'I am a Driver',
-                          variant: ButtonVariant.outline,
-                          icon: const Icon(Icons.directions_bus_outlined),
-                          onPressed: () => _navigateToLogin(AppConstants.driverRole),
-                        ),
-                        const Spacer(),
-                        Text(
-                          AppConstants.poweredBy,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppColors.textSecondaryLight,
-                          ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -124,6 +140,39 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FeatureItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _FeatureItem({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.primaryGreenDark.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primaryGreenDark, size: 20),
+        ),
+        const SizedBox(width: 14),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColors.primaryGreenDark,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -137,7 +186,6 @@ class _HeroIllustration extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Background circles
         Positioned(
           top: -20,
           right: -30,
@@ -162,7 +210,6 @@ class _HeroIllustration extends StatelessWidget {
             ),
           ),
         ),
-        // Road
         Positioned(
           bottom: 20,
           child: Container(
@@ -174,7 +221,6 @@ class _HeroIllustration extends StatelessWidget {
             ),
           ),
         ),
-        // Logo + campus icon
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -191,7 +237,6 @@ class _HeroIllustration extends StatelessWidget {
             ),
           ],
         ),
-        // Decorative dots
         ...List.generate(5, (i) => Positioned(
           top: 20.0 + i * 30,
           left: 20.0 + (i % 2) * 40,
