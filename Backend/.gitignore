@@ -1,0 +1,4 @@
+campride/
+.env
+__pycache__/
+*.pyc
