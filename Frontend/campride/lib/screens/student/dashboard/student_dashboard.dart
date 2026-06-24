@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../constants/app_constants.dart';
-import '../../../theme/app_colors.dart';
 import '../live_map/live_map_screen.dart';
-import '../notifications/notifications_screen.dart';
-import '../profile/student_profile_screen.dart';
-import '../search/search_screen.dart';
+import '../alerts/alerts_screen.dart';
+import '../account/student_account_screen.dart';
+import '../../../widgets/common/app_drawer.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -17,135 +15,143 @@ class StudentDashboard extends StatefulWidget {
 class _StudentDashboardState extends State<StudentDashboard> {
   int _currentIndex = 0;
 
-  static const List<Widget> _screens = [
-    LiveMapScreen(),
-    SearchRouteScreen(),
-    StudentProfileScreen(),
-  ];
-
-  static const List<_NavItem> _navItems = [
-    _NavItem(icon: Icons.map_outlined, activeIcon: Icons.map, label: 'Live Map'),
-    _NavItem(icon: Icons.search_outlined, activeIcon: Icons.search, label: 'Search Route'),
-    _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          AppConstants.appName,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.accentGold,
-                    shape: BoxShape.circle,
+      backgroundColor: Colors.white,
+      drawer: const AppDrawer(),
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _currentIndex,
+            children: const [
+              LiveMapScreen(),
+              AlertsScreen(),
+              StudentAccountScreen(),
+            ],
+          ),
+          // Floating hamburger — only visible on Home tab
+          if (_currentIndex == 0)
+            Builder(
+              builder: (innerContext) => SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 12),
+                  child: GestureDetector(
+                    onTap: () => Scaffold.of(innerContext).openDrawer(),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.menu, size: 22, color: Colors.black87),
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
         ],
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: KeyedSubtree(
-          key: ValueKey(_currentIndex),
-          child: _screens[_currentIndex],
-        ),
-      ),
-      bottomNavigationBar: _AnimatedBottomNav(
+      bottomNavigationBar: _BottomNav(
         currentIndex: _currentIndex,
-        items: _navItems,
         onTap: (i) => setState(() => _currentIndex = i),
       ),
     );
   }
 }
 
-class _NavItem {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  const _NavItem({required this.icon, required this.activeIcon, required this.label});
-}
-
-class _AnimatedBottomNav extends StatelessWidget {
+class _BottomNav extends StatelessWidget {
   final int currentIndex;
-  final List<_NavItem> items;
   final ValueChanged<int> onTap;
 
-  const _AnimatedBottomNav({
-    required this.currentIndex,
-    required this.items,
-    required this.onTap,
-  });
+  const _BottomNav({required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        top: false,
+        child: SizedBox(
+          height: 62,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: items.asMap().entries.map((e) {
-              final isActive = e.key == currentIndex;
-              return GestureDetector(
-                onTap: () => onTap(e.key),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isActive ? AppColors.primaryGreen.withOpacity(0.1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isActive ? e.value.activeIcon : e.value.icon,
-                        color: isActive
-                            ? Theme.of(context).bottomNavigationBarTheme.selectedItemColor
-                            : Theme.of(context).bottomNavigationBarTheme.unselectedItemColor,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        e.value.label,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                          color: isActive
-                              ? Theme.of(context).bottomNavigationBarTheme.selectedItemColor
-                              : Theme.of(context).bottomNavigationBarTheme.unselectedItemColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+            children: [
+              _NavTab(
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                label: 'Home',
+                isActive: currentIndex == 0,
+                onTap: () => onTap(0),
+              ),
+              _NavTab(
+                icon: Icons.notifications_outlined,
+                activeIcon: Icons.notifications,
+                label: 'Alerts',
+                isActive: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              _NavTab(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: 'Account',
+                isActive: currentIndex == 2,
+                onTap: () => onTap(2),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavTab extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _NavTab({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? Colors.black : Colors.grey[500]!;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(isActive ? activeIcon : icon, size: 24, color: color),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: color,
+              ),
+            ),
+          ],
         ),
       ),
     );

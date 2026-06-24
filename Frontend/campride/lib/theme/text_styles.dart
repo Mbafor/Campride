@@ -63,4 +63,11 @@ class AppTextStyles {
         color: AppColors.accentGold,
         letterSpacing: 1.2,
       );
+
+  static TextStyle splashBrand() => GoogleFonts.poppins(
+        fontSize: 34,
+        fontWeight: FontWeight.w800,
+        color: AppColors.primaryGreen,
+        letterSpacing: 0.5,
+      );
 }

@@ -58,4 +58,4 @@ flutter run
 ## Frontend Team
 
 - **Mbafor Joshua** — Frontend Lead & Project Manager
-- **Edwin Kobina Armah** — UI/UX & Frontend Developer
+- **Edwin Kobina Armah** — Frontend Developer
