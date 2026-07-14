@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_constants.dart';
 import '../../providers/authentication_provider.dart';
@@ -23,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
   bool _googleLoading = false;
   String? _emailError;
 
@@ -35,31 +37,102 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleContinue() {
+  Future<void> _handleContinue() async {
     final email = _emailCtrl.text.trim();
-    final valid = RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$').hasMatch(email);
-    if (!valid) {
-      setState(() => _emailError = 'Enter a valid email address');
-      return;
+    final password = _passwordCtrl.text;
+
+    String? emailErr;
+
+    final validEmail = RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$').hasMatch(email);
+    if (!validEmail) emailErr = 'Enter a valid email address';
+
+    setState(() => _emailError = emailErr);
+    if (emailErr != null) return;
+
+    setState(() => _isLoading = true);
+
+    final auth = context.read<AuthenticationProvider>();
+    final role = context.read<UserRoleProvider>();
+    role.setRole(widget.role);
+
+    final ok = await auth.login(email: email, password: password);
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (ok) {
+        // Login successful, navigate to dashboard
+        context.go(_isStudent
+            ? RouteNames.studentDashboard
+            : RouteNames.driverDashboard);
+      } else if (auth.errorCode == 'AUTH_007') {
+        // Email not verified, navigate to verification screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OtpScreen(email: email)),
+        );
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage ?? 'Login failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-    setState(() => _emailError = null);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => OtpScreen(email: email)),
-    );
   }
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _googleLoading = true);
-    final auth = context.read<AuthenticationProvider>();
-    final role = context.read<UserRoleProvider>();
-    role.setRole(widget.role);
-    final ok = await auth.signInWithGoogle(widget.role);
-    if (mounted) {
-      setState(() => _googleLoading = false);
-      if (ok) {
-        context.go(
-            _isStudent ? RouteNames.studentDashboard : RouteNames.driverDashboard);
+
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        if (mounted) setState(() => _googleLoading = false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        if (mounted) {
+          setState(() => _googleLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to get Google ID token')),
+          );
+        }
+        return;
+      }
+
+      final auth = context.read<AuthenticationProvider>();
+      final role = context.read<UserRoleProvider>();
+      role.setRole(widget.role);
+
+      final ok = await auth.googleSignIn(idToken: idToken);
+
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        if (ok) {
+          context.go(
+              _isStudent ? RouteNames.studentDashboard : RouteNames.driverDashboard);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.errorMessage ?? 'Google sign-in failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in error: $e')),
+        );
       }
     }
   }
@@ -132,7 +205,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Continue button
                 _PrimaryButton(
-                    label: 'Continue', onPressed: _handleContinue),
+                  label: 'Continue',
+                  onPressed: _isLoading ? null : _handleContinue,
+                  isLoading: _isLoading,
+                ),
                 const SizedBox(height: 24),
 
                 // OR divider
@@ -256,7 +332,12 @@ class _GreyField extends StatelessWidget {
 class _PrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
-  const _PrimaryButton({required this.label, this.onPressed});
+  final bool isLoading;
+  const _PrimaryButton({
+    required this.label,
+    this.onPressed,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -272,13 +353,22 @@ class _PrimaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14)),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                label,
+                style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white),
+              ),
       ),
     );
   }
