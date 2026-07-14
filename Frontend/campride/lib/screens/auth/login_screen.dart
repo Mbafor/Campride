@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -95,13 +96,22 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      developer.log(
+        'Google Auth Object - idToken: ${googleAuth.idToken}, accessToken: ${googleAuth.accessToken}',
+        name: 'GoogleSignIn',
+      );
+
       final String? idToken = googleAuth.idToken;
 
       if (idToken == null) {
         if (mounted) {
           setState(() => _googleLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to get Google ID token')),
+            SnackBar(
+              content: Text('Failed to get Google ID token - accessToken available: ${googleAuth.accessToken != null}'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
         return;

@@ -1,5 +1,7 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/authentication_provider.dart';
@@ -38,7 +40,8 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  void _handleCreate() {
+  Future<void> _handleCreate() async {
+    final name = _nameCtrl.text.trim();
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text;
     final confirm = _confirmCtrl.text;
@@ -50,8 +53,8 @@ class _SignupScreenState extends State<SignupScreen> {
         RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$').hasMatch(email);
     if (!validEmail) emailErr = 'Enter a valid email address';
 
-    if (password.length < 6) {
-      passErr = 'Password must be at least 6 characters';
+    if (password.length < 8) {
+      passErr = 'Password must be at least 8 characters';
     } else if (password != confirm) {
       passErr = 'Passwords do not match';
     }
@@ -63,23 +66,93 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (emailErr != null || passErr != null) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => OtpScreen(email: email)),
+    // Call the real register endpoint
+    final auth = context.read<AuthenticationProvider>();
+    final ok = await auth.register(
+      name: name,
+      email: email,
+      password: password,
     );
+
+    if (mounted) {
+      if (ok) {
+        // Navigate to verification code screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OtpScreen(email: email)),
+        );
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage ?? 'Registration failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _googleLoading = true);
-    final auth = context.read<AuthenticationProvider>();
-    final role = context.read<UserRoleProvider>();
-    role.setRole(widget.role);
-    final ok = await auth.signInWithGoogle(widget.role);
-    if (mounted) {
-      setState(() => _googleLoading = false);
-      if (ok) {
-        context.go(
-            _isStudent ? RouteNames.studentDashboard : RouteNames.driverDashboard);
+
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        if (mounted) setState(() => _googleLoading = false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      developer.log(
+        'Google Auth Object - idToken: ${googleAuth.idToken}, accessToken: ${googleAuth.accessToken}',
+        name: 'GoogleSignIn',
+      );
+
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        if (mounted) {
+          setState(() => _googleLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to get Google ID token - accessToken available: ${googleAuth.accessToken != null}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final auth = context.read<AuthenticationProvider>();
+      final role = context.read<UserRoleProvider>();
+      role.setRole(widget.role);
+
+      final ok = await auth.googleSignIn(idToken: idToken);
+
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        if (ok) {
+          context.go(
+              _isStudent ? RouteNames.studentDashboard : RouteNames.driverDashboard);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.errorMessage ?? 'Google sign-in failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in error: $e')),
+        );
       }
     }
   }
