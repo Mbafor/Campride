@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -87,18 +88,52 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _googleLoading = true);
 
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: ['openid', 'email', 'profile'],
+      );
 
-      if (googleUser == null) {
-        if (mounted) setState(() => _googleLoading = false);
-        return;
+      if (kIsWeb) {
+        // Web platform: use signInSilently which works better with GIS
+        final GoogleSignInAccount? googleUser = await googleSignIn.signInSilently();
+
+        if (googleUser == null) {
+          // Silent sign-in failed, try interactive signIn
+          final interactiveUser = await googleSignIn.signIn();
+          if (interactiveUser == null) {
+            if (mounted) setState(() => _googleLoading = false);
+            return;
+          }
+          await _processGoogleSignIn(interactiveUser);
+        } else {
+          await _processGoogleSignIn(googleUser);
+        }
+      } else {
+        // Mobile platforms: use regular signIn
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+        if (googleUser == null) {
+          if (mounted) setState(() => _googleLoading = false);
+          return;
+        }
+        await _processGoogleSignIn(googleUser);
       }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in error: $e')),
+        );
+      }
+    }
+  }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+  Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
+    try {
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       developer.log(
-        'Google Auth Object - idToken: ${googleAuth.idToken}, accessToken: ${googleAuth.accessToken}',
+        'Google Auth - idToken: ${googleAuth.idToken}, accessToken: ${googleAuth.accessToken}',
         name: 'GoogleSignIn',
       );
 
@@ -109,7 +144,8 @@ class _LoginScreenState extends State<LoginScreen> {
           setState(() => _googleLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to get Google ID token - accessToken available: ${googleAuth.accessToken != null}'),
+              content: Text(
+                  'Failed to get Google ID token - accessToken: ${googleAuth.accessToken != null}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -126,8 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _googleLoading = false);
         if (ok) {
-          context.go(
-              _isStudent ? RouteNames.studentDashboard : RouteNames.driverDashboard);
+          context.go(_isStudent
+              ? RouteNames.studentDashboard
+              : RouteNames.driverDashboard);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -141,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _googleLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google sign-in error: $e')),
+          SnackBar(content: Text('Error processing sign-in: $e')),
         );
       }
     }
