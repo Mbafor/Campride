@@ -7,6 +7,7 @@ from app.models.telemetry import TelemetryLog
 from app.models.notification import Notification
 from app.models.ride_history import RideHistory
 from app.models.shuttle_request import ShuttleRequest
+from app.models.verification_code import VerificationCode
 
 __all__ = [
     "User",
@@ -18,4 +19,5 @@ __all__ = [
     "Notification",
     "RideHistory",
     "ShuttleRequest",
+    "VerificationCode",
 ]

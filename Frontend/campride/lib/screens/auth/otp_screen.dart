@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import '../../providers/authentication_provider.dart';
+import '../../routes/route_names.dart';
 import '../../theme/app_colors.dart';
+import 'login_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String email;
@@ -15,6 +20,8 @@ class _OtpScreenState extends State<OtpScreen> {
   final List<TextEditingController> _ctrls =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _nodes = List.generate(6, (_) => FocusNode());
+  bool _isLoading = false;
+  bool _isResending = false;
 
   @override
   void initState() {
@@ -43,10 +50,58 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
-  void _handleVerify() {
+  Future<void> _handleVerify() async {
     final otp = _ctrls.map((c) => c.text).join();
     if (otp.length < 6) return;
-    // TODO: verify OTP against backend
+
+    setState(() => _isLoading = true);
+
+    final auth = context.read<AuthenticationProvider>();
+    final ok = await auth.verifyEmail(email: widget.email, code: otp);
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (ok) {
+        // Navigate to login screen after successful verification
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen(role: 'student')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage ?? 'Verification failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleResend() async {
+    setState(() => _isResending = true);
+
+    final auth = context.read<AuthenticationProvider>();
+    final ok = await auth.resendVerification(email: widget.email);
+
+    if (mounted) {
+      setState(() => _isResending = false);
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verification code sent'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage ?? 'Resend failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -127,7 +182,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _handleVerify,
+                  onPressed: _isLoading ? null : _handleVerify,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryGreenDark,
                     foregroundColor: Colors.white,
@@ -135,13 +190,23 @@ class _OtpScreenState extends State<OtpScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: Text(
-                    'Verify',
-                    style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          'Verify',
+                          style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -149,7 +214,7 @@ class _OtpScreenState extends State<OtpScreen> {
               // Resend
               Center(
                 child: GestureDetector(
-                  onTap: () {},
+                  onTap: _isResending ? null : _handleResend,
                   child: RichText(
                     text: TextSpan(
                       style: GoogleFonts.poppins(
@@ -157,7 +222,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       children: [
                         const TextSpan(text: "Didn't receive a code? "),
                         TextSpan(
-                          text: 'Resend',
+                          text: _isResending ? 'Sending...' : 'Resend',
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
