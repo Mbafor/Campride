@@ -112,17 +112,28 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    if (kIsWeb) {
-      // Web: renderButton() is rendered in UI and handles click + auth flow
-      // Authentication happens via Google's GIS library
-      // User will see the official Google button and click it directly
-      developer.log(
-        'GIS renderButton() shown on web - user interaction handled by Google',
-        name: 'GoogleSignIn',
+    setState(() => _googleLoading = true);
+
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: ['openid', 'email', 'profile'],
       );
-    } else {
-      // Mobile: Use traditional signIn() flow
-      await _handleMobileGoogleSignIn();
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        if (mounted) setState(() => _googleLoading = false);
+        return;
+      }
+
+      await _processGoogleSignIn(googleUser);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in error: $e')),
+        );
+      }
     }
   }
 
@@ -474,47 +485,39 @@ class _GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb) {
-      // Web: Render Google's official GIS button with customization
-      return SizedBox(
-        width: double.infinity,
-        child: google_sign_in_web.renderButton(),
-      );
-    } else {
-      // Mobile: Use custom button with traditional flow
-      return SizedBox(
-        width: double.infinity,
-        height: 54,
-        child: OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
-          ),
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _GoogleIcon(),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Continue with Google',
-                      style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87),
-                    ),
-                  ],
-                ),
+    // Use custom button for all platforms - modern design with your branding
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14)),
         ),
-      );
-    }
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _GoogleIcon(),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Continue with Google',
+                    style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87),
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 }
 
