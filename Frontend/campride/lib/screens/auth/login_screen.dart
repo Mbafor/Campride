@@ -98,6 +98,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
+      // DEBUG: Credential received
+      print('[DEBUG] Google credential received: ${googleUser?.email}');
+      developer.log('[DEBUG] Google credential received: ${googleUser?.email}', name: 'GoogleSignIn');
+
       if (googleUser == null) {
         if (mounted) setState(() => _googleLoading = false);
         return;
@@ -144,11 +148,20 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
       final role = context.read<UserRoleProvider>();
       role.setRole(widget.role);
 
+      // DEBUG: Before API call
+      print('[DEBUG] Calling auth.googleSignIn() with idToken: ${idToken.substring(0, 20)}...');
+      developer.log('[DEBUG] Calling auth.googleSignIn()', name: 'GoogleSignIn');
+
       final ok = await auth.googleSignIn(idToken: idToken);
+
+      // DEBUG: After API response
+      print('[DEBUG] API response received: ok=$ok, errorMessage=${auth.errorMessage}, errorCode=${auth.errorCode}');
+      developer.log('[DEBUG] API response received: ok=$ok, errorCode=${auth.errorCode}', name: 'GoogleSignIn');
 
       if (mounted) {
         setState(() => _googleLoading = false);
         if (ok) {
+          print('[DEBUG] Navigation: navigating to ${_isStudent ? 'studentDashboard' : 'driverDashboard'}');
           context.go(_isStudent
               ? RouteNames.studentDashboard
               : RouteNames.driverDashboard);
@@ -452,7 +465,7 @@ class _GoogleButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: Colors.grey[300]!, width: 1.5),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+              borderRadius: BorderRadius.circular(27)),
         ),
         child: isLoading
             ? const SizedBox(
