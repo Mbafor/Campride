@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
 import 'package:google_sign_in_web/web_only.dart' as google_sign_in_web;
 import 'package:provider/provider.dart';
 import '../../constants/app_constants.dart';
@@ -88,57 +87,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleGoogleSignIn() async {
     if (kIsWeb) {
-      // Web: Use Google's official renderButton() via GIS
-      // The button click is handled by the GIS library; we listen for the result
-      _setupWebGISListener();
+      // Web: renderButton() is rendered in UI and handles click + auth flow
+      // Authentication happens via Google's GIS library
+      // User will see the official Google button and click it directly
+      developer.log(
+        'GIS renderButton() shown on web - user interaction handled by Google',
+        name: 'GoogleSignIn',
+      );
     } else {
       // Mobile: Use traditional signIn() flow
       await _handleMobileGoogleSignIn();
-    }
-  }
-
-  void _setupWebGISListener() {
-    // Listen for the GIS authentication result from renderButton()
-    GoogleSignInPlatform.instance.userDataEvents?.listen(
-      (GoogleSignInUserData? userData) {
-        if (userData?.idToken != null) {
-          developer.log(
-            'GIS renderButton() returned idToken: ${userData!.idToken}',
-            name: 'GoogleSignIn',
-          );
-          _processWebGISSignIn(userData.idToken!);
-        }
-      },
-      onError: (error) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Google sign-in error: $error')),
-          );
-        }
-      },
-    );
-  }
-
-  Future<void> _processWebGISSignIn(String idToken) async {
-    final auth = context.read<AuthenticationProvider>();
-    final role = context.read<UserRoleProvider>();
-    role.setRole(widget.role);
-
-    final ok = await auth.googleSignIn(idToken: idToken);
-
-    if (mounted) {
-      if (ok) {
-        context.go(_isStudent
-            ? RouteNames.studentDashboard
-            : RouteNames.driverDashboard);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(auth.errorMessage ?? 'Google sign-in failed'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
