@@ -34,6 +34,24 @@ class _LoginScreenState extends State<LoginScreen> {
   bool get _isStudent => widget.role == AppConstants.studentRole;
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize GoogleSignIn on web BEFORE renderButton() is called
+    if (kIsWeb) {
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: ['openid', 'email', 'profile'],
+      );
+      // Initialize the plugin so renderButton() can be called safely later
+      googleSignIn.signInSilently().then((_) {
+        developer.log('GoogleSignIn initialized on web', name: 'GoogleSignIn');
+      }).catchError((e) {
+        // Silent initialization failure is OK - button will still work
+        developer.log('GoogleSignIn init note: $e', name: 'GoogleSignIn');
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
