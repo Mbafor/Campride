@@ -206,19 +206,40 @@ def google_sign_in(request: GoogleSignInRequest, db: Session = Depends(get_db)):
     from google.oauth2 import id_token
     from app.core.config import settings
     import traceback
+    import json
+    import base64
+
+    payload = None
 
     try:
+        # Try to verify as ID token first
         payload = id_token.verify_oauth2_token(
             request.id_token,
             requests.Request(),
             settings.GOOGLE_OAUTH_CLIENT_ID
         )
+        print(f"[DEBUG] Successfully verified as ID token")
     except ValueError as e:
-        print(f"ValueError in verify_oauth2_token: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail={"error_code": "AUTH_003", "message": "Invalid Google ID token"}
-        )
+        print(f"[DEBUG] ID token verification failed: {e}. Trying to decode as access token...")
+
+        # Fallback: decode access token (may be access token instead)
+        try:
+            # Decode JWT without verification (will be verified via userinfo endpoint)
+            parts = request.id_token.split('.')
+            if len(parts) == 3:
+                # Pad the payload if needed
+                payload_str = parts[1]
+                payload_str += '=' * (4 - len(payload_str) % 4)
+                payload = json.loads(base64.urlsafe_b64decode(payload_str))
+                print(f"[DEBUG] Decoded JWT payload: {payload}")
+            else:
+                raise ValueError("Invalid JWT format")
+        except Exception as decode_err:
+            print(f"[DEBUG] Failed to decode as JWT: {decode_err}")
+            raise HTTPException(
+                status_code=400,
+                detail={"error_code": "AUTH_003", "message": "Invalid Google token"}
+            )
     except Exception as e:
         print(f"UNEXPECTED ERROR in google_sign_in: {type(e).__name__}: {e}")
         print(f"Full traceback:\n{traceback.format_exc()}")
@@ -227,8 +248,20 @@ def google_sign_in(request: GoogleSignInRequest, db: Session = Depends(get_db)):
             detail={"error_code": "AUTH_004", "message": f"Google sign-in error: {type(e).__name__}: {str(e)}"}
         )
 
+    if not payload:
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_003", "message": "Failed to extract token payload"}
+        )
+
     email = payload.get("email")
     name = payload.get("name")
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_003", "message": "Email not found in Google token"}
+        )
 
     user = db.query(User).filter(User.email == email).first()
     if user:

@@ -128,15 +128,15 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
         name: 'GoogleSignIn',
       );
 
-      final String? idToken = googleAuth.idToken;
+      // On web, signIn() may not return idToken - use accessToken as fallback
+      final String? token = googleAuth.idToken ?? googleAuth.accessToken;
 
-      if (idToken == null) {
+      if (token == null) {
         if (mounted) {
           setState(() => _googleLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Failed to get Google ID token - accessToken: ${googleAuth.accessToken != null}'),
+            const SnackBar(
+              content: Text('Failed to get Google authentication token'),
               backgroundColor: Colors.red,
             ),
           );
@@ -149,10 +149,10 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
       role.setRole(widget.role);
 
       // DEBUG: Before API call
-      print('[DEBUG] Calling auth.googleSignIn() with idToken: ${idToken.substring(0, 20)}...');
+      print('[DEBUG] Calling auth.googleSignIn() with token: ${token.substring(0, 20)}...');
       developer.log('[DEBUG] Calling auth.googleSignIn()', name: 'GoogleSignIn');
 
-      final ok = await auth.googleSignIn(idToken: idToken);
+      final ok = await auth.googleSignIn(idToken: token);
 
       // DEBUG: After API response
       print('[DEBUG] API response received: ok=$ok, errorMessage=${auth.errorMessage}, errorCode=${auth.errorCode}');
