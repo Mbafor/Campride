@@ -36,18 +36,85 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize GoogleSignIn on web BEFORE renderButton() is called
+    // Initialize GoogleSignIn and set up authentication event listener on web
     if (kIsWeb) {
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['openid', 'email', 'profile'],
       );
-      // Initialize the plugin so renderButton() can be called safely later
+
+      // Initialize the plugin so renderButton() can be called safely
       googleSignIn.signInSilently().then((_) {
         developer.log('GoogleSignIn initialized on web', name: 'GoogleSignIn');
       }).catchError((e) {
-        // Silent initialization failure is OK - button will still work
         developer.log('GoogleSignIn init note: $e', name: 'GoogleSignIn');
       });
+
+      // Listen for GIS authentication events (credential responses)
+      GoogleSignIn.instance.authenticationEvents.listen(
+        (AuthenticationEvent event) async {
+          // User completed authentication - we have the credential (idToken)
+          developer.log(
+            'GIS authentication completed, idToken: ${event.idToken}',
+            name: 'GoogleSignIn',
+          );
+
+          // Send the idToken to our backend
+          await _handleGISCredential(event.idToken);
+        },
+        onError: (error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Google Sign-In error: $error'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+      );
+    }
+  }
+
+  Future<void> _handleGISCredential(String idToken) async {
+    try {
+      // Show loading indicator
+      setState(() => _googleLoading = true);
+
+      final auth = context.read<AuthenticationProvider>();
+      final role = context.read<UserRoleProvider>();
+      role.setRole(widget.role);
+
+      // Send idToken to backend
+      final ok = await auth.googleSignIn(idToken: idToken);
+
+      if (mounted) {
+        setState(() => _googleLoading = false);
+
+        if (ok) {
+          // Successful authentication - navigate to dashboard
+          context.go(_isStudent
+              ? RouteNames.studentDashboard
+              : RouteNames.driverDashboard);
+        } else {
+          // Backend rejected the token
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.errorMessage ?? 'Google sign-in failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -474,11 +541,21 @@ class _GoogleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      // Web: Render Google's official GIS button via renderButton()
+      // Web: Render Google's official GIS button with customization
+      // Button handles authentication internally via authenticationEvents stream
       return SizedBox(
         width: double.infinity,
-        height: 54,
-        child: google_sign_in_web.renderButton(),
+        child: google_sign_in_web.renderButton(
+          configuration: google_sign_in_web.GSIButtonConfiguration(
+            theme: 'outline',              // Outline theme matches app design
+            size: 'large',                 // Large button for prominence
+            shape: 'rectangular',          // Rectangular to match other buttons
+            text: 'continue_with',         // "Continue with Google" text
+            type: 'standard',              // Full button (not icon-only)
+            logoAlignment: 'left',         // Google logo on left side
+            minimumWidth: 280,             // Minimum width for consistency
+          ),
+        ),
       );
     } else {
       // Mobile: Use custom button with traditional flow
