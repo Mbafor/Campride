@@ -20,7 +20,11 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
         server.quit()
         return True
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        import traceback
+        print(f"[ERROR] Failed to send email to {to_email}")
+        print(f"[ERROR] Exception type: {type(e).__name__}")
+        print(f"[ERROR] Exception message: {e}")
+        print(f"[ERROR] Traceback:\n{traceback.format_exc()}")
         return False
 
 

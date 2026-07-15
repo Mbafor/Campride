@@ -206,61 +206,40 @@ def google_sign_in(request: GoogleSignInRequest, db: Session = Depends(get_db)):
     from google.oauth2 import id_token
     from app.core.config import settings
     import traceback
-    import json
-    import base64
-
-    payload = None
 
     try:
-        # Try to verify as ID token first
+        # Verify ID token against Google's public keys
+        # This is the ONLY accepted authentication method
         payload = id_token.verify_oauth2_token(
             request.id_token,
             requests.Request(),
             settings.GOOGLE_OAUTH_CLIENT_ID
         )
-        print(f"[DEBUG] Successfully verified as ID token")
+        print(f"[DEBUG] ID token verified successfully. Email: {payload.get('email')}")
     except ValueError as e:
-        print(f"[DEBUG] ID token verification failed: {e}. Trying to decode as access token...")
-
-        # Fallback: decode access token (may be access token instead)
-        try:
-            # Decode JWT without verification (will be verified via userinfo endpoint)
-            parts = request.id_token.split('.')
-            if len(parts) == 3:
-                # Pad the payload if needed
-                payload_str = parts[1]
-                payload_str += '=' * (4 - len(payload_str) % 4)
-                payload = json.loads(base64.urlsafe_b64decode(payload_str))
-                print(f"[DEBUG] Decoded JWT payload: {payload}")
-            else:
-                raise ValueError("Invalid JWT format")
-        except Exception as decode_err:
-            print(f"[DEBUG] Failed to decode as JWT: {decode_err}")
-            raise HTTPException(
-                status_code=400,
-                detail={"error_code": "AUTH_003", "message": "Invalid Google token"}
-            )
+        # ID token verification failed - reject the request
+        print(f"[DEBUG] ID token verification failed: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_003", "message": "Invalid Google ID token"}
+        )
     except Exception as e:
-        print(f"UNEXPECTED ERROR in google_sign_in: {type(e).__name__}: {e}")
+        # Any other error during verification - reject
+        print(f"ERROR in google_sign_in: {type(e).__name__}: {e}")
         print(f"Full traceback:\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
-            detail={"error_code": "AUTH_004", "message": f"Google sign-in error: {type(e).__name__}: {str(e)}"}
+            detail={"error_code": "AUTH_004", "message": f"Google sign-in error: {type(e).__name__}"}
         )
 
-    if not payload:
-        raise HTTPException(
-            status_code=400,
-            detail={"error_code": "AUTH_003", "message": "Failed to extract token payload"}
-        )
-
+    # Extract verified claims from the ID token
     email = payload.get("email")
     name = payload.get("name")
 
     if not email:
         raise HTTPException(
             status_code=400,
-            detail={"error_code": "AUTH_003", "message": "Email not found in Google token"}
+            detail={"error_code": "AUTH_003", "message": "Email not found in verified Google token"}
         )
 
     user = db.query(User).filter(User.email == email).first()
@@ -268,21 +247,33 @@ def google_sign_in(request: GoogleSignInRequest, db: Session = Depends(get_db)):
         access_token = create_access_token({"sub": str(user.id), "role": user.role})
         refresh_token = create_refresh_token({"sub": str(user.id), "role": user.role})
     else:
-        new_user = User(
-            id=uuid.uuid4(),
-            name=name,
-            email=email,
-            hashed_password=None,
-            role="student",
-            is_active=True,
-            is_verified=True,
-        )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+        try:
+            new_user = User(
+                id=uuid.uuid4(),
+                name=name,
+                email=email,
+                hashed_password=None,
+                role="student",
+                is_active=True,
+                is_verified=True,
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
 
-        access_token = create_access_token({"sub": str(new_user.id), "role": new_user.role})
-        refresh_token = create_refresh_token({"sub": str(new_user.id), "role": new_user.role})
+            access_token = create_access_token({"sub": str(new_user.id), "role": new_user.role})
+            refresh_token = create_refresh_token({"sub": str(new_user.id), "role": new_user.role})
+        except Exception as e:
+            db.rollback()
+            user = db.query(User).filter(User.email == email).first()
+            if user:
+                access_token = create_access_token({"sub": str(user.id), "role": user.role})
+                refresh_token = create_refresh_token({"sub": str(user.id), "role": user.role})
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail={"error_code": "AUTH_004", "message": "Failed to create or find user"}
+                )
 
     return TokenResponse(
         access_token=access_token,

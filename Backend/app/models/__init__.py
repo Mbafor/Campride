@@ -8,6 +8,7 @@ from app.models.notification import Notification
 from app.models.ride_history import RideHistory
 from app.models.shuttle_request import ShuttleRequest
 from app.models.verification_code import VerificationCode
+from app.models.driver_current_route import DriverCurrentRoute
 
 __all__ = [
     "User",
@@ -20,4 +21,5 @@ __all__ = [
     "RideHistory",
     "ShuttleRequest",
     "VerificationCode",
+    "DriverCurrentRoute",
 ]
