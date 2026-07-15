@@ -63,7 +63,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
     print('[DEBUG-WEB] Found registered platform view container: google_signin_button');
 
-    // Render Google's official button once at page load into the pre-registered container
+    // Clear the container to avoid duplicate buttons if this screen is revisited
+    // (e.g., user navigates between Sign Up and Login, causing initState to run again)
+    containerElement.innerHtml = '';
+    print('[DEBUG-WEB] Cleared container to ensure clean renderButton state');
+
+    // Render Google's official button into the pre-registered container
     try {
       google_sign_in_web.renderButton(
         options: {
