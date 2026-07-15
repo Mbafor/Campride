@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in_web/web_only.dart' as google_sign_in_web;
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/authentication_provider.dart';
@@ -95,6 +96,62 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    if (kIsWeb) {
+      // Web: Use Google's official renderButton() via GIS
+      // The button click is handled by the GIS library; we listen for the result
+      _setupWebGISListener();
+    } else {
+      // Mobile: Use traditional signIn() flow
+      await _handleMobileGoogleSignIn();
+    }
+  }
+
+  void _setupWebGISListener() {
+    // Listen for the GIS authentication result from renderButton()
+    GoogleSignInPlatform.instance.userDataEvents?.listen(
+      (GoogleSignInUserData? userData) {
+        if (userData?.idToken != null) {
+          developer.log(
+            'GIS renderButton() returned idToken: ${userData!.idToken}',
+            name: 'GoogleSignIn',
+          );
+          _processWebGISSignIn(userData.idToken!);
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Google sign-in error: $error')),
+          );
+        }
+      },
+    );
+  }
+
+  Future<void> _processWebGISSignIn(String idToken) async {
+    final auth = context.read<AuthenticationProvider>();
+    final role = context.read<UserRoleProvider>();
+    role.setRole(widget.role);
+
+    final ok = await auth.googleSignIn(idToken: idToken);
+
+    if (mounted) {
+      if (ok) {
+        context.go(_isStudent
+            ? RouteNames.studentDashboard
+            : RouteNames.driverDashboard);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage ?? 'Google sign-in failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleMobileGoogleSignIn() async {
     setState(() => _googleLoading = true);
 
     try {
@@ -102,31 +159,14 @@ class _SignupScreenState extends State<SignupScreen> {
         scopes: ['openid', 'email', 'profile'],
       );
 
-      if (kIsWeb) {
-        // Web platform: use signInSilently which works better with GIS
-        final GoogleSignInAccount? googleUser = await googleSignIn.signInSilently();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
-        if (googleUser == null) {
-          // Silent sign-in failed, try interactive signIn
-          final interactiveUser = await googleSignIn.signIn();
-          if (interactiveUser == null) {
-            if (mounted) setState(() => _googleLoading = false);
-            return;
-          }
-          await _processGoogleSignIn(interactiveUser);
-        } else {
-          await _processGoogleSignIn(googleUser);
-        }
-      } else {
-        // Mobile platforms: use regular signIn
-        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-
-        if (googleUser == null) {
-          if (mounted) setState(() => _googleLoading = false);
-          return;
-        }
-        await _processGoogleSignIn(googleUser);
+      if (googleUser == null) {
+        if (mounted) setState(() => _googleLoading = false);
+        return;
       }
+
+      await _processGoogleSignIn(googleUser);
     } catch (e) {
       if (mounted) {
         setState(() => _googleLoading = false);
@@ -459,38 +499,48 @@ class _GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: Colors.grey[300]!, width: 1.5),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+    if (kIsWeb) {
+      // Web: Render Google's official GIS button via renderButton()
+      return SizedBox(
+        width: double.infinity,
+        height: 54,
+        child: google_sign_in_web.renderButton(),
+      );
+    } else {
+      // Mobile: Use custom button with traditional flow
+      return SizedBox(
+        width: double.infinity,
+        height: 54,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _GoogleIcon(),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Continue with Google',
+                      style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87),
+                    ),
+                  ],
+                ),
         ),
-        child: isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _GoogleIcon(),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Continue with Google',
-                    style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87),
-                  ),
-                ],
-              ),
-      ),
-    );
+      );
+    }
   }
 }
 
