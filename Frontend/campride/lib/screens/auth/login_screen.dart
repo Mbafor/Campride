@@ -1,11 +1,9 @@
 import 'dart:developer' as developer;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:google_sign_in_web/web_only.dart' as google_sign_in_web;
 import 'package:provider/provider.dart';
 import '../../constants/app_constants.dart';
 import '../../providers/authentication_provider.dart';
@@ -36,17 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize GoogleSignIn on web before renderButton() is called
-    if (kIsWeb) {
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['openid', 'email', 'profile'],
-      );
-      googleSignIn.signInSilently().then((_) {
-        developer.log('GoogleSignIn initialized on web', name: 'GoogleSignIn');
-      }).catchError((e) {
-        developer.log('GoogleSignIn init note: $e', name: 'GoogleSignIn');
-      });
-    }
   }
 
   @override
@@ -127,33 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _handleMobileGoogleSignIn() async {
-    setState(() => _googleLoading = true);
-
-    try {
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['openid', 'email', 'profile'],
-      );
-
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-
-      if (googleUser == null) {
-        if (mounted) setState(() => _googleLoading = false);
-        return;
-      }
-
-      await _processGoogleSignIn(googleUser);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _googleLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google sign-in error: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
+Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
     try {
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
