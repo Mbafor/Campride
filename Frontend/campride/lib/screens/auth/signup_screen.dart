@@ -1,5 +1,4 @@
 import 'dart:developer' as developer;
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -102,6 +101,80 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    if (kIsWeb) {
+      // WEB: Use Google Identity Services renderButton() with credential callback
+      _handleGoogleSignInWeb();
+    } else {
+      // MOBILE: Use traditional signIn() flow
+      _handleGoogleSignInMobile();
+    }
+  }
+
+  void _handleGoogleSignInWeb() {
+    setState(() => _googleLoading = true);
+
+    try {
+      // Set up credential response callback BEFORE rendering button
+      google_sign_in_web.onCredentialResponse((credential) {
+        print('[DEBUG-WEB] Credential response received from Google');
+        print('[DEBUG-WEB] Credential (first 10 chars): ${credential.credential.substring(0, 10)}');
+        developer.log('[DEBUG-WEB] Credential JWT received, first 10 chars: ${credential.credential.substring(0, 10)}', name: 'GoogleSignIn');
+
+        // Process the JWT credential directly
+        _processWebCredential(credential.credential);
+      });
+
+      // Render Google's official button - this will trigger the credential callback
+      google_sign_in_web.renderButton();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in error: $e')),
+        );
+      }
+    }
+  }
+
+  void _processWebCredential(String idToken) async {
+    try {
+      print('[DEBUG-WEB] Processing credential: ${idToken.substring(0, 10)}...');
+      print('[DEBUG-WEB] Token type (eyJ=JWT, ya29=AccessToken): ${idToken.substring(0, 4)}');
+      developer.log('[DEBUG-WEB] Processing JWT, starts with: ${idToken.substring(0, 4)}', name: 'GoogleSignIn');
+
+      final auth = context.read<AuthenticationProvider>();
+      final role = context.read<UserRoleProvider>();
+      role.setRole(widget.role);
+
+      final ok = await auth.googleSignIn(idToken: idToken);
+
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        if (ok) {
+          print('[DEBUG-WEB] Navigation successful to ${_isStudent ? 'studentDashboard' : 'driverDashboard'}');
+          context.go(_isStudent
+              ? RouteNames.studentDashboard
+              : RouteNames.driverDashboard);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.errorMessage ?? 'Google sign-in failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error processing credential: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignInMobile() async {
     setState(() => _googleLoading = true);
 
     try {
@@ -111,8 +184,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
-      print('[DEBUG] Google credential received: ${googleUser?.email}');
-      developer.log('[DEBUG] Google credential received: ${googleUser?.email}', name: 'GoogleSignIn');
+      print('[DEBUG-MOBILE] Google credential received: ${googleUser?.email}');
+      developer.log('[DEBUG-MOBILE] Google credential received: ${googleUser?.email}', name: 'GoogleSignIn');
 
       if (googleUser == null) {
         if (mounted) setState(() => _googleLoading = false);
@@ -135,25 +208,14 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
-      // Detailed token type logging
-      print('[DEBUG] idToken: ${googleAuth.idToken?.substring(0, 30) ?? "null"}');
-      print('[DEBUG] accessToken: ${googleAuth.accessToken?.substring(0, 30) ?? "null"}');
-      developer.log(
-        'Google Auth - idToken: ${googleAuth.idToken?.substring(0, 30) ?? "null"}, accessToken: ${googleAuth.accessToken?.substring(0, 30) ?? "null"}',
-        name: 'GoogleSignIn',
-      );
+      final String? idToken = googleAuth.idToken;
 
-      // Prioritize idToken (JWT starting with "eyJ"), only use accessToken as last resort
-      final String? token = googleAuth.idToken;
-
-      if (token == null) {
-        print('[DEBUG] WARNING: idToken is null! Cannot proceed without a real ID token.');
-        print('[DEBUG] accessToken available: ${googleAuth.accessToken != null}');
+      if (idToken == null) {
         if (mounted) {
           setState(() => _googleLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Google Sign-In returned access token but not ID token. This is not supported.'),
+              content: Text('Failed to get Google ID token'),
               backgroundColor: Colors.red,
             ),
           );
@@ -161,25 +223,20 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
         return;
       }
 
+      print('[DEBUG-MOBILE] Sending idToken (first 10 chars): ${idToken.substring(0, 10)}');
+      print('[DEBUG-MOBILE] Token type: ${idToken.substring(0, 4)}');
+      developer.log('[DEBUG-MOBILE] Sending idToken, starts with: ${idToken.substring(0, 4)}', name: 'GoogleSignIn');
+
       final auth = context.read<AuthenticationProvider>();
       final role = context.read<UserRoleProvider>();
       role.setRole(widget.role);
 
-      // DEBUG: Before API call
-      print('[DEBUG] Token type check: starts with "eyJ"? ${token.startsWith("eyJ")}');
-      print('[DEBUG] Calling auth.googleSignIn() with token: ${token.substring(0, 30)}...');
-      developer.log('[DEBUG] Calling auth.googleSignIn()', name: 'GoogleSignIn');
-
-      final ok = await auth.googleSignIn(idToken: token);
-
-      // DEBUG: After API response
-      print('[DEBUG] API response received: ok=$ok, errorMessage=${auth.errorMessage}, errorCode=${auth.errorCode}');
-      developer.log('[DEBUG] API response received: ok=$ok, errorCode=${auth.errorCode}', name: 'GoogleSignIn');
+      final ok = await auth.googleSignIn(idToken: idToken);
 
       if (mounted) {
         setState(() => _googleLoading = false);
         if (ok) {
-          print('[DEBUG] Navigation: navigating to ${_isStudent ? 'studentDashboard' : 'driverDashboard'}');
+          print('[DEBUG-MOBILE] Navigation successful to ${_isStudent ? 'studentDashboard' : 'driverDashboard'}');
           context.go(_isStudent
               ? RouteNames.studentDashboard
               : RouteNames.driverDashboard);
