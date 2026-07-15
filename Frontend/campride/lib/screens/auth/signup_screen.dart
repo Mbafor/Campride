@@ -36,6 +36,40 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) {
+      _initializeGoogleSignInWeb();
+    }
+  }
+
+  void _initializeGoogleSignInWeb() {
+    // Set up credential response callback (called once when renderButton receives credential)
+    google_sign_in_web.onCredentialResponse((credential) {
+      print('[DEBUG-WEB] Credential response received from Google');
+      print('[DEBUG-WEB] Credential (first 10 chars): ${credential.credential.substring(0, 10)}');
+      developer.log('[DEBUG-WEB] Credential JWT received, first 10 chars: ${credential.credential.substring(0, 10)}', name: 'GoogleSignIn');
+
+      // Process the JWT credential directly
+      _processWebCredential(credential.credential);
+    });
+
+    // Render Google's official button once at page load
+    // This renders into a container in the UI (see _GoogleButtonWeb widget)
+    try {
+      google_sign_in_web.renderButton(
+        options: {
+          'theme': 'outline',           // Outline style matches app design
+          'size': 'large',              // Large button for prominence
+          'shape': 'pill',              // Pill shape (fully rounded) as preferred
+          'text': 'continue_with',      // "Continue with Google" text
+          'type': 'standard',           // Full button (not icon-only)
+        },
+      );
+      print('[DEBUG-WEB] renderButton() initialized in initState');
+      developer.log('[DEBUG-WEB] renderButton() initialized', name: 'GoogleSignIn');
+    } catch (e) {
+      print('[DEBUG-WEB] Error calling renderButton: $e');
+      developer.log('[DEBUG-WEB] renderButton error: $e', name: 'GoogleSignIn');
+    }
   }
 
   @override
@@ -101,80 +135,8 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    if (kIsWeb) {
-      // WEB: Use Google Identity Services renderButton() with credential callback
-      _handleGoogleSignInWeb();
-    } else {
-      // MOBILE: Use traditional signIn() flow
-      _handleGoogleSignInMobile();
-    }
-  }
-
-  void _handleGoogleSignInWeb() {
-    setState(() => _googleLoading = true);
-
-    try {
-      // Set up credential response callback BEFORE rendering button
-      google_sign_in_web.onCredentialResponse((credential) {
-        print('[DEBUG-WEB] Credential response received from Google');
-        print('[DEBUG-WEB] Credential (first 10 chars): ${credential.credential.substring(0, 10)}');
-        developer.log('[DEBUG-WEB] Credential JWT received, first 10 chars: ${credential.credential.substring(0, 10)}', name: 'GoogleSignIn');
-
-        // Process the JWT credential directly
-        _processWebCredential(credential.credential);
-      });
-
-      // Render Google's official button - this will trigger the credential callback
-      google_sign_in_web.renderButton();
-    } catch (e) {
-      if (mounted) {
-        setState(() => _googleLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google sign-in error: $e')),
-        );
-      }
-    }
-  }
-
-  void _processWebCredential(String idToken) async {
-    try {
-      print('[DEBUG-WEB] Processing credential: ${idToken.substring(0, 10)}...');
-      print('[DEBUG-WEB] Token type (eyJ=JWT, ya29=AccessToken): ${idToken.substring(0, 4)}');
-      developer.log('[DEBUG-WEB] Processing JWT, starts with: ${idToken.substring(0, 4)}', name: 'GoogleSignIn');
-
-      final auth = context.read<AuthenticationProvider>();
-      final role = context.read<UserRoleProvider>();
-      role.setRole(widget.role);
-
-      final ok = await auth.googleSignIn(idToken: idToken);
-
-      if (mounted) {
-        setState(() => _googleLoading = false);
-        if (ok) {
-          print('[DEBUG-WEB] Navigation successful to ${_isStudent ? 'studentDashboard' : 'driverDashboard'}');
-          context.go(_isStudent
-              ? RouteNames.studentDashboard
-              : RouteNames.driverDashboard);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(auth.errorMessage ?? 'Google sign-in failed'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _googleLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error processing credential: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleGoogleSignInMobile() async {
+    // MOBILE ONLY: On web, the button click is handled by Google's renderButton
+    // which was set up in initState() with onCredentialResponse callback
     setState(() => _googleLoading = true);
 
     try {
@@ -198,6 +160,42 @@ class _SignupScreenState extends State<SignupScreen> {
         setState(() => _googleLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Google sign-in error: $e')),
+        );
+      }
+    }
+  }
+
+  void _processWebCredential(String idToken) async {
+    try {
+      print('[DEBUG-WEB] Processing credential: ${idToken.substring(0, 10)}...');
+      print('[DEBUG-WEB] Token type (eyJ=JWT, ya29=AccessToken): ${idToken.substring(0, 4)}');
+      developer.log('[DEBUG-WEB] Processing JWT, starts with: ${idToken.substring(0, 4)}', name: 'GoogleSignIn');
+
+      final auth = context.read<AuthenticationProvider>();
+      final role = context.read<UserRoleProvider>();
+      role.setRole(widget.role);
+
+      final ok = await auth.googleSignIn(idToken: idToken);
+
+      if (mounted) {
+        if (ok) {
+          print('[DEBUG-WEB] Navigation successful to ${_isStudent ? 'studentDashboard' : 'driverDashboard'}');
+          context.go(_isStudent
+              ? RouteNames.studentDashboard
+              : RouteNames.driverDashboard);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.errorMessage ?? 'Google sign-in failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error processing credential: $e')),
         );
       }
     }
@@ -524,39 +522,53 @@ class _GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use custom button for all platforms - modern design with your branding
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: Colors.grey[300]!, width: 1.5),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(27)),
+    if (kIsWeb) {
+      // WEB: Google's renderButton() was initialized in initState()
+      // It renders into the page directly. This widget returns an empty container
+      // where renderButton() will place its button.
+      return SizedBox(
+        width: double.infinity,
+        height: 54,
+        child: Container(
+          // Google's renderButton() will render its button here
+          // The actual Google button appears in this space
         ),
-        child: isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _GoogleIcon(),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Continue with Google',
-                    style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87),
-                  ),
-                ],
-              ),
-      ),
-    );
+      );
+    } else {
+      // MOBILE: Custom button with traditional signIn() flow
+      return SizedBox(
+        width: double.infinity,
+        height: 54,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(27)),
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _GoogleIcon(),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Continue with Google',
+                      style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87),
+                    ),
+                  ],
+                ),
+        ),
+      );
+    }
   }
 }
 
