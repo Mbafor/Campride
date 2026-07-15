@@ -1,3 +1,6 @@
+import 'dart:html' as html;
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/authentication_provider.dart';
@@ -6,7 +9,15 @@ import 'providers/user_role_provider.dart';
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
 
+// Global reference to Google Sign-In button container (used on web)
+late html.DivElement _googleSignInButtonContainer;
+
 void main() {
+  // Register platform view factory for Google Sign-In button (web only)
+  if (kIsWeb) {
+    _registerGoogleSignInButtonFactory();
+  }
+
   runApp(
     MultiProvider(
       providers: [
@@ -17,6 +28,20 @@ void main() {
       child: const CamprideApp(),
     ),
   );
+}
+
+void _registerGoogleSignInButtonFactory() {
+  // Create the container element once at app startup
+  _googleSignInButtonContainer = html.DivElement()..id = 'google_signin_button';
+
+  // Register with Flutter's platform view system
+  // This connects HtmlElementView(viewType: 'google_signin_button') to this element
+  ui.platformViewRegistry.registerViewFactory(
+    'google_signin_button',
+    (int viewId) => _googleSignInButtonContainer,
+  );
+
+  print('[DEBUG-MAIN] Platform view factory registered: google_signin_button');
 }
 
 class CamprideApp extends StatefulWidget {

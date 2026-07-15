@@ -53,15 +53,17 @@ class _LoginScreenState extends State<LoginScreen> {
       _processWebCredential(credential.credential);
     });
 
-    // Get or create the container element where Google's button will render
+    // The container element was pre-registered in main.dart via platformViewRegistry
+    // It's already in the DOM and ready to receive renderButton()
     html.DivElement? containerElement = html.document.getElementById('google_signin_button') as html.DivElement?;
     if (containerElement == null) {
-      containerElement = html.DivElement()..id = 'google_signin_button';
-      html.document.body?.append(containerElement);
-      print('[DEBUG-WEB] Created new container element with ID google_signin_button');
+      print('[DEBUG-WEB] ERROR: Platform view container not found! Factory may not be registered.');
+      return;
     }
 
-    // Render Google's official button once at page load into the specific container
+    print('[DEBUG-WEB] Found registered platform view container: google_signin_button');
+
+    // Render Google's official button once at page load into the pre-registered container
     try {
       google_sign_in_web.renderButton(
         options: {
@@ -72,8 +74,8 @@ class _LoginScreenState extends State<LoginScreen> {
           'type': 'standard',           // Full button (not icon-only)
         },
       );
-      print('[DEBUG-WEB] renderButton() called - button should render into #google_signin_button');
-      developer.log('[DEBUG-WEB] renderButton() initialized into element: google_signin_button', name: 'GoogleSignIn');
+      print('[DEBUG-WEB] renderButton() called - button rendered into #google_signin_button');
+      developer.log('[DEBUG-WEB] renderButton() initialized into registered element: google_signin_button', name: 'GoogleSignIn');
     } catch (e) {
       print('[DEBUG-WEB] Error calling renderButton: $e');
       developer.log('[DEBUG-WEB] renderButton error: $e', name: 'GoogleSignIn');
