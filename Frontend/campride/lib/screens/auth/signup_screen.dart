@@ -135,20 +135,25 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
+      // Detailed token type logging
+      print('[DEBUG] idToken: ${googleAuth.idToken?.substring(0, 30) ?? "null"}');
+      print('[DEBUG] accessToken: ${googleAuth.accessToken?.substring(0, 30) ?? "null"}');
       developer.log(
-        'Google Auth - idToken: ${googleAuth.idToken}, accessToken: ${googleAuth.accessToken}',
+        'Google Auth - idToken: ${googleAuth.idToken?.substring(0, 30) ?? "null"}, accessToken: ${googleAuth.accessToken?.substring(0, 30) ?? "null"}',
         name: 'GoogleSignIn',
       );
 
-      // On web, signIn() may not return idToken - use accessToken as fallback
-      final String? token = googleAuth.idToken ?? googleAuth.accessToken;
+      // Prioritize idToken (JWT starting with "eyJ"), only use accessToken as last resort
+      final String? token = googleAuth.idToken;
 
       if (token == null) {
+        print('[DEBUG] WARNING: idToken is null! Cannot proceed without a real ID token.');
+        print('[DEBUG] accessToken available: ${googleAuth.accessToken != null}');
         if (mounted) {
           setState(() => _googleLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Failed to get Google authentication token'),
+              content: Text('Google Sign-In returned access token but not ID token. This is not supported.'),
               backgroundColor: Colors.red,
             ),
           );
@@ -161,7 +166,8 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
       role.setRole(widget.role);
 
       // DEBUG: Before API call
-      print('[DEBUG] Calling auth.googleSignIn() with token: ${token.substring(0, 20)}...');
+      print('[DEBUG] Token type check: starts with "eyJ"? ${token.startsWith("eyJ")}');
+      print('[DEBUG] Calling auth.googleSignIn() with token: ${token.substring(0, 30)}...');
       developer.log('[DEBUG] Calling auth.googleSignIn()', name: 'GoogleSignIn');
 
       final ok = await auth.googleSignIn(idToken: token);
