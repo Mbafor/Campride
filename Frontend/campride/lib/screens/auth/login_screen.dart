@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -52,8 +53,15 @@ class _LoginScreenState extends State<LoginScreen> {
       _processWebCredential(credential.credential);
     });
 
-    // Render Google's official button once at page load
-    // This renders into a container in the UI (see _GoogleButtonWeb widget)
+    // Get or create the container element where Google's button will render
+    html.DivElement? containerElement = html.document.getElementById('google_signin_button') as html.DivElement?;
+    if (containerElement == null) {
+      containerElement = html.DivElement()..id = 'google_signin_button';
+      html.document.body?.append(containerElement);
+      print('[DEBUG-WEB] Created new container element with ID google_signin_button');
+    }
+
+    // Render Google's official button once at page load into the specific container
     try {
       google_sign_in_web.renderButton(
         options: {
@@ -64,8 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
           'type': 'standard',           // Full button (not icon-only)
         },
       );
-      print('[DEBUG-WEB] renderButton() initialized in initState');
-      developer.log('[DEBUG-WEB] renderButton() initialized', name: 'GoogleSignIn');
+      print('[DEBUG-WEB] renderButton() called - button should render into #google_signin_button');
+      developer.log('[DEBUG-WEB] renderButton() initialized into element: google_signin_button', name: 'GoogleSignIn');
     } catch (e) {
       print('[DEBUG-WEB] Error calling renderButton: $e');
       developer.log('[DEBUG-WEB] renderButton error: $e', name: 'GoogleSignIn');
@@ -520,15 +528,14 @@ class _GoogleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      // WEB: Google's renderButton() was initialized in initState()
-      // It renders into the page directly. This widget returns an empty container
-      // where renderButton() will place its button.
+      // WEB: Embed the actual HTML element where renderButton() placed Google's button
+      // renderButton() rendered into element with ID 'google_signin_button'
+      // We embed it here in the Flutter widget tree using HtmlElementView
       return SizedBox(
         width: double.infinity,
         height: 54,
-        child: Container(
-          // Google's renderButton() will render its button here
-          // The actual Google button appears in this space
+        child: HtmlElementView(
+          viewType: 'google_signin_button',
         ),
       );
     } else {
