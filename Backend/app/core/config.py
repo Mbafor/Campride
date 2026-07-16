@@ -1,19 +1,29 @@
 import os
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
 
 load_dotenv()
 
 
-class Settings:
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password123@localhost:5433/shuttledb")
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "your_secret_key_here")
+class Settings(BaseSettings):
+    # Required environment variables (fail fast if missing)
+    DATABASE_URL: str
+    JWT_SECRET: str
+
+    # Optional environment variables
+    GMAIL_ADDRESS: str = ""
+    GMAIL_APP_PASSWORD: str = ""
+    GOOGLE_OAUTH_CLIENT_ID: str = ""
+
+    # Fixed configuration (not environment-dependent)
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    GMAIL_ADDRESS: str = os.getenv("GMAIL_ADDRESS", "")
-    GMAIL_APP_PASSWORD: str = os.getenv("GMAIL_APP_PASSWORD", "")
-    GOOGLE_OAUTH_CLIENT_ID: str = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
+        extra = "ignore"
 
 
 settings = Settings()

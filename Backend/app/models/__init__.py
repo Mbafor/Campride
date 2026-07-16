@@ -1,4 +1,4 @@
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.shuttle import Shuttle
 from app.models.route import Route
 from app.models.stop import Stop
@@ -12,6 +12,7 @@ from app.models.driver_current_route import DriverCurrentRoute
 
 __all__ = [
     "User",
+    "UserRole",
     "Shuttle",
     "Route",
     "Stop",

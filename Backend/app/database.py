@@ -1,13 +1,12 @@
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from dotenv import load_dotenv
+from app.core.config import settings
 
-load_dotenv()
+# Get DATABASE_URL from centralized settings (required env var)
+DATABASE_URL = settings.DATABASE_URL
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-# Convert asyncpg URL to regular PostgreSQL driver (psycopg2)
-if DATABASE_URL and DATABASE_URL.startswith("postgresql+asyncpg://"):
+# Convert asyncpg URL to regular PostgreSQL driver (psycopg2) if needed
+if DATABASE_URL.startswith("postgresql+asyncpg://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
 
 engine = create_engine(
