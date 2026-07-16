@@ -1,24 +1,26 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import resend
 from app.core.config import settings
+
+resend.api_key = settings.RESEND_API_KEY
 
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
     try:
-        msg = MIMEMultipart()
-        msg["From"] = settings.GMAIL_ADDRESS
-        msg["To"] = to_email
-        msg["Subject"] = subject
+        response = resend.Emails.send(
+            {
+                "from": "CampRide <onboarding@resend.dev>",
+                "to": to_email,
+                "subject": subject,
+                "text": body,
+            }
+        )
 
-        msg.attach(MIMEText(body, "plain"))
-
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
-        server.login(settings.GMAIL_ADDRESS, settings.GMAIL_APP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        return True
+        if response.get("id"):
+            return True
+        else:
+            print(f"[ERROR] Resend API returned no email ID for {to_email}")
+            print(f"[ERROR] Response: {response}")
+            return False
     except Exception as e:
         import traceback
         print(f"[ERROR] Failed to send email to {to_email}")

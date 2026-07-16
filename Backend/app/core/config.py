@@ -9,10 +9,9 @@ class Settings(BaseSettings):
     # Required environment variables (fail fast if missing)
     DATABASE_URL: str
     JWT_SECRET: str
+    RESEND_API_KEY: str
 
     # Optional environment variables
-    GMAIL_ADDRESS: str = ""
-    GMAIL_APP_PASSWORD: str = ""
     GOOGLE_OAUTH_CLIENT_ID: str = ""
 
     # Fixed configuration (not environment-dependent)
