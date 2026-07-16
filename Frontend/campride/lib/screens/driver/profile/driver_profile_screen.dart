@@ -6,6 +6,7 @@ import '../../../models/user_model.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../routes/route_names.dart';
+import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
 
 class DriverProfileScreen extends StatelessWidget {
@@ -31,7 +32,7 @@ class DriverProfileScreen extends StatelessWidget {
             children: [
               _DriverHeader(driver: driver),
               const SizedBox(height: 20),
-              _DriverStats(),
+              _ComingSoonStats(),
               const SizedBox(height: 16),
               _VehicleCard(),
               const SizedBox(height: 16),
@@ -114,61 +115,117 @@ class _DriverHeader extends StatelessWidget {
   }
 }
 
-class _DriverStats extends StatelessWidget {
+class _ComingSoonStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: _StatCard(icon: Icons.directions_bus, label: 'Total Trips', value: '142')),
-        const SizedBox(width: 12),
-        Expanded(child: _StatCard(icon: Icons.people, label: 'Passengers', value: '3,847')),
-        const SizedBox(width: 12),
-        Expanded(child: _StatCard(icon: Icons.star, label: 'Rating', value: '4.8')),
-      ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _StatCard({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Icon(icon, color: AppColors.primaryGreen, size: 22),
-            const SizedBox(height: 4),
-            Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text(label, style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight), textAlign: TextAlign.center),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.dividerLight),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey[50],
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: AppColors.textSecondaryLight, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Trip Statistics Coming Soon',
+                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Trips, passengers, and rating data will appear here once you complete rides',
+                  style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _VehicleCard extends StatelessWidget {
+class _VehicleCard extends StatefulWidget {
+  const _VehicleCard();
+
+  @override
+  State<_VehicleCard> createState() => _VehicleCardState();
+}
+
+class _VehicleCardState extends State<_VehicleCard> {
+  final _shuttleService = ShuttleService();
+  ShuttleInfo? _shuttle;
+  DriverRoute? _route;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVehicleData();
+  }
+
+  Future<void> _loadVehicleData() async {
+    final auth = context.read<AuthenticationProvider>();
+    if (auth.accessToken == null) {
+      setState(() => _loading = false);
+      return;
+    }
+
+    // Load shuttle and route in parallel
+    final shuttleResult = await _shuttleService.getDriverShuttle(accessToken: auth.accessToken!);
+    final routeResult = await _shuttleService.getDriverRoute(accessToken: auth.accessToken!);
+
+    if (mounted) {
+      setState(() {
+        _shuttle = shuttleResult.data;
+        _route = routeResult.data;
+        _loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+          ),
+        ),
+      );
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Vehicle Info', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
+            Text('Vehicle & Route Info', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
             const SizedBox(height: 12),
-            _InfoRow(icon: Icons.directions_bus_outlined, label: 'Plate Number', value: 'GR 1234-20'),
-            _InfoRow(icon: Icons.category_outlined, label: 'Capacity', value: '32 seats'),
-            _InfoRow(icon: Icons.route_outlined, label: 'Assigned Route', value: 'Main Campus Loop'),
-            _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: '+233 20 000 0002'),
+            if (_shuttle != null) ...[
+              _InfoRow(icon: Icons.directions_bus_outlined, label: 'Plate Number', value: _shuttle!.plateNumber),
+              _InfoRow(icon: Icons.category_outlined, label: 'Capacity', value: '${_shuttle!.capacity} seats'),
+              _InfoRow(
+                icon: Icons.circle,
+                label: 'Shuttle Status',
+                value: _shuttle!.status.substring(0, 1).toUpperCase() + _shuttle!.status.substring(1),
+              ),
+            ] else
+              _InfoRow(icon: Icons.directions_bus_outlined, label: 'Shuttle', value: 'Not assigned'),
+            const SizedBox(height: 8),
+            if (_route != null)
+              _InfoRow(icon: Icons.route_outlined, label: 'Assigned Route', value: _route!.name)
+            else
+              _InfoRow(icon: Icons.route_outlined, label: 'Assigned Route', value: 'Not assigned'),
           ],
         ),
       ),
