@@ -3,7 +3,13 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from alembic import context
 import os
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
+
+# Add Backend/ root to sys.path so alembic can find app module regardless of cwd
+backend_root = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_root))
 
 from app.database import Base, engine
 
