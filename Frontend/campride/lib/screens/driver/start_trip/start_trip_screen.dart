@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../constants/app_constants.dart';
-import '../../../models/route_model.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/authentication_provider.dart';
+import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/buttons/custom_button.dart';
-import '../../../widgets/common/section_header.dart';
 
 class StartTripScreen extends StatefulWidget {
   const StartTripScreen({super.key});
@@ -17,7 +17,13 @@ class _StartTripScreenState extends State<StartTripScreen>
     with SingleTickerProviderStateMixin {
   bool _tripStarted = false;
   bool _loading = false;
+  bool _loadingRoute = true;
   late AnimationController _pulseController;
+  final _shuttleService = ShuttleService();
+  DriverRoute? _currentRoute;
+  List<Stop> _stops = [];
+  ShuttleInfo? _assignedShuttle;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -26,6 +32,53 @@ class _StartTripScreenState extends State<StartTripScreen>
       vsync: this,
       duration: const Duration(seconds: 1),
     );
+    _loadDriverData();
+  }
+
+  Future<void> _loadDriverData() async {
+    final auth = context.read<AuthenticationProvider>();
+    if (auth.accessToken == null) {
+      setState(() {
+        _loadingRoute = false;
+        _errorMessage = 'No access token available';
+      });
+      return;
+    }
+
+    // Load route
+    final routeResult = await _shuttleService.getDriverRoute(
+      accessToken: auth.accessToken!,
+    );
+
+    // Load shuttle (in parallel)
+    final shuttleResult = await _shuttleService.getDriverShuttle(
+      accessToken: auth.accessToken!,
+    );
+
+    if (routeResult.success && routeResult.data != null) {
+      final route = routeResult.data!;
+      final stopsResult = await _shuttleService.getRouteStops(
+        accessToken: auth.accessToken!,
+        routeId: route.id,
+      );
+
+      if (mounted) {
+        setState(() {
+          _currentRoute = route;
+          _stops = stopsResult.data ?? [];
+          _assignedShuttle = shuttleResult.data;
+          _loadingRoute = false;
+          _errorMessage = null;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _loadingRoute = false;
+          _errorMessage = routeResult.message ?? 'No route assigned';
+        });
+      }
+    }
   }
 
   @override
@@ -53,22 +106,154 @@ class _StartTripScreenState extends State<StartTripScreen>
 
   @override
   Widget build(BuildContext context) {
-    final routes = RouteModel.mockRoutes();
-    final activeRoute = routes.first;
+    final auth = context.watch<AuthenticationProvider>();
+
+    if (_loadingRoute) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+        ),
+      );
+    }
+
+    if (_errorMessage != null || _currentRoute == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.route_outlined, size: 48, color: AppColors.error),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage ?? 'No route assigned',
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Contact your fleet manager to assign a route',
+                style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Welcome section
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome back, ${auth.user?.name ?? 'Driver'}',
+                  style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ready to start your route?',
+                  style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                ),
+              ],
+            ),
+          ),
+
+          // Trip status card
           _TripStatusCard(isStarted: _tripStarted, pulseController: _pulseController),
           const SizedBox(height: 24),
-          const SectionHeader(title: 'Current Route'),
+
+          // My Route section
+          Text(
+            'My Route',
+            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 12),
-          _RouteCard(route: activeRoute),
+          _RouteCard(route: _currentRoute!),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Route selection coming soon'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.edit, size: 18),
+              label: Text(
+                'Change Route',
+                style: GoogleFonts.poppins(fontSize: 13),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: const BorderSide(color: AppColors.primaryGreen),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
-          _StopsTimeline(stops: activeRoute.stops),
+
+          // Assigned Shuttle section
+          Text(
+            'Assigned Shuttle',
+            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          if (_assignedShuttle != null)
+            _ShuttleCard(shuttle: _assignedShuttle!)
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.dividerLight),
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey[50],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.airport_shuttle, color: AppColors.textSecondaryLight, size: 32),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'No shuttle assigned yet',
+                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Contact your fleet manager to assign a shuttle',
+                          style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 24),
+
+          // Route stops timeline
+          Text(
+            'Route Stops',
+            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          _StopsTimeline(stops: _stops),
           const SizedBox(height: 32),
+
+          // Start/End trip button
           CustomButton(
             label: _tripStarted ? 'End Trip' : 'Start Trip',
             isLoading: _loading,
@@ -85,6 +270,7 @@ class _StartTripScreenState extends State<StartTripScreen>
               ),
             ),
           ],
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -176,7 +362,7 @@ class _TripStatusCard extends StatelessWidget {
 }
 
 class _RouteCard extends StatelessWidget {
-  final RouteModel route;
+  final DriverRoute route;
   const _RouteCard({required this.route});
 
   @override
@@ -193,7 +379,7 @@ class _RouteCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    AppConstants.mockRoute,
+                    route.name,
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                 ),
@@ -202,18 +388,13 @@ class _RouteCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.access_time, size: 14, color: AppColors.textSecondaryLight),
+                const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondaryLight),
                 const SizedBox(width: 4),
                 Text(
-                  '${route.startTime} - ${route.endTime}',
+                  '${route.startName} → ${route.endName}',
                   style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.refresh, size: 14, color: AppColors.textSecondaryLight),
-                const SizedBox(width: 4),
-                Text(
-                  'Every ${route.frequency} min',
-                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -225,11 +406,25 @@ class _RouteCard extends StatelessWidget {
 }
 
 class _StopsTimeline extends StatelessWidget {
-  final List<String> stops;
+  final List<Stop> stops;
   const _StopsTimeline({required this.stops});
 
   @override
   Widget build(BuildContext context) {
+    if (stops.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: Text(
+              'No stops available for this route',
+              style: GoogleFonts.poppins(color: AppColors.textSecondaryLight),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -267,7 +462,7 @@ class _StopsTimeline extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 3),
                   child: Text(
-                    e.value,
+                    e.value.name,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: e.key == 0 || e.key == stops.length - 1 ? FontWeight.w600 : FontWeight.normal,
@@ -276,6 +471,96 @@ class _StopsTimeline extends StatelessWidget {
                 ),
               ],
             )).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShuttleCard extends StatelessWidget {
+  final ShuttleInfo shuttle;
+  const _ShuttleCard({required this.shuttle});
+
+  String _getStatusColor() {
+    switch (shuttle.status.toLowerCase()) {
+      case 'active':
+        return 'Active';
+      case 'idle':
+        return 'Idle';
+      case 'offline':
+        return 'Offline';
+      default:
+        return shuttle.status;
+    }
+  }
+
+  Color _getStatusBadgeColor() {
+    switch (shuttle.status.toLowerCase()) {
+      case 'active':
+        return AppColors.success;
+      case 'idle':
+        return AppColors.warning;
+      case 'offline':
+        return AppColors.error;
+      default:
+        return AppColors.textSecondaryLight;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.airport_shuttle, color: AppColors.primaryGreen, size: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    shuttle.name,
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusBadgeColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _getStatusColor(),
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _getStatusBadgeColor(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.tag, size: 14, color: AppColors.textSecondaryLight),
+                const SizedBox(width: 6),
+                Text(
+                  shuttle.plateNumber,
+                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.people, size: 14, color: AppColors.textSecondaryLight),
+                const SizedBox(width: 6),
+                Text(
+                  '${shuttle.capacity} seats',
+                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                ),
+              ],
+            ),
           ],
         ),
       ),
