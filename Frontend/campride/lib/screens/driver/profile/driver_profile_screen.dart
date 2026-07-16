@@ -13,23 +13,35 @@ class DriverProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final driver = UserModel.mockDriver();
+    return Consumer<AuthenticationProvider>(
+      builder: (context, auth, _) {
+        final driver = auth.user;
+        if (driver == null) {
+          return Center(
+            child: Text(
+              'User data not available',
+              style: GoogleFonts.poppins(color: AppColors.textSecondaryLight),
+            ),
+          );
+        }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _DriverHeader(driver: driver),
-          const SizedBox(height: 20),
-          _DriverStats(),
-          const SizedBox(height: 16),
-          _VehicleCard(),
-          const SizedBox(height: 16),
-          _SettingsCard(),
-          const SizedBox(height: 24),
-          _SignOutButton(),
-        ],
-      ),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _DriverHeader(driver: driver),
+              const SizedBox(height: 20),
+              _DriverStats(),
+              const SizedBox(height: 16),
+              _VehicleCard(),
+              const SizedBox(height: 16),
+              _SettingsCard(),
+              const SizedBox(height: 24),
+              _SignOutButton(),
+            ],
+          ),
+        );
+      },
     );
   }
 }

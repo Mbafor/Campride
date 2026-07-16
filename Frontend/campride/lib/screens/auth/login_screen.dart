@@ -1,14 +1,12 @@
 import 'dart:developer' as developer;
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:google_sign_in_web/web_only.dart' as google_sign_in_web;
+import 'package:google_sign_in_web/web_only.dart';
 import 'package:provider/provider.dart';
-import '../../constants/app_constants.dart';
 import '../../providers/authentication_provider.dart';
 import '../../providers/user_role_provider.dart';
 import '../../routes/route_names.dart';
@@ -32,59 +30,32 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _googleLoading = false;
   String? _emailError;
 
-  bool get _isStudent => widget.role == AppConstants.studentRole;
+  String _getDashboardRoute(String userRole) {
+    switch (userRole) {
+      case 'student':
+        return RouteNames.studentDashboard;
+      case 'driver':
+        return RouteNames.driverDashboard;
+      case 'fleet_manager':
+        return RouteNames.fleetDashboard;
+      case 'super_admin':
+        return RouteNames.adminDashboard;
+      default:
+        return RouteNames.studentDashboard;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    if (kIsWeb) {
-      _initializeGoogleSignInWeb();
-    }
-  }
-
-  void _initializeGoogleSignInWeb() {
-    // Set up credential response callback (called once when renderButton receives credential)
-    google_sign_in_web.onCredentialResponse((credential) {
-      print('[DEBUG-WEB] Credential response received from Google');
-      print('[DEBUG-WEB] Credential (first 10 chars): ${credential.credential.substring(0, 10)}');
-      developer.log('[DEBUG-WEB] Credential JWT received, first 10 chars: ${credential.credential.substring(0, 10)}', name: 'GoogleSignIn');
-
-      // Process the JWT credential directly
-      _processWebCredential(credential.credential);
+    // Listen to Google Sign-In stream (works on both web and mobile)
+    GoogleSignIn().onCurrentUserChanged.listen((account) {
+      if (account != null && mounted) {
+        print('[DEBUG] User signed in: ${account.email}');
+        developer.log('[DEBUG] User signed in: ${account.email}', name: 'GoogleSignIn');
+        _handleGoogleSignInSuccess(account);
+      }
     });
-
-    // The container element was pre-registered in main.dart via platformViewRegistry
-    // It's already in the DOM and ready to receive renderButton()
-    html.DivElement? containerElement = html.document.getElementById('google_signin_button') as html.DivElement?;
-    if (containerElement == null) {
-      print('[DEBUG-WEB] ERROR: Platform view container not found! Factory may not be registered.');
-      return;
-    }
-
-    print('[DEBUG-WEB] Found registered platform view container: google_signin_button');
-
-    // Clear the container to avoid duplicate buttons if this screen is revisited
-    // (e.g., user navigates between Sign Up and Login, causing initState to run again)
-    containerElement.innerHtml = '';
-    print('[DEBUG-WEB] Cleared container to ensure clean renderButton state');
-
-    // Render Google's official button into the pre-registered container
-    try {
-      google_sign_in_web.renderButton(
-        options: {
-          'theme': 'outline',           // Outline style matches app design
-          'size': 'large',              // Large button for prominence
-          'shape': 'pill',              // Pill shape (fully rounded) as preferred
-          'text': 'continue_with',      // "Continue with Google" text
-          'type': 'standard',           // Full button (not icon-only)
-        },
-      );
-      print('[DEBUG-WEB] renderButton() called - button rendered into #google_signin_button');
-      developer.log('[DEBUG-WEB] renderButton() initialized into registered element: google_signin_button', name: 'GoogleSignIn');
-    } catch (e) {
-      print('[DEBUG-WEB] Error calling renderButton: $e');
-      developer.log('[DEBUG-WEB] renderButton error: $e', name: 'GoogleSignIn');
-    }
   }
 
   @override
@@ -117,18 +88,15 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) {
       setState(() => _isLoading = false);
       if (ok) {
-        // Login successful, navigate to dashboard
-        context.go(_isStudent
-            ? RouteNames.studentDashboard
-            : RouteNames.driverDashboard);
+        final userRole = auth.user?.role ?? 'student';
+        final dashboardRoute = _getDashboardRoute(userRole);
+        context.go(dashboardRoute);
       } else if (auth.errorCode == 'AUTH_007') {
-        // Email not verified, navigate to verification screen
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => OtpScreen(email: email)),
         );
       } else {
-        // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(auth.errorMessage ?? 'Login failed'),
@@ -139,96 +107,20 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    // MOBILE ONLY: On web, the button click is handled by Google's renderButton
-    // which was set up in initState() with onCredentialResponse callback
+  Future<void> _handleGoogleSignInSuccess(GoogleSignInAccount account) async {
     setState(() => _googleLoading = true);
 
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['openid', 'email', 'profile'],
-      );
-
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-
-      print('[DEBUG-MOBILE] Google credential received: ${googleUser?.email}');
-      developer.log('[DEBUG-MOBILE] Google credential received: ${googleUser?.email}', name: 'GoogleSignIn');
-
-      if (googleUser == null) {
-        if (mounted) setState(() => _googleLoading = false);
-        return;
-      }
-
-      await _processGoogleSignIn(googleUser);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _googleLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google sign-in error: $e')),
-        );
-      }
-    }
-  }
-
-  void _processWebCredential(String idToken) async {
-    try {
-      print('[DEBUG-WEB] Processing credential: ${idToken.substring(0, 10)}...');
-      print('[DEBUG-WEB] Token type (eyJ=JWT, ya29=AccessToken): ${idToken.substring(0, 4)}');
-      developer.log('[DEBUG-WEB] Processing JWT, starts with: ${idToken.substring(0, 4)}', name: 'GoogleSignIn');
-
-      final auth = context.read<AuthenticationProvider>();
-      final role = context.read<UserRoleProvider>();
-      role.setRole(widget.role);
-
-      final ok = await auth.googleSignIn(idToken: idToken);
-
-      if (mounted) {
-        if (ok) {
-          print('[DEBUG-WEB] Navigation successful to ${_isStudent ? 'studentDashboard' : 'driverDashboard'}');
-          context.go(_isStudent
-              ? RouteNames.studentDashboard
-              : RouteNames.driverDashboard);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(auth.errorMessage ?? 'Google sign-in failed'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error processing credential: $e')),
-        );
-      }
-    }
-  }
-
-Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
-    try {
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      final String? idToken = googleAuth.idToken;
+      final googleAuth = await account.authentication;
+      final idToken = googleAuth.idToken;
 
       if (idToken == null) {
-        if (mounted) {
-          setState(() => _googleLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to get Google ID token'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
+        throw Exception('Failed to get ID token from Google');
       }
 
-      print('[DEBUG-MOBILE] Sending idToken (first 10 chars): ${idToken.substring(0, 10)}');
-      print('[DEBUG-MOBILE] Token type: ${idToken.substring(0, 4)}');
-      developer.log('[DEBUG-MOBILE] Sending idToken, starts with: ${idToken.substring(0, 4)}', name: 'GoogleSignIn');
+      print('[DEBUG] ID token received (first 10 chars): ${idToken.substring(0, 10)}');
+      print('[DEBUG] Token type: ${idToken.substring(0, 4)}');
+      developer.log('[DEBUG] ID token starts with: ${idToken.substring(0, 4)}', name: 'GoogleSignIn');
 
       final auth = context.read<AuthenticationProvider>();
       final role = context.read<UserRoleProvider>();
@@ -239,10 +131,10 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
       if (mounted) {
         setState(() => _googleLoading = false);
         if (ok) {
-          print('[DEBUG-MOBILE] Navigation successful to ${_isStudent ? 'studentDashboard' : 'driverDashboard'}');
-          context.go(_isStudent
-              ? RouteNames.studentDashboard
-              : RouteNames.driverDashboard);
+          final userRole = auth.user?.role ?? 'student';
+          final dashboardRoute = _getDashboardRoute(userRole);
+          print('[DEBUG] Navigation to $dashboardRoute');
+          context.go(dashboardRoute);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -255,8 +147,12 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
     } catch (e) {
       if (mounted) {
         setState(() => _googleLoading = false);
+        print('[DEBUG] Error in Google sign-in: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error processing sign-in: $e')),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -273,7 +169,6 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back arrow
                 GestureDetector(
                   onTap: () => context.go(RouteNames.welcome),
                   child: Container(
@@ -288,8 +183,6 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
                   ),
                 ),
                 const SizedBox(height: 36),
-
-                // Title
                 Text(
                   'Sign in to Campride',
                   style: GoogleFonts.poppins(
@@ -299,8 +192,6 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
                   ),
                 ),
                 const SizedBox(height: 28),
-
-                // Email field
                 _GreyField(
                   controller: _emailCtrl,
                   hint: 'Email address',
@@ -308,8 +199,6 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
                   errorText: _emailError,
                 ),
                 const SizedBox(height: 12),
-
-                // Password field
                 _GreyField(
                   controller: _passwordCtrl,
                   hint: 'Password',
@@ -327,31 +216,20 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
                   ),
                 ),
                 const SizedBox(height: 28),
-
-                // Continue button
                 _PrimaryButton(
                   label: 'Continue',
                   onPressed: _isLoading ? null : _handleContinue,
                   isLoading: _isLoading,
                 ),
                 const SizedBox(height: 24),
-
-                // OR divider
                 _OrDivider(),
                 const SizedBox(height: 24),
-
-                // Continue with Google
                 _GoogleButton(
                   isLoading: _googleLoading,
-                  onPressed: _googleLoading ? null : _handleGoogleSignIn,
                 ),
                 const SizedBox(height: 36),
-
-                // Terms & conditions
                 Center(child: _TermsText()),
                 const SizedBox(height: 20),
-
-                // Sign up link
                 Center(
                   child: GestureDetector(
                     onTap: () => Navigator.push(
@@ -386,8 +264,6 @@ Future<void> _processGoogleSignIn(GoogleSignInAccount googleUser) async {
     );
   }
 }
-
-// ─── Grey input field ─────────────────────────────────────────────────────────
 
 class _GreyField extends StatelessWidget {
   final TextEditingController controller;
@@ -452,8 +328,6 @@ class _GreyField extends StatelessWidget {
   }
 }
 
-// ─── Primary green button ─────────────────────────────────────────────────────
-
 class _PrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -499,8 +373,6 @@ class _PrimaryButton extends StatelessWidget {
   }
 }
 
-// ─── OR divider ───────────────────────────────────────────────────────────────
-
 class _OrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -525,33 +397,36 @@ class _OrDivider extends StatelessWidget {
   }
 }
 
-// ─── Continue with Google button ──────────────────────────────────────────────
-
 class _GoogleButton extends StatelessWidget {
   final bool isLoading;
-  final VoidCallback? onPressed;
-  const _GoogleButton({required this.isLoading, this.onPressed});
+  const _GoogleButton({required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      // WEB: Embed the actual HTML element where renderButton() placed Google's button
-      // renderButton() rendered into element with ID 'google_signin_button'
-      // We embed it here in the Flutter widget tree using HtmlElementView
       return SizedBox(
         width: double.infinity,
         height: 54,
-        child: HtmlElementView(
-          viewType: 'google_signin_button',
+        child: renderButton(
+          configuration: GSIButtonConfiguration(
+            theme: GSIButtonTheme.outline,
+            size: GSIButtonSize.large,
+            shape: GSIButtonShape.pill,
+            text: GSIButtonText.continueWith,
+            type: GSIButtonType.standard,
+          ),
         ),
       );
     } else {
-      // MOBILE: Custom button with traditional signIn() flow
       return SizedBox(
         width: double.infinity,
         height: 54,
         child: OutlinedButton(
-          onPressed: onPressed,
+          onPressed: isLoading
+              ? null
+              : () async {
+                  GoogleSignIn().signIn();
+                },
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: Colors.grey[300]!, width: 1.5),
             shape: RoundedRectangleBorder(
@@ -582,8 +457,6 @@ class _GoogleButton extends StatelessWidget {
     }
   }
 }
-
-// ─── Google "G" icon ──────────────────────────────────────────────────────────
 
 class _GoogleIcon extends StatelessWidget {
   @override
@@ -623,8 +496,6 @@ class _GIconPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter _) => false;
 }
-
-// ─── Terms & conditions text ──────────────────────────────────────────────────
 
 class _TermsText extends StatefulWidget {
   const _TermsText();

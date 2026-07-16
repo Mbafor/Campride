@@ -9,6 +9,8 @@ import '../screens/welcome/welcome_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/student/dashboard/student_dashboard.dart';
 import '../screens/driver/dashboard/driver_dashboard.dart';
+import '../screens/fleet/dashboard/fleet_dashboard.dart';
+import '../screens/admin/dashboard/admin_dashboard.dart';
 import 'route_names.dart';
 
 GoRouter createRouter(BuildContext context) {
@@ -50,6 +52,14 @@ GoRouter createRouter(BuildContext context) {
       GoRoute(
         path: RouteNames.driverDashboard,
         pageBuilder: (context, state) => _fadePage(state, const DriverDashboard()),
+      ),
+      GoRoute(
+        path: RouteNames.fleetDashboard,
+        pageBuilder: (context, state) => _fadePage(state, const FleetDashboard()),
+      ),
+      GoRoute(
+        path: RouteNames.adminDashboard,
+        pageBuilder: (context, state) => _fadePage(state, const AdminDashboard()),
       ),
     ],
   );

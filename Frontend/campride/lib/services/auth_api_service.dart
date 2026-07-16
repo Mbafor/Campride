@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 
-// TODO: Change this to production backend URL when deploying
-const String baseUrl = 'http://127.0.0.1:8000/api/v1';
+const String baseUrl = 'https://campride-production.up.railway.app/api/v1';
 
 Map<String, dynamic> _extractErrorDetail(Map<String, dynamic> json) {
   if (json.containsKey('detail') && json['detail'] is Map) {

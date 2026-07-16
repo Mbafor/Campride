@@ -3,6 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../theme/app_colors.dart';
 
+// TODO: Phase 5 - Replace mock trip history with real backend API
+// Backend needs to implement GET /driver/trip-history endpoint to fetch actual trip records
+// This screen currently uses mock data for demonstration purposes
+
 class _TripRecord {
   final String id;
   final String route;
