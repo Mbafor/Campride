@@ -16,7 +16,6 @@ class _ShuttlesListScreenState extends State<ShuttlesListScreen> {
   final _shuttleService = ShuttleService();
   List<ShuttleInfo> _shuttles = [];
   bool _loading = true;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -27,26 +26,16 @@ class _ShuttlesListScreenState extends State<ShuttlesListScreen> {
   Future<void> _loadShuttles() async {
     final auth = context.read<AuthenticationProvider>();
     if (auth.accessToken == null) {
-      setState(() {
-        _loading = false;
-        _errorMessage = 'No access token available';
-      });
+      setState(() => _loading = false);
       return;
     }
 
-    final result = await _shuttleService.listShuttles(
-      accessToken: auth.accessToken!,
-    );
+    final result = await _shuttleService.listShuttles(accessToken: auth.accessToken!);
 
     if (mounted) {
       setState(() {
+        _shuttles = result.data ?? [];
         _loading = false;
-        if (result.success && result.data != null) {
-          _shuttles = result.data!;
-          _errorMessage = null;
-        } else {
-          _errorMessage = result.message ?? 'Failed to load shuttles';
-        }
       });
     }
   }
@@ -61,92 +50,76 @@ class _ShuttlesListScreenState extends State<ShuttlesListScreen> {
       );
     }
 
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: AppColors.error),
-              const SizedBox(height: 16),
-              Text(
-                _errorMessage!,
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _loadShuttles,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     if (_shuttles.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.airport_shuttle, size: 48, color: AppColors.primaryGreen),
-              const SizedBox(height: 16),
-              Text(
-                'No Shuttles',
-                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'No shuttles registered yet',
-                style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.airport_shuttle, size: 48, color: AppColors.textSecondaryLight),
+            const SizedBox(height: 16),
+            Text(
+              'No Shuttles Yet',
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Shuttles will appear here once they are added to the fleet',
+              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadShuttles,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(12),
-        itemCount: _shuttles.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) => _ShuttleCard(shuttle: _shuttles[index]),
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _shuttles.length,
+      separatorBuilder: (context, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) => _ShuttleCard(shuttle: _shuttles[index]),
     );
   }
 }
 
 class _ShuttleCard extends StatelessWidget {
   final ShuttleInfo shuttle;
+
   const _ShuttleCard({required this.shuttle});
+
+  Color _getStatusColor() {
+    switch (shuttle.status.toLowerCase()) {
+      case 'active':
+        return AppColors.success;
+      case 'idle':
+        return AppColors.warning;
+      case 'offline':
+        return AppColors.error;
+      default:
+        return AppColors.textSecondaryLight;
+    }
+  }
+
+  String _getStatusLabel() {
+    return shuttle.status.substring(0, 1).toUpperCase() + shuttle.status.substring(1);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = shuttle.status == 'idle' ? AppColors.primaryGreen :
-                        shuttle.status == 'active' ? AppColors.success :
-                        AppColors.textSecondaryLight;
-
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: statusColor.withOpacity(0.2),
-                  child: Icon(
-                    Icons.directions_bus,
-                    color: statusColor,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: const Icon(Icons.airport_shuttle, color: AppColors.primaryGreen, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -165,67 +138,58 @@ class _ShuttleCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    color: _getStatusColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    shuttle.status.toUpperCase(),
+                    _getStatusLabel(),
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: statusColor,
+                      color: _getStatusColor(),
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            _InfoRow(
-              icon: Icons.event_seat,
-              label: 'Capacity',
-              value: '${shuttle.capacity} seats',
+            Row(
+              children: [
+                Icon(Icons.people, size: 16, color: AppColors.primaryGreen),
+                const SizedBox(width: 8),
+                Text(
+                  'Capacity',
+                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                ),
+                const Spacer(),
+                Text(
+                  '${shuttle.capacity} seats',
+                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ],
             ),
-            _InfoRow(
-              icon: Icons.person,
-              label: 'Driver',
-              value: shuttle.assignedDriverName ?? 'Unassigned',
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.person_outline, size: 16, color: AppColors.primaryGreen),
+                const SizedBox(width: 8),
+                Text(
+                  'Driver',
+                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                ),
+                const Spacer(),
+                Text(
+                  shuttle.assignedDriverName ?? 'Not assigned',
+                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: AppColors.primaryGreen),
-          const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight)),
-          const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ),
     );
   }

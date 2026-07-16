@@ -16,7 +16,6 @@ class _DriversListScreenState extends State<DriversListScreen> {
   final _shuttleService = ShuttleService();
   List<DriverInfo> _drivers = [];
   bool _loading = true;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -27,26 +26,16 @@ class _DriversListScreenState extends State<DriversListScreen> {
   Future<void> _loadDrivers() async {
     final auth = context.read<AuthenticationProvider>();
     if (auth.accessToken == null) {
-      setState(() {
-        _loading = false;
-        _errorMessage = 'No access token available';
-      });
+      setState(() => _loading = false);
       return;
     }
 
-    final result = await _shuttleService.listDrivers(
-      accessToken: auth.accessToken!,
-    );
+    final result = await _shuttleService.listDrivers(accessToken: auth.accessToken!);
 
     if (mounted) {
       setState(() {
+        _drivers = result.data ?? [];
         _loading = false;
-        if (result.success && result.data != null) {
-          _drivers = result.data!;
-          _errorMessage = null;
-        } else {
-          _errorMessage = result.message ?? 'Failed to load drivers';
-        }
       });
     }
   }
@@ -61,89 +50,60 @@ class _DriversListScreenState extends State<DriversListScreen> {
       );
     }
 
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: AppColors.error),
-              const SizedBox(height: 16),
-              Text(
-                _errorMessage!,
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _loadDrivers,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     if (_drivers.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.people_outline, size: 48, color: AppColors.primaryGreen),
-              const SizedBox(height: 16),
-              Text(
-                'No Drivers',
-                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'No drivers assigned yet',
-                style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_outline, size: 48, color: AppColors.textSecondaryLight),
+            const SizedBox(height: 16),
+            Text(
+              'No Drivers Yet',
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Drivers will appear here once they are added to the system',
+              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadDrivers,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(12),
-        itemCount: _drivers.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) => _DriverCard(driver: _drivers[index]),
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _drivers.length,
+      separatorBuilder: (context, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) => _DriverCard(driver: _drivers[index]),
     );
   }
 }
 
 class _DriverCard extends StatelessWidget {
   final DriverInfo driver;
+
   const _DriverCard({required this.driver});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 CircleAvatar(
+                  radius: 24,
                   backgroundColor: AppColors.primaryGreen,
                   child: Text(
-                    driver.name.substring(0, 1).toUpperCase(),
+                    driver.name.substring(0, 1),
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -167,7 +127,7 @@ class _DriverCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: driver.isActive ? AppColors.success.withOpacity(0.1) : AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     driver.isActive ? 'Active' : 'Inactive',
@@ -181,16 +141,31 @@ class _DriverCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            _InfoRow(
-              icon: Icons.directions_bus,
-              label: 'Shuttle',
-              value: driver.assignedShuttleName ?? 'Unassigned',
-            ),
-            _InfoRow(
-              icon: Icons.route,
-              label: 'Route',
-              value: driver.assignedRouteName ?? 'No route',
-            ),
+            if (driver.assignedShuttleName != null)
+              _InfoRow(
+                icon: Icons.airport_shuttle,
+                label: 'Shuttle',
+                value: driver.assignedShuttleName!,
+              )
+            else
+              _InfoRow(
+                icon: Icons.airport_shuttle,
+                label: 'Shuttle',
+                value: 'Not assigned',
+              ),
+            const SizedBox(height: 8),
+            if (driver.assignedRouteName != null)
+              _InfoRow(
+                icon: Icons.route,
+                label: 'Route',
+                value: driver.assignedRouteName!,
+              )
+            else
+              _InfoRow(
+                icon: Icons.route,
+                label: 'Route',
+                value: 'Not assigned',
+              ),
           ],
         ),
       ),
@@ -211,21 +186,22 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: AppColors.primaryGreen),
-          const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight)),
-          const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.primaryGreen),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }
