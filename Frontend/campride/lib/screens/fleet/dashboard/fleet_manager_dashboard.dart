@@ -4,55 +4,88 @@ import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
-import '../drivers/drivers_list_screen.dart';
-import '../shuttles/shuttles_list_screen.dart';
 
-class FleetManagerDashboard extends StatefulWidget {
+class FleetManagerDashboard extends StatelessWidget {
   const FleetManagerDashboard({super.key});
 
   @override
-  State<FleetManagerDashboard> createState() => _FleetManagerDashboardState();
-}
+  Widget build(BuildContext context) {
+    return Consumer<AuthenticationProvider>(
+      builder: (context, auth, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              'Fleet Manager',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome message
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome, ${auth.user?.name ?? "Fleet Manager"}',
+                      style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Manage your fleet operations',
+                      style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
 
-class _FleetManagerDashboardState extends State<FleetManagerDashboard> {
-  int _selectedTabIndex = 0;
-  final _shuttleService = ShuttleService();
+                // Stats row
+                _StatsRow(),
+                const SizedBox(height: 32),
 
-  late List<Widget> _screens;
-
-  @override
-  void initState() {
-    super.initState();
-    _screens = [
-      const DriversListScreen(),
-      const ShuttlesListScreen(),
-    ];
+                // Quick Navigation
+                Text(
+                  'Quick Navigation',
+                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                _NavigationCard(
+                  icon: Icons.person_outline,
+                  title: 'Drivers Management',
+                  subtitle: 'Manage drivers and assignments',
+                  onTap: () => _navigateTo(context, 'drivers'),
+                ),
+                const SizedBox(height: 10),
+                _NavigationCard(
+                  icon: Icons.airport_shuttle,
+                  title: 'Shuttles',
+                  subtitle: 'View and manage shuttles',
+                  onTap: () => _navigateTo(context, 'shuttles'),
+                ),
+                const SizedBox(height: 10),
+                _NavigationCard(
+                  icon: Icons.location_on_outlined,
+                  title: 'Live Map',
+                  subtitle: 'Track fleet location (Phase 5)',
+                  onTap: () => _navigateTo(context, 'map'),
+                  isPlaceholder: true,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Fleet Manager',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-      ),
-      body: Column(
-        children: [
-          _StatsRow(),
-          const SizedBox(height: 16),
-          _TabNavigation(
-            selectedIndex: _selectedTabIndex,
-            onTabChanged: (index) => setState(() => _selectedTabIndex = index),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _screens[_selectedTabIndex],
-          ),
-        ],
-      ),
+  void _navigateTo(BuildContext context, String section) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Navigating to $section...')),
     );
+    // TODO: Implement navigation to respective sections
+    // This will be replaced with actual navigation/routing
   }
 }
 
@@ -179,6 +212,72 @@ class _StatCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavigationCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool isPlaceholder;
+
+  const _NavigationCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.isPlaceholder = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isPlaceholder ? Colors.grey[200] : AppColors.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: isPlaceholder ? AppColors.textSecondaryLight : AppColors.primaryGreen,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: isPlaceholder ? AppColors.textSecondaryLight : AppColors.primaryGreen,
+              ),
+            ],
+          ),
         ),
       ),
     );
