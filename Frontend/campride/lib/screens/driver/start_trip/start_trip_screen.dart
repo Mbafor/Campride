@@ -23,7 +23,6 @@ class _StartTripScreenState extends State<StartTripScreen>
   DriverRoute? _currentRoute;
   List<Stop> _stops = [];
   ShuttleInfo? _assignedShuttle;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -38,10 +37,7 @@ class _StartTripScreenState extends State<StartTripScreen>
   Future<void> _loadDriverData() async {
     final auth = context.read<AuthenticationProvider>();
     if (auth.accessToken == null) {
-      setState(() {
-        _loadingRoute = false;
-        _errorMessage = 'No access token available';
-      });
+      setState(() => _loadingRoute = false);
       return;
     }
 
@@ -50,34 +46,28 @@ class _StartTripScreenState extends State<StartTripScreen>
       accessToken: auth.accessToken!,
     );
 
-    // Load shuttle (in parallel)
+    // Load shuttle
     final shuttleResult = await _shuttleService.getDriverShuttle(
       accessToken: auth.accessToken!,
     );
 
+    // Load stops if route exists
+    List<Stop> stops = [];
     if (routeResult.success && routeResult.data != null) {
-      final route = routeResult.data!;
       final stopsResult = await _shuttleService.getRouteStops(
         accessToken: auth.accessToken!,
-        routeId: route.id,
+        routeId: routeResult.data!.id,
       );
+      stops = stopsResult.data ?? [];
+    }
 
-      if (mounted) {
-        setState(() {
-          _currentRoute = route;
-          _stops = stopsResult.data ?? [];
-          _assignedShuttle = shuttleResult.data;
-          _loadingRoute = false;
-          _errorMessage = null;
-        });
-      }
-    } else {
-      if (mounted) {
-        setState(() {
-          _loadingRoute = false;
-          _errorMessage = routeResult.message ?? 'No route assigned';
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _currentRoute = routeResult.data;
+        _stops = stops;
+        _assignedShuttle = shuttleResult.data;
+        _loadingRoute = false;
+      });
     }
   }
 
@@ -116,32 +106,6 @@ class _StartTripScreenState extends State<StartTripScreen>
       );
     }
 
-    if (_errorMessage != null || _currentRoute == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.route_outlined, size: 48, color: AppColors.error),
-              const SizedBox(height: 16),
-              Text(
-                _errorMessage ?? 'No route assigned',
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Contact your fleet manager to assign a route',
-                style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -176,7 +140,39 @@ class _StartTripScreenState extends State<StartTripScreen>
             style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
-          _RouteCard(route: _currentRoute!),
+          if (_currentRoute != null)
+            _RouteCard(route: _currentRoute!)
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.dividerLight),
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey[50],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.route, color: AppColors.textSecondaryLight, size: 32),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'No route assigned',
+                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Contact your fleet manager to assign a route',
+                          style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
@@ -244,14 +240,16 @@ class _StartTripScreenState extends State<StartTripScreen>
             ),
           const SizedBox(height: 24),
 
-          // Route stops timeline
-          Text(
-            'Route Stops',
-            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          _StopsTimeline(stops: _stops),
-          const SizedBox(height: 32),
+          // Route stops timeline (only show if route assigned)
+          if (_currentRoute != null) ...[
+            Text(
+              'Route Stops',
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            _StopsTimeline(stops: _stops),
+            const SizedBox(height: 32),
+          ],
 
           // Start/End trip button
           CustomButton(
