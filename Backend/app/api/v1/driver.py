@@ -4,8 +4,9 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from app.database import SessionLocal
-from app.models import User, Route, DriverCurrentRoute
+from app.models import User, Route, DriverCurrentRoute, Shuttle
 from app.schemas.route import RouteResponse
+from app.schemas.shuttle import ShuttleResponse
 from app.api.deps import get_db, get_current_user, require_role
 
 router = APIRouter(prefix="/api/v1/driver", tags=["driver"])
@@ -57,3 +58,18 @@ def update_driver_route(
         "message": "Route updated successfully",
         "route": RouteResponse.from_orm_with_geometry(route),
     }
+
+
+@router.get("/shuttle", response_model=ShuttleResponse)
+def get_driver_shuttle(
+    current_user: User = Depends(require_role(["driver"])),
+    db: Session = Depends(get_db),
+):
+    """Get the driver's currently assigned shuttle"""
+    shuttle = db.query(Shuttle).filter(Shuttle.driver_id == current_user.id).first()
+    if not shuttle:
+        raise HTTPException(
+            status_code=404,
+            detail="No shuttle currently assigned to this driver"
+        )
+    return shuttle
