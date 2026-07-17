@@ -14,7 +14,7 @@ public_router = APIRouter(prefix="/api/v1/shuttles", tags=["shuttles"])
 @admin_router.post("", response_model=ShuttleResponse)
 def create_shuttle(
     shuttle_data: ShuttleCreate,
-    current_user: User = Depends(require_role(["super_admin"])),
+    current_user: User = Depends(require_role(["super_admin", "fleet_manager"])),
     db: Session = Depends(get_db),
 ):
     existing = db.query(Shuttle).filter(Shuttle.plate_number == shuttle_data.plate_number).first()
@@ -58,7 +58,7 @@ def get_shuttle(
 def update_shuttle(
     shuttle_id: UUID,
     shuttle_data: ShuttleUpdate,
-    current_user: User = Depends(require_role(["super_admin"])),
+    current_user: User = Depends(require_role(["super_admin", "fleet_manager"])),
     db: Session = Depends(get_db),
 ):
     shuttle = db.query(Shuttle).filter(Shuttle.id == shuttle_id).first()
@@ -87,7 +87,7 @@ def update_shuttle(
 @admin_router.delete("/{shuttle_id}")
 def delete_shuttle(
     shuttle_id: UUID,
-    current_user: User = Depends(require_role(["super_admin"])),
+    current_user: User = Depends(require_role(["super_admin", "fleet_manager"])),
     db: Session = Depends(get_db),
 ):
     shuttle = db.query(Shuttle).filter(Shuttle.id == shuttle_id).first()
