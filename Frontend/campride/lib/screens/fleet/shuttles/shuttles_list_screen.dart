@@ -40,6 +40,104 @@ class _ShuttlesListScreenState extends State<ShuttlesListScreen> {
     }
   }
 
+  void _showCreateShuttleDialog() {
+    final nameController = TextEditingController();
+    final plateController = TextEditingController();
+    final capacityController = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Create Shuttle', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Shuttle Name',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    isDense: true,
+                  ),
+                  enabled: !isSubmitting,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: plateController,
+                  decoration: InputDecoration(
+                    labelText: 'Plate Number',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    isDense: true,
+                  ),
+                  enabled: !isSubmitting,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: capacityController,
+                  decoration: InputDecoration(
+                    labelText: 'Capacity (seats)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                  enabled: !isSubmitting,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      setDialogState(() => isSubmitting = true);
+                      final auth = context.read<AuthenticationProvider>();
+                      try {
+                        await _shuttleService.createShuttle(
+                          accessToken: auth.accessToken!,
+                          name: nameController.text,
+                          plateNumber: plateController.text,
+                          capacity: int.parse(capacityController.text),
+                        );
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          _loadShuttles();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Shuttle created: ${nameController.text}')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+              ),
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
+                    )
+                  : const Text('Create', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -63,31 +161,68 @@ class _ShuttlesListScreenState extends State<ShuttlesListScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Shuttles will appear here once they are added to the fleet',
+              'Create a shuttle to get started',
               style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _showCreateShuttleDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Create Shuttle'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+              ),
             ),
           ],
         ),
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: _shuttles.length,
-      separatorBuilder: (context, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) => _ShuttleCard(shuttle: _shuttles[index]),
+    return Stack(
+      children: [
+        ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: _shuttles.length,
+          separatorBuilder: (context, _) => const SizedBox(height: 10),
+          itemBuilder: (context, index) => _ShuttleCard(
+            shuttle: _shuttles[index],
+            onRefresh: _loadShuttles,
+          ),
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
+            onPressed: _showCreateShuttleDialog,
+            backgroundColor: AppColors.primaryGreen,
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _ShuttleCard extends StatelessWidget {
+class _ShuttleCard extends StatefulWidget {
   final ShuttleInfo shuttle;
+  final VoidCallback onRefresh;
 
-  const _ShuttleCard({required this.shuttle});
+  const _ShuttleCard({
+    required this.shuttle,
+    required this.onRefresh,
+  });
+
+  @override
+  State<_ShuttleCard> createState() => _ShuttleCardState();
+}
+
+class _ShuttleCardState extends State<_ShuttleCard> {
+  final _shuttleService = ShuttleService();
+  bool _isDeleting = false;
 
   Color _getStatusColor() {
-    switch (shuttle.status.toLowerCase()) {
+    switch (widget.shuttle.status.toLowerCase()) {
       case 'active':
         return AppColors.success;
       case 'idle':
@@ -100,7 +235,144 @@ class _ShuttleCard extends StatelessWidget {
   }
 
   String _getStatusLabel() {
-    return shuttle.status.substring(0, 1).toUpperCase() + shuttle.status.substring(1);
+    return widget.shuttle.status.substring(0, 1).toUpperCase() + widget.shuttle.status.substring(1);
+  }
+
+  void _showEditDialog() {
+    final nameController = TextEditingController(text: widget.shuttle.name);
+    final capacityController = TextEditingController(text: widget.shuttle.capacity.toString());
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Edit Shuttle', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Shuttle Name',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    isDense: true,
+                  ),
+                  enabled: !isSubmitting,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: capacityController,
+                  decoration: InputDecoration(
+                    labelText: 'Capacity (seats)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                  enabled: !isSubmitting,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      setDialogState(() => isSubmitting = true);
+                      final auth = context.read<AuthenticationProvider>();
+                      try {
+                        await _shuttleService.updateShuttle(
+                          accessToken: auth.accessToken!,
+                          shuttleId: widget.shuttle.id,
+                          name: nameController.text,
+                          capacity: int.parse(capacityController.text),
+                        );
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          widget.onRefresh();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Updated: ${nameController.text}')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+              ),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirm() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Shuttle?', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Text(
+          'This will permanently delete "${widget.shuttle.name}". This action cannot be undone.',
+          style: GoogleFonts.poppins(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: _isDeleting
+                ? null
+                : () async {
+                    setState(() => _isDeleting = true);
+                    final auth = context.read<AuthenticationProvider>();
+                    try {
+                      await _shuttleService.deleteShuttle(
+                        accessToken: auth.accessToken!,
+                        shuttleId: widget.shuttle.id,
+                      );
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        widget.onRefresh();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Deleted: ${widget.shuttle.name}')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+                        );
+                      }
+                    }
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+            child: _isDeleting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
+                  )
+                : const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -127,11 +399,11 @@ class _ShuttleCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        shuttle.name,
+                        widget.shuttle.name,
                         style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
                       ),
                       Text(
-                        shuttle.plateNumber,
+                        widget.shuttle.plateNumber,
                         style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
                       ),
                     ],
@@ -165,7 +437,7 @@ class _ShuttleCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '${shuttle.capacity} seats',
+                  '${widget.shuttle.capacity} seats',
                   style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ],
@@ -181,10 +453,59 @@ class _ShuttleCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  shuttle.assignedDriverName ?? 'Not assigned',
+                  widget.shuttle.assignedDriverName ?? 'Not assigned',
                   style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                border: Border.all(color: Colors.blue[200]!),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue[700], size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Live tracking — coming in Phase 5',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.blue[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _showEditDialog,
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit', style: TextStyle(fontSize: 12)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isDeleting ? null : _showDeleteConfirm,
+                    icon: const Icon(Icons.delete),
+                    label: const Text('Delete', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.error),
+                    ),
+                  ),
                 ),
               ],
             ),
