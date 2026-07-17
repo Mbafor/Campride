@@ -738,4 +738,40 @@ class ShuttleService {
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
+
+  // FLEET MANAGER ADMIN ENDPOINTS
+  /// Create a new driver
+  Future<ApiResponse<DriverInfo>> createDriver({
+    required String name,
+    required String email,
+    required String password,
+    required String accessToken,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/admin/users/driver'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'role': 'driver',
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final json = jsonDecode(response.body);
+        return ApiResponse(success: true, data: DriverInfo.fromJson(json));
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['detail']?['message'] ?? 'Failed to create driver';
+        return ApiResponse(success: false, message: message);
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
 }
