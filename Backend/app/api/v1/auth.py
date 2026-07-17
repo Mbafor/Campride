@@ -288,7 +288,7 @@ admin_router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 @admin_router.post("/users/driver", response_model=UserResponse)
 def create_driver(
     user_data: UserCreateAdmin,
-    current_user: User = Depends(require_role(["super_admin"])),
+    current_user: User = Depends(require_role(["super_admin", "fleet_manager"])),
     db: Session = Depends(get_db)
 ):
     existing_user = db.query(User).filter(User.email == user_data.email).first()

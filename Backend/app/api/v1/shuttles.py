@@ -103,7 +103,7 @@ def delete_shuttle(
 def assign_driver(
     shuttle_id: UUID,
     request: AssignDriverRequest,
-    current_user: User = Depends(require_role(["super_admin"])),
+    current_user: User = Depends(require_role(["super_admin", "fleet_manager"])),
     db: Session = Depends(get_db),
 ):
     shuttle = db.query(Shuttle).filter(Shuttle.id == shuttle_id).first()
