@@ -4,76 +4,84 @@ import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
+import '../map/live_map_screen.dart';
 
 class FleetManagerDashboard extends StatelessWidget {
-  const FleetManagerDashboard({super.key});
+  final VoidCallback? onDriversTap;
+  final VoidCallback? onShuttlesTap;
+
+  const FleetManagerDashboard({
+    super.key,
+    this.onDriversTap,
+    this.onShuttlesTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthenticationProvider>(
       builder: (context, auth, _) {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              'Fleet Manager',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Welcome message
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome, ${auth.user?.name ?? "Fleet Manager"}',
-                      style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Manage your fleet operations',
-                      style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Welcome message
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome, ${auth.user?.name ?? "Fleet Manager"}',
+                    style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Manage your fleet operations',
+                    style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
 
-                // Stats row
-                _StatsRow(),
-                const SizedBox(height: 32),
+              // Stats row
+              _StatsRow(
+                onDriversTap: onDriversTap,
+                onShuttlesTap: onShuttlesTap,
+              ),
+              const SizedBox(height: 32),
 
-                // Quick Navigation
-                Text(
-                  'Quick Navigation',
-                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                _NavigationCard(
-                  icon: Icons.person_outline,
-                  title: 'Drivers Management',
-                  subtitle: 'Manage drivers and assignments',
-                  onTap: () => _navigateTo(context, 'drivers'),
-                ),
-                const SizedBox(height: 10),
-                _NavigationCard(
-                  icon: Icons.airport_shuttle,
-                  title: 'Shuttles',
-                  subtitle: 'View and manage shuttles',
-                  onTap: () => _navigateTo(context, 'shuttles'),
-                ),
-                const SizedBox(height: 10),
-                _NavigationCard(
-                  icon: Icons.location_on_outlined,
-                  title: 'Live Map',
-                  subtitle: 'Track fleet location (Phase 5)',
-                  onTap: () => _navigateTo(context, 'map'),
-                  isPlaceholder: true,
-                ),
-              ],
-            ),
+              // Quick Navigation
+              Text(
+                'Quick Navigation',
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              _NavigationCard(
+                icon: Icons.person_outline,
+                title: 'Drivers Management',
+                subtitle: 'Manage drivers and assignments',
+                onTap: onDriversTap,
+              ),
+              const SizedBox(height: 10),
+              _NavigationCard(
+                icon: Icons.airport_shuttle,
+                title: 'Shuttles',
+                subtitle: 'View and manage shuttles',
+                onTap: onShuttlesTap,
+              ),
+              const SizedBox(height: 10),
+              _NavigationCard(
+                icon: Icons.location_on_outlined,
+                title: 'Live Map',
+                subtitle: 'Track fleet location (Phase 5)',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LiveMapScreen()),
+                  );
+                },
+                isPlaceholder: true,
+              ),
+            ],
           ),
         );
       },
@@ -90,6 +98,14 @@ class FleetManagerDashboard extends StatelessWidget {
 }
 
 class _StatsRow extends StatefulWidget {
+  final VoidCallback? onDriversTap;
+  final VoidCallback? onShuttlesTap;
+
+  const _StatsRow({
+    this.onDriversTap,
+    this.onShuttlesTap,
+  });
+
   @override
   State<_StatsRow> createState() => _StatsRowState();
 }
@@ -153,6 +169,7 @@ class _StatsRowState extends State<_StatsRow> {
               label: 'Drivers',
               value: '$_totalDrivers',
               color: AppColors.primaryGreen,
+              onTap: widget.onDriversTap,
             ),
           ),
           const SizedBox(width: 12),
@@ -162,6 +179,7 @@ class _StatsRowState extends State<_StatsRow> {
               label: 'Shuttles',
               value: '$_totalShuttles',
               color: AppColors.primaryGreen,
+              onTap: widget.onShuttlesTap,
             ),
           ),
           const SizedBox(width: 12),
@@ -184,34 +202,39 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final VoidCallback? onTap;
 
   const _StatCard({
     required this.icon,
     required this.label,
     required this.value,
     required this.color,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            Text(
-              label,
-              style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight),
-              textAlign: TextAlign.center,
-            ),
-          ],
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              Text(
+                label,
+                style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -222,14 +245,14 @@ class _NavigationCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool isPlaceholder;
 
   const _NavigationCard({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.onTap,
+    this.onTap,
     this.isPlaceholder = false,
   });
 
