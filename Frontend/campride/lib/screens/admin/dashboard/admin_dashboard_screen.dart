@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
+import '../../fleet/map/live_map_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -13,74 +14,141 @@ class AdminDashboardScreen extends StatelessWidget {
     return Consumer<AuthenticationProvider>(
       builder: (context, auth, _) {
         return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              'Super Admin',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Welcome message
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome, ${auth.user?.name ?? "Admin"}',
-                      style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
+          body: CustomScrollView(
+            slivers: [
+              // Premium header with gradient
+              SliverAppBar(
+                expandedHeight: 220,
+                floating: false,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.primaryGreenDark, AppColors.primaryGreen],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'System administration and oversight',
-                      style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Welcome, ${auth.user?.name ?? "Admin"}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'System administration and oversight',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.shield_admin, size: 16, color: Colors.white),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Super Admin',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 24),
+              ),
+              // Content
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // Stats overview
+                    _StatsRow(),
+                    const SizedBox(height: 32),
 
-                // Stats overview
-                _StatsRow(),
-                const SizedBox(height: 32),
-
-                // Quick Navigation
-                Text(
-                  'Management',
-                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                    // Quick Navigation
+                    Text(
+                      'Management',
+                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 12),
+                    _NavigationCard(
+                      icon: Icons.people,
+                      title: 'Drivers & Staff',
+                      subtitle: 'Manage drivers and fleet managers',
+                      onTap: () => _navigateTo(context, 'staff'),
+                      color: Colors.blue,
+                    ),
+                    const SizedBox(height: 10),
+                    _NavigationCard(
+                      icon: Icons.airport_shuttle,
+                      title: 'Shuttles',
+                      subtitle: 'View and manage all shuttles',
+                      onTap: () => _navigateTo(context, 'shuttles'),
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(height: 10),
+                    _NavigationCard(
+                      icon: Icons.route_outlined,
+                      title: 'Routes & Stops',
+                      subtitle: 'Manage routes and stops',
+                      onTap: () => _navigateTo(context, 'routes'),
+                      color: Colors.purple,
+                    ),
+                    const SizedBox(height: 10),
+                    _NavigationCard(
+                      icon: Icons.location_on_outlined,
+                      title: 'Live Map',
+                      subtitle: 'Track fleet location (Phase 5)',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LiveMapScreen()),
+                        );
+                      },
+                      isPlaceholder: true,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 32),
+                  ]),
                 ),
-                const SizedBox(height: 12),
-                _NavigationCard(
-                  icon: Icons.people,
-                  title: 'Drivers & Staff',
-                  subtitle: 'Manage drivers and fleet managers',
-                  onTap: () => _navigateTo(context, 'staff'),
-                ),
-                const SizedBox(height: 10),
-                _NavigationCard(
-                  icon: Icons.airport_shuttle,
-                  title: 'Shuttles',
-                  subtitle: 'View and manage shuttles',
-                  onTap: () => _navigateTo(context, 'shuttles'),
-                ),
-                const SizedBox(height: 10),
-                _NavigationCard(
-                  icon: Icons.route,
-                  title: 'Routes & Stops',
-                  subtitle: 'Manage routes and stops',
-                  onTap: () => _navigateTo(context, 'routes'),
-                ),
-                const SizedBox(height: 10),
-                _NavigationCard(
-                  icon: Icons.location_on_outlined,
-                  title: 'Live Map',
-                  subtitle: 'Track fleet location (Phase 5)',
-                  onTap: () => _navigateTo(context, 'map'),
-                  isPlaceholder: true,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -225,6 +293,7 @@ class _NavigationCard extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
   final bool isPlaceholder;
+  final Color color;
 
   const _NavigationCard({
     required this.icon,
@@ -232,11 +301,15 @@ class _NavigationCard extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.isPlaceholder = false,
+    this.color = AppColors.primaryGreen,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = isPlaceholder ? Colors.grey : color;
+
     return Card(
+      elevation: 2,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -246,12 +319,12 @@ class _NavigationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isPlaceholder ? Colors.grey[200] : AppColors.primaryGreen.withOpacity(0.1),
+                  color: isPlaceholder ? Colors.grey[200] : effectiveColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
-                  color: isPlaceholder ? AppColors.textSecondaryLight : AppColors.primaryGreen,
+                  color: isPlaceholder ? AppColors.textSecondaryLight : effectiveColor,
                   size: 24,
                 ),
               ),
@@ -275,7 +348,7 @@ class _NavigationCard extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: isPlaceholder ? AppColors.textSecondaryLight : AppColors.primaryGreen,
+                color: isPlaceholder ? AppColors.textSecondaryLight : effectiveColor,
               ),
             ],
           ),
