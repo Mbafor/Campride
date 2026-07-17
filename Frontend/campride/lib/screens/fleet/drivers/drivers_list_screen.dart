@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
+import 'driver_detail_screen.dart';
 
 class DriversListScreen extends StatefulWidget {
   const DriversListScreen({super.key});
@@ -288,110 +289,120 @@ class _DriverCardState extends State<_DriverCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.primaryGreen,
-                  child: Text(
-                    widget.driver.name.substring(0, 1),
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DriverDetailScreen(driverId: widget.driver.id),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primaryGreen,
+                    child: Text(
+                      widget.driver.name.substring(0, 1),
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.driver.name,
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
-                      ),
-                      Text(
-                        widget.driver.email,
-                        style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: widget.driver.isActive ? AppColors.success.withOpacity(0.1) : AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    widget.driver.isActive ? 'Active' : 'Inactive',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: widget.driver.isActive ? AppColors.success : AppColors.error,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.driver.name,
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        Text(
+                          widget.driver.email,
+                          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (widget.driver.assignedShuttleName != null)
-              _InfoRow(
-                icon: Icons.airport_shuttle,
-                label: 'Shuttle',
-                value: widget.driver.assignedShuttleName!,
-              )
-            else
-              _InfoRow(
-                icon: Icons.airport_shuttle,
-                label: 'Shuttle',
-                value: 'Not assigned',
-              ),
-            const SizedBox(height: 8),
-            if (widget.driver.assignedRouteName != null)
-              _InfoRow(
-                icon: Icons.route,
-                label: 'Route',
-                value: widget.driver.assignedRouteName!,
-              )
-            else
-              _InfoRow(
-                icon: Icons.route,
-                label: 'Route',
-                value: 'Not assigned',
-              ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _assigning ? null : _showAssignShuttleDialog,
-                    icon: const Icon(Icons.airport_shuttle),
-                    label: const Text('Assign', style: TextStyle(fontSize: 12)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.driver.isActive ? AppColors.success.withOpacity(0.1) : AppColors.error.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      widget.driver.isActive ? 'Active' : 'Inactive',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: widget.driver.isActive ? AppColors.success : AppColors.error,
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (widget.driver.assignedShuttleName != null)
+                _InfoRow(
+                  icon: Icons.airport_shuttle,
+                  label: 'Shuttle',
+                  value: widget.driver.assignedShuttleName!,
+                )
+              else
+                _InfoRow(
+                  icon: Icons.airport_shuttle,
+                  label: 'Shuttle',
+                  value: 'Not assigned',
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete', style: TextStyle(fontSize: 12)),
+              const SizedBox(height: 8),
+              if (widget.driver.assignedRouteName != null)
+                _InfoRow(
+                  icon: Icons.route,
+                  label: 'Route',
+                  value: widget.driver.assignedRouteName!,
+                )
+              else
+                _InfoRow(
+                  icon: Icons.route,
+                  label: 'Route',
+                  value: 'Not assigned',
+                ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _assigning ? null : _showAssignShuttleDialog,
+                      icon: const Icon(Icons.airport_shuttle),
+                      label: const Text('Assign', style: TextStyle(fontSize: 12)),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Delete — coming in Phase 5',
-              style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight),
-              textAlign: TextAlign.center,
-            ),
-          ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Delete', style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Delete — coming in Phase 5',
+                style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
