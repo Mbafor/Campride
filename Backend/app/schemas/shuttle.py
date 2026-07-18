@@ -21,6 +21,7 @@ class ShuttleUpdate(BaseModel):
     plate_number: str | None = None
     capacity: int | None = None
     status: ShuttleStatus | None = None
+    driver_id: UUID | None = None
 
 
 class AssignDriverRequest(BaseModel):

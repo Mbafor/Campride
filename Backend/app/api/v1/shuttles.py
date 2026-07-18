@@ -78,6 +78,8 @@ def update_shuttle(
         shuttle.capacity = shuttle_data.capacity
     if shuttle_data.status is not None:
         shuttle.status = shuttle_data.status
+    if shuttle_data.driver_id is not None:
+        shuttle.driver_id = shuttle_data.driver_id
 
     db.commit()
     db.refresh(shuttle)
