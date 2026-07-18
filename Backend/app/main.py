@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, Query
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.auth import router as auth_router, admin_router as auth_admin_router
 from app.api.v1.shuttles import admin_router as shuttles_admin_router, public_router as shuttles_public_router
@@ -6,6 +6,7 @@ from app.api.v1.routes import admin_router as routes_admin_router, admin_stops_r
 from app.api.v1.driver import router as driver_router
 from app.api.v1.fleet import router as fleet_router
 from app.api.v1.telemetry import router as telemetry_router
+import json
 
 app = FastAPI(title="CampRide API", version="1.0.0")
 
@@ -43,6 +44,13 @@ app.include_router(telemetry_router)
 @app.get("/health")
 def health_check():
     return {"status": "ok", "version": "deployment_check_v2", "timestamp": "telemetry-router-included"}
+
+
+@app.websocket("/api/v1/ws/test-direct")
+async def test_websocket_direct(websocket: WebSocket):
+    """Test WebSocket endpoint registered directly on app (not via router)"""
+    await websocket.accept()
+    await websocket.send_json({"status": "connected", "message": "This WebSocket was registered directly on app"})
 
 
 @app.on_event("startup")
