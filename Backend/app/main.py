@@ -42,4 +42,4 @@ app.include_router(telemetry_router)
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "version": "1.1"}
