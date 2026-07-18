@@ -38,6 +38,11 @@ def update_driver_location(driver_id: str, lat: float, lng: float, heading: floa
     """
     import sys
 
+    # Check if redis_client initialized
+    if redis_client is None:
+        print(f"[REDIS] FATAL: redis_client is None - initialization failed!", file=sys.stderr)
+        return False
+
     # Log REDIS_URL at function entry (mask password)
     redis_url = settings.REDIS_URL if hasattr(settings, 'REDIS_URL') else 'NOT SET'
     if redis_url != 'NOT SET':
@@ -127,6 +132,11 @@ def get_driver_location(driver_id: str) -> dict | None:
     or None if driver not found.
     """
     import sys
+
+    # Check if redis_client initialized
+    if redis_client is None:
+        print(f"[REDIS] FATAL: redis_client is None - initialization failed!", file=sys.stderr)
+        return None
 
     try:
         print(f"[REDIS] get_driver_location START: driver_id={driver_id}", file=sys.stderr)
