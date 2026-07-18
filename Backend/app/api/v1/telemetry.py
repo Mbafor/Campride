@@ -13,6 +13,13 @@ from app.api.deps import get_db
 
 router = APIRouter(prefix="/api/v1/ws", tags=["telemetry"])
 
+
+@router.get("/debug")
+async def debug_telemetry():
+    """Debug endpoint to verify telemetry router is loaded"""
+    return {"status": "telemetry_router_loaded", "websocket_endpoint": "/api/v1/ws/driver/telemetry"}
+
+
 DISTANCE_FILTER_METERS = 2.0
 MIN_LAT = -90
 MAX_LAT = 90
