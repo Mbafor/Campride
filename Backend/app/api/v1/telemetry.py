@@ -213,9 +213,15 @@ async def telemetry_websocket(
             else:
                 print(f"[DEBUG] No last location found in Redis", file=sys.stderr)
 
-            # Update Redis location
+            # Update Redis location - MUST succeed for distance filtering to work
             update_result = update_driver_location(driver_id_str, lat, lng, heading, accuracy)
             print(f"[DEBUG] Redis update result: {update_result}", file=sys.stderr)
+            if not update_result:
+                await websocket.send_json({
+                    "status": "error",
+                    "message": "Failed to update location in Redis"
+                })
+                continue
 
             # Log telemetry to database
             from geoalchemy2.elements import WKTElement
