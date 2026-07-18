@@ -7,7 +7,7 @@ import random
 import string
 
 from app.database import SessionLocal
-from app.models import User, VerificationCode
+from app.models import User, VerificationCode, Shuttle, Route
 from app.schemas.user import (
     UserRegister,
     UserLogin,
@@ -282,6 +282,19 @@ def google_sign_in(request: GoogleSignInRequest, db: Session = Depends(get_db)):
     )
 
 
+class UserCountByRole(BaseModel):
+    student: int
+    driver: int
+    fleet_manager: int
+    super_admin: int
+
+
+class AdminStatsResponse(BaseModel):
+    users_by_role: UserCountByRole
+    total_shuttles: int
+    total_routes: int
+
+
 admin_router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
 
@@ -339,3 +352,30 @@ def create_fleet_manager(
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+@admin_router.get("/stats", response_model=AdminStatsResponse)
+def get_admin_stats(
+    current_user: User = Depends(require_role(["super_admin"])),
+    db: Session = Depends(get_db)
+):
+    # Count users by role
+    student_count = db.query(User).filter(User.role == "student").count()
+    driver_count = db.query(User).filter(User.role == "driver").count()
+    fleet_manager_count = db.query(User).filter(User.role == "fleet_manager").count()
+    super_admin_count = db.query(User).filter(User.role == "super_admin").count()
+
+    # Count shuttles and routes
+    total_shuttles = db.query(Shuttle).count()
+    total_routes = db.query(Route).count()
+
+    return AdminStatsResponse(
+        users_by_role=UserCountByRole(
+            student=student_count,
+            driver=driver_count,
+            fleet_manager=fleet_manager_count,
+            super_admin=super_admin_count
+        ),
+        total_shuttles=total_shuttles,
+        total_routes=total_routes
+    )
