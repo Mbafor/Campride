@@ -43,3 +43,17 @@ app.include_router(telemetry_router)
 @app.get("/health")
 def health_check():
     return {"status": "ok", "version": "1.1"}
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Log all registered routes on startup for debugging"""
+    print("\n" + "="*80)
+    print("REGISTERED ROUTES AT STARTUP")
+    print("="*80)
+    for route in app.routes:
+        if hasattr(route, 'path'):
+            route_type = route.__class__.__name__
+            methods = getattr(route, 'methods', ['N/A'])
+            print(f"[{route_type:20}] {str(methods):30} {route.path}")
+    print("="*80 + "\n")
