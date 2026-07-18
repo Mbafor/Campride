@@ -13,7 +13,7 @@ admin_stops_router = APIRouter(prefix="/api/v1/admin/stops", tags=["admin-stops"
 public_router = APIRouter(prefix="/api/v1/routes", tags=["routes"])
 
 
-@admin_router.post("", response_model=dict)
+@admin_router.post("", response_model=RouteResponse)
 def create_route(
     route_data: RouteCreate,
     current_user: User = Depends(require_role(["super_admin"])),
@@ -36,7 +36,7 @@ def create_route(
     return RouteResponse.from_orm_with_geometry(new_route)
 
 
-@admin_router.get("", response_model=list[dict])
+@admin_router.get("", response_model=list[RouteResponse])
 def list_routes(
     current_user: User = Depends(require_role(["super_admin"])),
     db: Session = Depends(get_db),
@@ -57,7 +57,7 @@ def get_route(
     return RouteResponse.from_orm_with_geometry(route)
 
 
-@admin_router.put("/{route_id}", response_model=dict)
+@admin_router.put("/{route_id}", response_model=RouteResponse)
 def update_route(
     route_id: UUID,
     route_data: RouteCreate,
@@ -94,7 +94,7 @@ def delete_route(
     return {"message": "Route deleted successfully"}
 
 
-@admin_router.post("/{route_id}/stops", response_model=dict)
+@admin_router.post("/{route_id}/stops", response_model=StopResponse)
 def add_stop(
     route_id: UUID,
     stop_data: StopCreate,
