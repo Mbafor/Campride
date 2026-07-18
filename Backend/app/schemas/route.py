@@ -1,5 +1,6 @@
 from uuid import UUID
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 from geoalchemy2.shape import to_shape
 
@@ -19,10 +20,10 @@ class RouteResponse(BaseModel):
     name: str
     start_name: str
     end_name: str
-    start_lat: float
-    start_lng: float
-    end_lat: float
-    end_lng: float
+    start_lat: Optional[float]
+    start_lng: Optional[float]
+    end_lat: Optional[float]
+    end_lng: Optional[float]
     created_at: datetime
 
     class Config:
