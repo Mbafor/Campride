@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_SECRET: str
     RESEND_API_KEY: str
+    REDIS_URL: str
 
     # Optional environment variables
     GOOGLE_OAUTH_CLIENT_ID: str = ""
