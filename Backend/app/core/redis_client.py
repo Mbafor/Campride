@@ -25,7 +25,9 @@ def update_driver_location(driver_id: str, lat: float, lng: float, heading: floa
 
         return True
     except Exception as e:
-        print(f"Error updating driver location: {e}")
+        import sys
+        print(f"[REDIS ERROR] update_driver_location failed: {type(e).__name__}: {e}", file=sys.stderr)
+        print(f"[REDIS ERROR] REDIS_URL config: {settings.REDIS_URL if hasattr(settings, 'REDIS_URL') else 'NOT SET'}", file=sys.stderr)
         return False
 
 
@@ -107,5 +109,6 @@ def get_driver_location(driver_id: str) -> dict | None:
             "last_updated": metadata.get("last_updated", "")
         }
     except Exception as e:
-        print(f"Error getting driver location: {e}")
+        import sys
+        print(f"[REDIS ERROR] get_driver_location failed: {type(e).__name__}: {e}", file=sys.stderr)
         return None
