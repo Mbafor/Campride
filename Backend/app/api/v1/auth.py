@@ -5,8 +5,6 @@ from pydantic import BaseModel
 import uuid
 import random
 import string
-import os
-import redis
 
 from app.database import SessionLocal
 from app.models import User, VerificationCode, Shuttle, Route
@@ -381,44 +379,3 @@ def get_admin_stats(
         total_shuttles=total_shuttles,
         total_routes=total_routes
     )
-
-
-@admin_router.get("/test-redis")
-def test_redis():
-    """TEMPORARY: Test Redis connectivity using REDIS_URL environment variable"""
-    try:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            return {"status": "error", "message": "REDIS_URL environment variable not set"}
-
-        r = redis.from_url(redis_url, decode_responses=True)
-
-        # Test SET
-        r.set("test_key", "hello")
-
-        # Test GET
-        value = r.get("test_key")
-
-        # Test DELETE
-        r.delete("test_key")
-
-        if value == "hello":
-            return {
-                "status": "success",
-                "message": "Redis SET/GET test passed",
-                "redis_url": redis_url.split("@")[-1] if "@" in redis_url else redis_url,
-                "set_value": "hello",
-                "get_value": value
-            }
-        else:
-            return {
-                "status": "error",
-                "message": f"Expected 'hello', got '{value}'",
-                "redis_url": redis_url.split("@")[-1] if "@" in redis_url else redis_url
-            }
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": str(e),
-            "type": type(e).__name__
-        }
