@@ -45,7 +45,7 @@ def list_routes(
     return [RouteResponse.from_orm_with_geometry(r) for r in routes]
 
 
-@public_router.get("/{route_id}", response_model=dict)
+@public_router.get("/{route_id}", response_model=RouteResponse)
 def get_route(
     route_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -119,7 +119,7 @@ def add_stop(
     return StopResponse.from_orm_with_geometry(new_stop)
 
 
-@public_router.get("/{route_id}/stops", response_model=list[dict])
+@public_router.get("/{route_id}/stops", response_model=list[StopResponse])
 def get_stops(
     route_id: UUID,
     current_user: User = Depends(get_current_user),
