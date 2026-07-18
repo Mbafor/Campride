@@ -774,4 +774,38 @@ class ShuttleService {
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
+
+  Future<ApiResponse<Map<String, dynamic>>> createFleetManager({
+    required String name,
+    required String email,
+    required String password,
+    required String accessToken,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/admin/users/fleet-manager'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'role': 'fleet_manager',
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final json = jsonDecode(response.body);
+        return ApiResponse(success: true, data: json);
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['detail']?['message'] ?? 'Failed to create fleet manager';
+        return ApiResponse(success: false, message: message);
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
 }

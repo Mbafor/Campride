@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/app_colors.dart';
+import 'fleet_manager_dashboard.dart';
 import '../drivers/drivers_list_screen.dart';
 import '../shuttles/shuttles_list_screen.dart';
 
@@ -15,19 +16,25 @@ class _FleetDashboardState extends State<FleetDashboard> {
   int _currentIndex = 0;
 
   late final List<Widget> _screens = [
+    FleetManagerDashboard(
+      onDriversTap: () => setState(() => _currentIndex = 1),
+      onShuttlesTap: () => setState(() => _currentIndex = 2),
+    ),
     DriversListScreen(),
     ShuttlesListScreen(),
   ];
 
   static const List<_NavItem> _navItems = [
+    _NavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'Dashboard'),
     _NavItem(icon: Icons.people_outline, activeIcon: Icons.people, label: 'Drivers'),
     _NavItem(icon: Icons.airport_shuttle, activeIcon: Icons.directions_bus, label: 'Shuttles'),
   ];
 
   String get _appBarTitle {
     switch (_currentIndex) {
-      case 0: return 'Drivers';
-      case 1: return 'Shuttles';
+      case 0: return 'Fleet Manager';
+      case 1: return 'Drivers';
+      case 2: return 'Shuttles';
       default: return 'Fleet Manager';
     }
   }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../fleet/map/live_map_screen.dart';
+import '../staff/staff_management_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -71,7 +74,7 @@ class AdminDashboardScreen extends StatelessWidget {
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.shield_admin, size: 16, color: Colors.white),
+                                    Icon(Icons.security, size: 16, color: Colors.white),
                                     const SizedBox(width: 6),
                                     Text(
                                       'Super Admin',
@@ -156,9 +159,16 @@ class AdminDashboardScreen extends StatelessWidget {
   }
 
   void _navigateTo(BuildContext context, String section) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Navigating to $section...')),
-    );
+    if (section == 'staff') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const StaffManagementScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$section coming soon')),
+      );
+    }
   }
 }
 
@@ -169,6 +179,7 @@ class _StatsRow extends StatefulWidget {
 
 class _StatsRowState extends State<_StatsRow> {
   final _shuttleService = ShuttleService();
+  int _totalStudents = 0;
   int _totalShuttles = 0;
   int _totalRoutes = 0;
   int _totalDrivers = 0;
@@ -191,13 +202,35 @@ class _StatsRowState extends State<_StatsRow> {
     final shuttlesResult = await _shuttleService.listShuttles(accessToken: auth.accessToken!);
     final routesResult = await _shuttleService.listRoutes(accessToken: auth.accessToken!);
 
+    final statsResult = await _getAdminStats(auth.accessToken!);
+
     if (mounted) {
       setState(() {
         _totalDrivers = driversResult.data?.length ?? 0;
         _totalShuttles = shuttlesResult.data?.length ?? 0;
         _totalRoutes = routesResult.data?.length ?? 0;
+        _totalStudents = statsResult['students'] ?? 0;
         _loading = false;
       });
+    }
+  }
+
+  Future<Map<String, dynamic>> _getAdminStats(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/admin/stats'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'students': data['users_by_role']?['student'] ?? 0,
+        };
+      }
+      return {'students': 0};
+    } catch (e) {
+      return {'students': 0};
     }
   }
 
@@ -212,37 +245,53 @@ class _StatsRowState extends State<_StatsRow> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _StatCard(
-              icon: Icons.people_outline,
-              label: 'Drivers',
-              value: '$_totalDrivers',
-              color: AppColors.primaryGreen,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 90,
+              child: _StatCard(
+                icon: Icons.school_outlined,
+                label: 'Students',
+                value: '$_totalStudents',
+                color: AppColors.primaryGreen,
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _StatCard(
-              icon: Icons.directions_bus_outlined,
-              label: 'Shuttles',
-              value: '$_totalShuttles',
-              color: AppColors.primaryGreen,
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 90,
+              child: _StatCard(
+                icon: Icons.people_outline,
+                label: 'Drivers',
+                value: '$_totalDrivers',
+                color: AppColors.primaryGreen,
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _StatCard(
-              icon: Icons.route_outlined,
-              label: 'Routes',
-              value: '$_totalRoutes',
-              color: AppColors.primaryGreen,
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 90,
+              child: _StatCard(
+                icon: Icons.directions_bus_outlined,
+                label: 'Shuttles',
+                value: '$_totalShuttles',
+                color: AppColors.primaryGreen,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 90,
+              child: _StatCard(
+                icon: Icons.route_outlined,
+                label: 'Routes',
+                value: '$_totalRoutes',
+                color: AppColors.primaryGreen,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
