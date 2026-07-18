@@ -2,8 +2,33 @@ import json
 import redis
 from datetime import datetime
 from app.core.config import settings
+import sys
 
-redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+print(f"[REDIS] Initializing redis_client...", file=sys.stderr)
+print(f"[REDIS] settings.REDIS_URL type: {type(settings.REDIS_URL)}", file=sys.stderr)
+
+redis_url = settings.REDIS_URL if hasattr(settings, 'REDIS_URL') else None
+if redis_url:
+    # Mask password in logging
+    if '@' in redis_url:
+        masked = f"redis://***@{redis_url.split('@')[1]}"
+    else:
+        masked = redis_url
+    print(f"[REDIS] REDIS_URL (masked): {masked}", file=sys.stderr)
+else:
+    print(f"[REDIS] ERROR: REDIS_URL not found in settings!", file=sys.stderr)
+
+try:
+    redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+    print(f"[REDIS] redis_client created successfully", file=sys.stderr)
+    # Test the connection
+    redis_client.ping()
+    print(f"[REDIS] ping() successful", file=sys.stderr)
+except Exception as e:
+    print(f"[REDIS] ERROR creating/testing redis_client: {type(e).__name__}: {e}", file=sys.stderr)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
+    redis_client = None
 
 
 def update_driver_location(driver_id: str, lat: float, lng: float, heading: float, accuracy: float) -> bool:
@@ -11,8 +36,21 @@ def update_driver_location(driver_id: str, lat: float, lng: float, heading: floa
     Store driver's location in Redis geospatial set and metadata.
     Returns True if successful, False otherwise.
     """
+    import sys
+
+    # Log REDIS_URL at function entry (mask password)
+    redis_url = settings.REDIS_URL if hasattr(settings, 'REDIS_URL') else 'NOT SET'
+    if redis_url != 'NOT SET':
+        # Mask the password: redis://:[PASSWORD]@host -> redis://:***@host
+        masked_url = redis_url.split('@')[1] if '@' in redis_url else redis_url
+        masked_url = f"redis://***@{masked_url}"
+    else:
+        masked_url = 'NOT SET'
+    print(f"[REDIS] update_driver_location START: REDIS_URL={masked_url}, driver_id={driver_id}, lat={lat}, lng={lng}", file=sys.stderr)
+
     try:
         # Add to geospatial set (stores lat/lng for proximity queries)
+        print(f"[REDIS] Calling geoadd('fleet:live_locations', {lng}, {lat}, {driver_id})", file=sys.stderr)
         redis_client.geoadd("fleet:live_locations", lng, lat, driver_id)
 
         # Store metadata (heading, accuracy, last_updated) in a hash
@@ -21,13 +59,16 @@ def update_driver_location(driver_id: str, lat: float, lng: float, heading: floa
             "accuracy": accuracy,
             "last_updated": datetime.utcnow().isoformat()
         }
+        print(f"[REDIS] Calling hset(driver:{driver_id}:metadata, {metadata})", file=sys.stderr)
         redis_client.hset(f"driver:{driver_id}:metadata", mapping=metadata)
 
+        print(f"[REDIS] SUCCESS: update_driver_location completed", file=sys.stderr)
         return True
     except Exception as e:
-        import sys
-        print(f"[REDIS ERROR] update_driver_location failed: {type(e).__name__}: {e}", file=sys.stderr)
-        print(f"[REDIS ERROR] REDIS_URL config: {settings.REDIS_URL if hasattr(settings, 'REDIS_URL') else 'NOT SET'}", file=sys.stderr)
+        print(f"[REDIS] EXCEPTION in update_driver_location: {type(e).__name__}: {e}", file=sys.stderr)
+        print(f"[REDIS] Full traceback:", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         return False
 
 
@@ -85,30 +126,42 @@ def get_driver_location(driver_id: str) -> dict | None:
     Returns dict: {"lat": float, "lng": float, "heading": float, "accuracy": float, "last_updated": str}
     or None if driver not found.
     """
+    import sys
+
     try:
+        print(f"[REDIS] get_driver_location START: driver_id={driver_id}", file=sys.stderr)
+
         # Check if driver exists in geospatial set
         rank = redis_client.zrank("fleet:live_locations", driver_id)
+        print(f"[REDIS] zrank result: {rank}", file=sys.stderr)
         if rank is None:
+            print(f"[REDIS] Driver not in geospatial set, returning None", file=sys.stderr)
             return None
 
         # Get position
         location = redis_client.geopos("fleet:live_locations", driver_id)
+        print(f"[REDIS] geopos result: {location}", file=sys.stderr)
         if not location or not location[0]:
+            print(f"[REDIS] No location found, returning None", file=sys.stderr)
             return None
 
         lng, lat = location[0]
 
         # Get metadata
         metadata = redis_client.hgetall(f"driver:{driver_id}:metadata")
+        print(f"[REDIS] metadata: {metadata}", file=sys.stderr)
 
-        return {
+        result = {
             "lat": lat,
             "lng": lng,
             "heading": float(metadata.get("heading", 0)),
             "accuracy": float(metadata.get("accuracy", 0)),
             "last_updated": metadata.get("last_updated", "")
         }
+        print(f"[REDIS] SUCCESS: returning {result}", file=sys.stderr)
+        return result
     except Exception as e:
-        import sys
-        print(f"[REDIS ERROR] get_driver_location failed: {type(e).__name__}: {e}", file=sys.stderr)
+        print(f"[REDIS] EXCEPTION in get_driver_location: {type(e).__name__}: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         return None
