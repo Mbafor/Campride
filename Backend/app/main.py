@@ -43,7 +43,7 @@ app.include_router(telemetry_router)
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": "deployment_check_v2", "timestamp": "telemetry-router-included"}
+    return {"status": "ok", "version": "websockets_dependency_added_v3"}
 
 
 @app.websocket("/api/v1/ws/test-direct")
