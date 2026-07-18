@@ -9,6 +9,7 @@ import '../../../theme/app_colors.dart';
 import '../../fleet/map/live_map_screen.dart';
 import '../staff/staff_management_screen.dart';
 import '../../fleet/shuttles/shuttles_list_screen.dart';
+import '../routes/routes_management_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -169,6 +170,11 @@ class AdminDashboardScreen extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ShuttlesListScreen()),
+      );
+    } else if (section == 'routes') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const RoutesManagementScreen()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
