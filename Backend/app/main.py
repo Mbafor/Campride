@@ -42,18 +42,42 @@ app.include_router(telemetry_router)
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": "1.1"}
+    return {"status": "ok", "version": "deployment_check_v2", "timestamp": "telemetry-router-included"}
 
 
 @app.on_event("startup")
 async def startup_event():
     """Log all registered routes on startup for debugging"""
-    print("\n" + "="*80)
-    print("REGISTERED ROUTES AT STARTUP")
-    print("="*80)
-    for route in app.routes:
-        if hasattr(route, 'path'):
-            route_type = route.__class__.__name__
-            methods = getattr(route, 'methods', ['N/A'])
-            print(f"[{route_type:20}] {str(methods):30} {route.path}")
-    print("="*80 + "\n")
+    import sys
+    print("\n" + "="*80, file=sys.stderr)
+    print("ALL ROUTES (using app.routes)", file=sys.stderr)
+    print("="*80, file=sys.stderr)
+
+    # Use app.routes which should merge all routes
+    all_routes = app.routes
+
+    websocket_routes = []
+    other_routes = []
+
+    for route in all_routes:
+        route_type = route.__class__.__name__
+        path = getattr(route, 'path', 'UNKNOWN')
+
+        if 'WebSocket' in route_type:
+            websocket_routes.append((route_type, path))
+        else:
+            other_routes.append((route_type, path))
+
+    print(f"\nHTTP ROUTES ({len(other_routes)}):", file=sys.stderr)
+    for route_type, path in other_routes[:20]:  # First 20
+        methods = getattr([r for r in all_routes if getattr(r, 'path', None) == path][0], 'methods', 'N/A') if path != 'UNKNOWN' else 'N/A'
+        print(f"  {route_type:20} {path}", file=sys.stderr)
+
+    print(f"\nWEBSOCKET ROUTES ({len(websocket_routes)}):", file=sys.stderr)
+    for route_type, path in websocket_routes:
+        print(f"  {route_type:20} {path}", file=sys.stderr)
+
+    if not websocket_routes:
+        print("  NONE FOUND!", file=sys.stderr)
+
+    print("="*80 + "\n", file=sys.stderr)
