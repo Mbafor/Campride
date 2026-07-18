@@ -191,21 +191,31 @@ async def telemetry_websocket(
                 continue
 
             # Distance filtering: check against last known position
-            last_location = get_driver_location(str(driver.id))
+            driver_id_str = str(driver.id)
+            last_location = get_driver_location(driver_id_str)
+
+            # DEBUG
+            import sys
+            print(f"[DEBUG] Driver: {driver_id_str}, Last: {last_location}", file=sys.stderr)
+
             if last_location:
                 distance = haversine_distance(
                     lat, lng,
                     last_location["lat"], last_location["lng"]
                 )
+                print(f"[DEBUG] Distance: {distance:.2f}m, Threshold: {DISTANCE_FILTER_METERS}m", file=sys.stderr)
                 if distance < DISTANCE_FILTER_METERS:
                     await websocket.send_json({
                         "status": "filtered",
                         "reason": f"New position too close to last position ({distance:.2f}m < {DISTANCE_FILTER_METERS}m)"
                     })
                     continue
+            else:
+                print(f"[DEBUG] No last location found in Redis", file=sys.stderr)
 
             # Update Redis location
-            update_driver_location(str(driver.id), lat, lng, heading, accuracy)
+            update_result = update_driver_location(driver_id_str, lat, lng, heading, accuracy)
+            print(f"[DEBUG] Redis update result: {update_result}", file=sys.stderr)
 
             # Log telemetry to database
             from geoalchemy2.elements import WKTElement
