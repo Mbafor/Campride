@@ -2,12 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from uuid import UUID
 from pydantic import BaseModel
+from datetime import datetime
 
 from app.database import SessionLocal
-from app.models import User, Route, DriverCurrentRoute, Shuttle
+from app.models import User, Route, DriverCurrentRoute, Shuttle, Trip
 from app.schemas.route import RouteResponse
 from app.schemas.shuttle import ShuttleResponse
 from app.api.deps import get_db, get_current_user, require_role
+from app.core.redis_client import remove_driver_location
 
 router = APIRouter(prefix="/api/v1/driver", tags=["driver"])
 
@@ -73,3 +75,39 @@ def get_driver_shuttle(
             detail="No shuttle currently assigned to this driver"
         )
     return shuttle
+
+
+@router.post("/offline")
+def driver_offline(
+    current_user: User = Depends(require_role(["driver"])),
+    db: Session = Depends(get_db),
+):
+    """End driver's shift: remove from live tracking and close active trip"""
+    driver_id_str = str(current_user.id)
+
+    # Remove driver from Redis live tracking
+    remove_driver_location(driver_id_str)
+
+    # Find and close their active trip
+    active_trip = db.query(Trip).filter(
+        Trip.driver_id == current_user.id,
+        Trip.status == "active"
+    ).first()
+
+    if active_trip:
+        active_trip.status = "completed"
+        active_trip.ended_at = datetime.utcnow()
+        db.commit()
+        db.refresh(active_trip)
+        return {
+            "status": "success",
+            "message": "Driver removed from live tracking and trip closed",
+            "trip_id": str(active_trip.id),
+            "trip_ended_at": active_trip.ended_at.isoformat()
+        }
+    else:
+        return {
+            "status": "success",
+            "message": "Driver removed from live tracking. No active trip to close.",
+            "trip_id": None
+        }
