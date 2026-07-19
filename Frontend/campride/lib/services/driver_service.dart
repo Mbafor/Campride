@@ -18,7 +18,7 @@ class DriverService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$ApiConfig.baseHttpUrl/driver/offline'),
+        Uri.parse('${ApiConfig.baseHttpUrl}/driver/offline'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
