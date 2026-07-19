@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
+import '../../../services/telemetry_service.dart';
+import '../../../services/driver_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/buttons/custom_button.dart';
 
@@ -18,8 +20,11 @@ class _StartTripScreenState extends State<StartTripScreen>
   bool _tripStarted = false;
   bool _loading = false;
   bool _loadingRoute = true;
+  bool _locationSharing = false;
   late AnimationController _pulseController;
   final _shuttleService = ShuttleService();
+  final _telemetryService = TelemetryService();
+  final _driverService = DriverService();
   DriverRoute? _currentRoute;
   List<Stop> _stops = [];
   ShuttleInfo? _assignedShuttle;
@@ -78,20 +83,114 @@ class _StartTripScreenState extends State<StartTripScreen>
   }
 
   Future<void> _toggleTrip() async {
+    final auth = context.read<AuthenticationProvider>();
+
+    if (!_tripStarted) {
+      // Starting a trip
+      await _startTrip(auth);
+    } else {
+      // Ending a trip
+      await _endTrip(auth);
+    }
+  }
+
+  Future<void> _startTrip(AuthenticationProvider auth) async {
+    if (auth.accessToken == null) {
+      _showError('Authentication token not found');
+      return;
+    }
+
     setState(() => _loading = true);
-    await Future.delayed(const Duration(seconds: 1));
+
+    // Set up error and status callbacks
+    _telemetryService.onError = (error) {
+      if (mounted) {
+        _showError(error);
+      }
+    };
+
+    _telemetryService.onConnected = () {
+      if (mounted) {
+        setState(() => _locationSharing = true);
+        _showSuccess('Location sharing started');
+      }
+    };
+
+    _telemetryService.onDisconnected = () {
+      if (mounted) {
+        setState(() => _locationSharing = false);
+      }
+    };
+
+    // Start telemetry
+    final success = await _telemetryService.startTelemetry(auth.accessToken!);
+
     if (mounted) {
-      setState(() {
-        _tripStarted = !_tripStarted;
-        _loading = false;
-        if (_tripStarted) {
+      setState(() => _loading = false);
+
+      if (success) {
+        setState(() {
+          _tripStarted = true;
           _pulseController.repeat(reverse: true);
-        } else {
+        });
+      }
+    }
+  }
+
+  Future<void> _endTrip(AuthenticationProvider auth) async {
+    if (auth.accessToken == null) {
+      _showError('Authentication token not found');
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    // Stop telemetry first
+    _telemetryService.stopTelemetry();
+
+    // Call offline endpoint
+    final result = await _driverService.endTrip(accessToken: auth.accessToken!);
+
+    if (mounted) {
+      setState(() => _loading = false);
+
+      if (result.success) {
+        setState(() {
+          _tripStarted = false;
           _pulseController.stop();
           _pulseController.reset();
-        }
-      });
+        });
+        _showSuccess('Trip ended successfully');
+      } else {
+        _showError(result.error ?? 'Failed to end trip');
+        // Still mark as ended even if the offline call failed
+        setState(() {
+          _tripStarted = false;
+          _pulseController.stop();
+          _pulseController.reset();
+        });
+      }
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -262,9 +361,27 @@ class _StartTripScreenState extends State<StartTripScreen>
           if (_tripStarted) ...[
             const SizedBox(height: 12),
             Center(
-              child: Text(
-                'Trip in progress — passengers can track you',
-                style: GoogleFonts.poppins(fontSize: 12, color: AppColors.success),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_locationSharing) ...[
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.success),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    _locationSharing
+                      ? 'Sharing location — passengers can track you'
+                      : 'Trip in progress — starting location sharing...',
+                    style: GoogleFonts.poppins(fontSize: 12, color: AppColors.success),
+                  ),
+                ],
               ),
             ),
           ],
