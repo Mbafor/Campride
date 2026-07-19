@@ -55,9 +55,10 @@ def update_driver_location(driver_id: str, lat: float, lng: float, heading: floa
 
     try:
         # Add to geospatial set (stores lat/lng for proximity queries)
-        # redis-py 8.0.1 expects: geoadd(name, {member: (lng, lat)})
-        print(f"[REDIS] Calling geoadd('fleet:live_locations', {{{driver_id}: ({lng}, {lat})}})", file=sys.stderr)
-        redis_client.geoadd("fleet:live_locations", {driver_id: (lng, lat)})
+        # redis-py 8.0.1 expects: geoadd(name, values) where values=[lng, lat, member, ...]
+        values = [lng, lat, driver_id]
+        print(f"[REDIS] Calling geoadd('fleet:live_locations', {values})", file=sys.stderr)
+        redis_client.geoadd("fleet:live_locations", values)
 
         # Store metadata (heading, accuracy, last_updated) in a hash
         metadata = {
