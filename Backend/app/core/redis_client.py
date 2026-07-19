@@ -85,9 +85,14 @@ def get_all_live_locations() -> dict:
     Returns dict: {driver_id: {"lat": float, "lng": float, "heading": float, "accuracy": float, "last_updated": str}}
     """
     try:
-        # Get all members of the geospatial set with their positions
-        locations = redis_client.geopos("fleet:live_locations")
+        # Get all members of the geospatial set
         members = redis_client.zrange("fleet:live_locations", 0, -1)
+
+        if not members:
+            return {}
+
+        # Get positions for all members
+        locations = redis_client.geopos("fleet:live_locations", *members)
 
         result = {}
         for i, driver_id in enumerate(members):
