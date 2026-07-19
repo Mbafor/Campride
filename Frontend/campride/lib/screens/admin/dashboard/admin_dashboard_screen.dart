@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
+import '../../../config/api_config.dart';
 import '../../../theme/app_colors.dart';
 import '../../fleet/map/live_map_screen.dart';
 import '../staff/staff_management_screen.dart';
@@ -230,7 +231,7 @@ class _StatsRowState extends State<_StatsRow> {
   Future<Map<String, dynamic>> _getAdminStats(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/admin/stats'),
+        Uri.parse('${ApiConfig.baseHttpUrl}/admin/stats'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
