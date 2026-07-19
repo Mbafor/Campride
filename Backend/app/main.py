@@ -3,10 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.auth import router as auth_router, admin_router as auth_admin_router
 from app.api.v1.shuttles import admin_router as shuttles_admin_router, public_router as shuttles_public_router
 from app.api.v1.routes import admin_router as routes_admin_router, admin_stops_router, public_router as routes_public_router
-from app.api.v1.driver import router as driver_router
+from app.api.v1.driver import router as driver_router, close_active_trip
 from app.api.v1.fleet import router as fleet_router
 from app.api.v1.telemetry import router as telemetry_router
+from app.core.redis_client import cleanup_stale_drivers
+from app.database import SessionLocal
 import json
+import asyncio
+import sys
 
 app = FastAPI(title="CampRide API", version="1.0.0")
 
@@ -53,10 +57,42 @@ async def test_websocket_direct(websocket: WebSocket):
     await websocket.send_json({"status": "connected", "message": "This WebSocket was registered directly on app"})
 
 
+async def stale_driver_cleanup_task(threshold_seconds: int = 120, interval_seconds: int = 30):
+    """Background task that periodically removes stale drivers from Redis and closes their trips"""
+    print(f"[CLEANUP-TASK] Starting stale driver cleanup task (threshold: {threshold_seconds}s, interval: {interval_seconds}s)", file=sys.stderr)
+
+    while True:
+        try:
+            # Wait for the interval
+            await asyncio.sleep(interval_seconds)
+
+            # Run cleanup
+            cleaned_driver_ids = cleanup_stale_drivers(threshold_seconds)
+
+            # For each cleaned up driver, close their active trip
+            if cleaned_driver_ids:
+                db = SessionLocal()
+                try:
+                    for driver_id in cleaned_driver_ids:
+                        print(f"[CLEANUP-TASK] Closing active trip for driver {driver_id}", file=sys.stderr)
+                        trip_result = close_active_trip(driver_id, db)
+                        if trip_result["closed"]:
+                            print(f"[CLEANUP-TASK] Trip {trip_result['trip_id']} closed for driver {driver_id}", file=sys.stderr)
+                        else:
+                            print(f"[CLEANUP-TASK] No active trip found for driver {driver_id}", file=sys.stderr)
+                finally:
+                    db.close()
+
+        except Exception as e:
+            print(f"[CLEANUP-TASK] Exception in cleanup loop: {type(e).__name__}: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            # Continue looping even on error
+
+
 @app.on_event("startup")
 async def startup_event():
-    """Log all registered routes on startup for debugging"""
-    import sys
+    """Log all registered routes and spawn background cleanup task"""
     print("\n" + "="*80, file=sys.stderr)
     print("ALL ROUTES (using app.routes)", file=sys.stderr)
     print("="*80, file=sys.stderr)
@@ -89,3 +125,7 @@ async def startup_event():
         print("  NONE FOUND!", file=sys.stderr)
 
     print("="*80 + "\n", file=sys.stderr)
+
+    # Spawn the background cleanup task
+    print("[STARTUP] Spawning stale driver cleanup background task", file=sys.stderr)
+    asyncio.create_task(stale_driver_cleanup_task(threshold_seconds=120, interval_seconds=30))

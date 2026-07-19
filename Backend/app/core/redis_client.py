@@ -177,3 +177,56 @@ def get_driver_location(driver_id: str) -> dict | None:
         import traceback
         traceback.print_exc(file=sys.stderr)
         return None
+
+
+def cleanup_stale_drivers(threshold_seconds: int = 120) -> list[str]:
+    """
+    Remove drivers who haven't sent a location update in threshold_seconds.
+    This handles cases where drivers disconnect without calling /driver/offline
+    (e.g. phone died, app crashed, lost signal entirely).
+
+    Returns a list of driver_ids that were removed.
+    """
+    try:
+        cleaned_up = []
+        now = datetime.utcnow()
+
+        print(f"[CLEANUP] Starting stale driver cleanup (threshold: {threshold_seconds}s)", file=sys.stderr)
+
+        # Get all drivers currently in the live locations set
+        all_locations = get_all_live_locations()
+        print(f"[CLEANUP] Found {len(all_locations)} drivers currently tracked", file=sys.stderr)
+
+        for driver_id, location_data in all_locations.items():
+            last_updated_str = location_data.get("last_updated", "")
+
+            if not last_updated_str:
+                print(f"[CLEANUP] Driver {driver_id}: no last_updated timestamp, skipping", file=sys.stderr)
+                continue
+
+            try:
+                # Parse the last_updated ISO timestamp
+                last_updated = datetime.fromisoformat(last_updated_str)
+                time_since_update = (now - last_updated).total_seconds()
+
+                if time_since_update > threshold_seconds:
+                    print(f"[CLEANUP] Driver {driver_id}: stale ({time_since_update:.1f}s > {threshold_seconds}s) - removing", file=sys.stderr)
+
+                    # Remove from Redis
+                    remove_driver_location(driver_id)
+                    cleaned_up.append(driver_id)
+                else:
+                    print(f"[CLEANUP] Driver {driver_id}: fresh ({time_since_update:.1f}s < {threshold_seconds}s)", file=sys.stderr)
+
+            except Exception as e:
+                print(f"[CLEANUP] Error processing driver {driver_id}: {type(e).__name__}: {e}", file=sys.stderr)
+                continue
+
+        print(f"[CLEANUP] Cleanup complete: {len(cleaned_up)} drivers removed out of {len(all_locations)} checked", file=sys.stderr)
+        return cleaned_up
+
+    except Exception as e:
+        print(f"[CLEANUP] EXCEPTION in cleanup_stale_drivers: {type(e).__name__}: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        return []

@@ -18,6 +18,38 @@ class DriverRouteRequest(BaseModel):
     route_id: UUID
 
 
+def close_active_trip(driver_id: str | UUID, db: Session) -> dict:
+    """
+    Find driver's active trip and mark it as completed.
+    Returns dict with trip_id (if closed) or None (if no active trip).
+    Used by both /driver/offline endpoint and stale cleanup task.
+    """
+    from uuid import UUID
+    if isinstance(driver_id, str):
+        driver_id = UUID(driver_id)
+
+    active_trip = db.query(Trip).filter(
+        Trip.driver_id == driver_id,
+        Trip.status == "active"
+    ).first()
+
+    if active_trip:
+        active_trip.status = "completed"
+        active_trip.ended_at = datetime.utcnow()
+        db.commit()
+        db.refresh(active_trip)
+        return {
+            "closed": True,
+            "trip_id": str(active_trip.id),
+            "ended_at": active_trip.ended_at.isoformat()
+        }
+    else:
+        return {
+            "closed": False,
+            "trip_id": None
+        }
+
+
 @router.get("/route", response_model=dict | None)
 def get_driver_route(
     current_user: User = Depends(require_role(["driver"])),
@@ -89,21 +121,14 @@ def driver_offline(
     remove_driver_location(driver_id_str)
 
     # Find and close their active trip
-    active_trip = db.query(Trip).filter(
-        Trip.driver_id == current_user.id,
-        Trip.status == "active"
-    ).first()
+    trip_result = close_active_trip(current_user.id, db)
 
-    if active_trip:
-        active_trip.status = "completed"
-        active_trip.ended_at = datetime.utcnow()
-        db.commit()
-        db.refresh(active_trip)
+    if trip_result["closed"]:
         return {
             "status": "success",
             "message": "Driver removed from live tracking and trip closed",
-            "trip_id": str(active_trip.id),
-            "trip_ended_at": active_trip.ended_at.isoformat()
+            "trip_id": trip_result["trip_id"],
+            "trip_ended_at": trip_result["ended_at"]
         }
     else:
         return {
