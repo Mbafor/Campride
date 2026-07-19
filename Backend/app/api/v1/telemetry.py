@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from math import radians, cos, sin, asin, sqrt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -173,11 +173,13 @@ async def telemetry_websocket(
                 else:
                     timestamp = datetime.utcnow()
 
-                # Reject future timestamps (allow 1 second of clock skew)
+                # Reject future timestamps (allow 30 seconds of clock skew for distributed systems)
                 now = datetime.now(timezone.utc) if timestamp.tzinfo else datetime.utcnow()
                 if timestamp.tzinfo is None:
                     timestamp = timestamp.replace(tzinfo=timezone.utc)
-                if timestamp > now.replace(tzinfo=timezone.utc):
+                # Allow 30 seconds of clock skew (client and server clocks may differ)
+                max_future = now.replace(tzinfo=timezone.utc) + timedelta(seconds=30)
+                if timestamp > max_future:
                     await websocket.send_json({
                         "status": "rejected",
                         "reason": "Timestamp is in the future"
