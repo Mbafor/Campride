@@ -8,7 +8,6 @@ class TelemetryService {
   WebSocketChannel? _channel;
   Timer? _locationUpdateTimer;
   bool _isConnected = false;
-  Position? _lastPosition;
 
   // Callbacks for UI updates
   Function(String)? onError;
@@ -119,7 +118,6 @@ class TelemetryService {
       };
 
       _channel!.sink.add(jsonEncode(locationData));
-      _lastPosition = position;
 
       print('[Telemetry] Sent location: ${position.latitude}, ${position.longitude}');
     } catch (e) {
