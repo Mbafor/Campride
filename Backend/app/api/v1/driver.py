@@ -136,32 +136,3 @@ def driver_offline(
             "message": "Driver removed from live tracking. No active trip to close.",
             "trip_id": None
         }
-
-
-@router.post("/test/cleanup-stale")
-def test_cleanup_stale(
-    threshold_seconds: int = 15,
-    current_user: User = Depends(require_role(["super_admin"])),
-    db: Session = Depends(get_db),
-):
-    """
-    TESTING ONLY: Manually trigger stale driver cleanup with custom threshold.
-    Returns details about which drivers were cleaned up.
-    This endpoint should be removed after testing.
-    """
-    from app.core.redis_client import cleanup_stale_drivers
-
-    cleaned_ids = cleanup_stale_drivers(threshold_seconds)
-
-    trip_results = {}
-    for driver_id in cleaned_ids:
-        trip_result = close_active_trip(driver_id, db)
-        trip_results[driver_id] = trip_result
-
-    return {
-        "status": "success",
-        "message": f"Cleaned up {len(cleaned_ids)} stale drivers",
-        "threshold_seconds": threshold_seconds,
-        "cleaned_driver_ids": cleaned_ids,
-        "trip_results": trip_results
-    }
