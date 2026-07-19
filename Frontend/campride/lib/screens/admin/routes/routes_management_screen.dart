@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../providers/authentication_provider.dart';
-import '../../../services/shuttle_service.dart';
+import '../../../config/api_config.dart';
 import '../../../theme/app_colors.dart';
 
 class RoutesManagementScreen extends StatefulWidget {
@@ -33,7 +33,7 @@ class _RoutesManagementScreenState extends State<RoutesManagementScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/admin/routes'),
+        Uri.parse('${ApiConfig.baseHttpUrl}/admin/routes'),
         headers: {'Authorization': 'Bearer ${auth.accessToken}'},
       );
 
@@ -171,7 +171,7 @@ class _RoutesManagementScreenState extends State<RoutesManagementScreen> {
                       final auth = context.read<AuthenticationProvider>();
                       try {
                         final response = await http.post(
-                          Uri.parse('$baseUrl/admin/routes'),
+                          Uri.parse('${ApiConfig.baseHttpUrl}/admin/routes'),
                           headers: {
                             'Authorization': 'Bearer ${auth.accessToken}',
                             'Content-Type': 'application/json',
@@ -404,7 +404,7 @@ class _StopsDialogState extends State<_StopsDialog> {
     final auth = context.read<AuthenticationProvider>();
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/routes/${widget.routeId}/stops'),
+        Uri.parse('${ApiConfig.baseHttpUrl}/routes/${widget.routeId}/stops'),
         headers: {'Authorization': 'Bearer ${auth.accessToken}'},
       );
 
@@ -428,7 +428,7 @@ class _StopsDialogState extends State<_StopsDialog> {
     final auth = context.read<AuthenticationProvider>();
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/admin/routes/${widget.routeId}/stops'),
+        Uri.parse('${ApiConfig.baseHttpUrl}/admin/routes/${widget.routeId}/stops'),
         headers: {
           'Authorization': 'Bearer ${auth.accessToken}',
           'Content-Type': 'application/json',
