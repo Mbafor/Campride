@@ -39,24 +39,50 @@ async def broadcast_location_update(message: dict):
                 pass
 
 
-async def live_map_subscription_task():
-    """Background task that subscribes to Redis pub/sub and broadcasts updates to all live-map clients"""
-    print("[LIVE-MAP-SUB] Starting live map subscription task", file=sys.stderr)
-
+def _redis_pubsub_listener(queue: asyncio.Queue):
+    """Run Redis pub/sub in a synchronous thread and put messages in async queue"""
     try:
-        # Create a separate Redis connection for pub/sub
+        print("[LIVE-MAP-SUB] Starting Redis subscription in thread", file=sys.stderr)
         redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
         pubsub = redis_client.pubsub()
-
-        # Subscribe to driver location updates
         pubsub.subscribe("driver-location-updates")
         print("[LIVE-MAP-SUB] Subscribed to driver-location-updates channel", file=sys.stderr)
 
-        # Listen for messages
         for message in pubsub.listen():
             if message['type'] == 'message':
+                # Put message in the queue for the async broadcast handler
                 try:
-                    update_data = json.loads(message['data'])
+                    asyncio.run_coroutine_threadsafe(queue.put(message['data']), queue._loop)
+                except Exception as e:
+                    print(f"[LIVE-MAP-SUB] Error putting message in queue: {e}", file=sys.stderr)
+
+    except Exception as e:
+        print(f"[LIVE-MAP-SUB] Exception in Redis listener: {type(e).__name__}: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+
+
+async def live_map_subscription_task():
+    """Background task that handles Redis pub/sub messages and broadcasts to live-map clients"""
+    print("[LIVE-MAP-SUB] Starting live map subscription task", file=sys.stderr)
+
+    try:
+        # Create a queue to receive messages from the Redis subscription thread
+        message_queue = asyncio.Queue()
+        message_queue._loop = asyncio.get_event_loop()
+
+        # Start the Redis subscription in a thread pool
+        loop = asyncio.get_event_loop()
+        loop.run_in_executor(None, _redis_pubsub_listener, message_queue)
+
+        # Listen for messages from the queue and broadcast them
+        while True:
+            try:
+                # Get message from queue with timeout
+                message_data = await asyncio.wait_for(message_queue.get(), timeout=60.0)
+
+                try:
+                    update_data = json.loads(message_data)
                     print(f"[LIVE-MAP-SUB] Received update for driver {update_data.get('driver_id')}", file=sys.stderr)
 
                     # Broadcast to all connected clients
@@ -69,6 +95,12 @@ async def live_map_subscription_task():
                     print(f"[LIVE-MAP-SUB] Error parsing message: {e}", file=sys.stderr)
                 except Exception as e:
                     print(f"[LIVE-MAP-SUB] Error processing message: {type(e).__name__}: {e}", file=sys.stderr)
+
+            except asyncio.TimeoutError:
+                # Timeout is normal, just continue
+                pass
+            except Exception as e:
+                print(f"[LIVE-MAP-SUB] Error in queue listener: {type(e).__name__}: {e}", file=sys.stderr)
 
     except Exception as e:
         print(f"[LIVE-MAP-SUB] Exception in subscription task: {type(e).__name__}: {e}", file=sys.stderr)
