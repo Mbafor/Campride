@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
-
-const String baseUrl = 'https://campride-production.up.railway.app/api/v1';
+import '../config/api_config.dart';
 
 Map<String, dynamic> _extractErrorDetail(Map<String, dynamic> json) {
   if (json.containsKey('detail') && json['detail'] is Map) {
@@ -34,7 +33,7 @@ class AuthApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/register'),
+        Uri.parse('$ApiConfig.baseHttpUrl/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': name,
@@ -78,7 +77,7 @@ class AuthApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/verify-email'),
+        Uri.parse('$ApiConfig.baseHttpUrl/auth/verify-email'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -113,7 +112,7 @@ class AuthApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/resend-verification'),
+        Uri.parse('$ApiConfig.baseHttpUrl/auth/resend-verification'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
@@ -146,7 +145,7 @@ class AuthApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
+        Uri.parse('$ApiConfig.baseHttpUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -188,7 +187,7 @@ class AuthApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/refresh'),
+        Uri.parse('$ApiConfig.baseHttpUrl/auth/refresh'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'refresh_token': refreshToken}),
       );
@@ -227,7 +226,7 @@ class AuthApiService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/auth/me'),
+        Uri.parse('$ApiConfig.baseHttpUrl/auth/me'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -264,7 +263,7 @@ class AuthApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/google'),
+        Uri.parse('$ApiConfig.baseHttpUrl/auth/google'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id_token': idToken}),
       );

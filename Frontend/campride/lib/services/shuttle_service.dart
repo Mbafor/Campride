@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
-const String baseUrl = 'https://campride-production.up.railway.app/api/v1';
+import '../config/api_config.dart';
 
 class ApiResponse<T> {
   final bool success;
@@ -154,7 +153,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/driver/route'),
+        Uri.parse('$ApiConfig.baseHttpUrl/driver/route'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -185,7 +184,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/driver/route'),
+        Uri.parse('$ApiConfig.baseHttpUrl/driver/route'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -215,7 +214,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/routes/$routeId/stops'),
+        Uri.parse('$ApiConfig.baseHttpUrl/routes/$routeId/stops'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -240,7 +239,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/driver/shuttle'),
+        Uri.parse('$ApiConfig.baseHttpUrl/driver/shuttle'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -267,7 +266,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/fleet/drivers'),
+        Uri.parse('$ApiConfig.baseHttpUrl/fleet/drivers'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -293,7 +292,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/fleet/drivers/$driverId'),
+        Uri.parse('$ApiConfig.baseHttpUrl/fleet/drivers/$driverId'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -317,7 +316,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/fleet/shuttles'),
+        Uri.parse('$ApiConfig.baseHttpUrl/fleet/shuttles'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -343,7 +342,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/admin/shuttles'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/shuttles'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -369,7 +368,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/admin/shuttles/$shuttleId'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/shuttles/$shuttleId'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -396,7 +395,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/admin/shuttles'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/shuttles'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -439,7 +438,7 @@ class ShuttleService {
       if (status != null) body['status'] = status;
 
       final response = await http.put(
-        Uri.parse('$baseUrl/admin/shuttles/$shuttleId'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/shuttles/$shuttleId'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -468,7 +467,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/admin/shuttles/$shuttleId'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/shuttles/$shuttleId'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -493,7 +492,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/admin/shuttles/$shuttleId/assign-driver'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/shuttles/$shuttleId/assign-driver'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -521,7 +520,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/shuttles'),
+        Uri.parse('$ApiConfig.baseHttpUrl/shuttles'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -547,7 +546,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/admin/routes'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/routes'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -579,7 +578,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/admin/routes'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/routes'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -623,7 +622,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/admin/routes/$routeId'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/routes/$routeId'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -660,7 +659,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/admin/routes/$routeId'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/routes/$routeId'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -688,7 +687,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/admin/routes/$routeId/stops'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/routes/$routeId/stops'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -722,7 +721,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/admin/stops/$stopId'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/stops/$stopId'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -749,7 +748,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/admin/users/driver'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/users/driver'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -783,7 +782,7 @@ class ShuttleService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/admin/users/fleet-manager'),
+        Uri.parse('$ApiConfig.baseHttpUrl/admin/users/fleet-manager'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',

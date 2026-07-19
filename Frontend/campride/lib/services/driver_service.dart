@@ -1,7 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
-const String baseUrl = 'https://campride-production.up.railway.app/api/v1';
+import '../config/api_config.dart';
 
 class ApiResponse<T> {
   final bool success;
@@ -19,7 +18,7 @@ class DriverService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/driver/offline'),
+        Uri.parse('$ApiConfig.baseHttpUrl/driver/offline'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
