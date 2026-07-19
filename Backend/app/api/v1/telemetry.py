@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
 from app.models import User, Trip, TelemetryLog, Shuttle, DriverCurrentRoute
-from app.core.redis_client import update_driver_location, get_driver_location
+from app.core.redis_client import update_driver_location, get_driver_location, publish_driver_location_update
 from app.core.security import decode_token
 from app.api.deps import get_db
 
@@ -224,6 +224,9 @@ async def telemetry_websocket(
                     "message": "Failed to update location in Redis"
                 })
                 continue
+
+            # Publish to Redis pub/sub for real-time live-map updates
+            publish_driver_location_update(driver_id_str, lat, lng, heading, accuracy)
 
             # Log telemetry to database
             from geoalchemy2.elements import WKTElement

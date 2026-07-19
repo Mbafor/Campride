@@ -6,6 +6,7 @@ from app.api.v1.routes import admin_router as routes_admin_router, admin_stops_r
 from app.api.v1.driver import router as driver_router, close_active_trip
 from app.api.v1.fleet import router as fleet_router
 from app.api.v1.telemetry import router as telemetry_router
+from app.api.v1.live_map import router as live_map_router, live_map_subscription_task
 from app.core.redis_client import cleanup_stale_drivers
 from app.database import SessionLocal
 import json
@@ -43,6 +44,9 @@ app.include_router(fleet_router)
 
 # Telemetry routers
 app.include_router(telemetry_router)
+
+# Live map routers
+app.include_router(live_map_router)
 
 
 @app.get("/health")
@@ -129,3 +133,7 @@ async def startup_event():
     # Spawn the background cleanup task
     print("[STARTUP] Spawning stale driver cleanup background task", file=sys.stderr)
     asyncio.create_task(stale_driver_cleanup_task(threshold_seconds=120, interval_seconds=30))
+
+    # Spawn the live map subscription task
+    print("[STARTUP] Spawning live map subscription task", file=sys.stderr)
+    asyncio.create_task(live_map_subscription_task())

@@ -235,3 +235,36 @@ def cleanup_stale_drivers(threshold_seconds: int = 120) -> list[str]:
         import traceback
         traceback.print_exc(file=sys.stderr)
         return []
+
+
+def publish_driver_location_update(driver_id: str, lat: float, lng: float, heading: float, accuracy: float) -> bool:
+    """
+    Publish driver location update to Redis pub/sub channel for real-time live-map updates.
+    This is called after a successful Redis geospatial update.
+
+    Returns True if successful, False otherwise.
+    """
+    try:
+        if redis_client is None:
+            print(f"[REDIS-PUB] ERROR: redis_client is None", file=sys.stderr)
+            return False
+
+        message = json.dumps({
+            "driver_id": driver_id,
+            "lat": lat,
+            "lng": lng,
+            "heading": heading,
+            "accuracy": accuracy,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+
+        # Publish to the driver-location-updates channel
+        redis_client.publish("driver-location-updates", message)
+        print(f"[REDIS-PUB] Published update for driver {driver_id}", file=sys.stderr)
+        return True
+
+    except Exception as e:
+        print(f"[REDIS-PUB] Exception publishing update: {type(e).__name__}: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        return False
