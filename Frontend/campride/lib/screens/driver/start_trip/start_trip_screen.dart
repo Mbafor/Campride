@@ -361,8 +361,9 @@ class _StartTripScreenState extends State<StartTripScreen>
           if (_tripStarted) ...[
             const SizedBox(height: 12),
             Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
                 children: [
                   if (_locationSharing) ...[
                     SizedBox(
@@ -373,16 +374,13 @@ class _StartTripScreenState extends State<StartTripScreen>
                         valueColor: AlwaysStoppedAnimation<Color>(AppColors.success),
                       ),
                     ),
-                    const SizedBox(width: 8),
                   ],
-                  Flexible(
-                    child: Text(
-                      _locationSharing
-                        ? 'Sharing location — passengers can track you'
-                        : 'Trip in progress — starting location sharing...',
-                      style: GoogleFonts.poppins(fontSize: 12, color: AppColors.success),
-                      textAlign: TextAlign.center,
-                    ),
+                  Text(
+                    _locationSharing
+                      ? 'Sharing location — passengers can track you'
+                      : 'Trip in progress — starting location sharing...',
+                    style: GoogleFonts.poppins(fontSize: 12, color: AppColors.success),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -418,22 +416,26 @@ class _TripStatusCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          AnimatedBuilder(
-            animation: pulseController,
-            builder: (_, child) => Transform.scale(
-              scale: isStarted ? 1.0 + pulseController.value * 0.15 : 1.0,
-              child: child,
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
+          SizedBox(
+            width: 64,
+            height: 64,
+            child: AnimatedBuilder(
+              animation: pulseController,
+              builder: (_, child) => Transform.scale(
+                scale: isStarted ? 1.0 + pulseController.value * 0.15 : 1.0,
+                child: child,
               ),
-              child: Icon(
-                isStarted ? Icons.directions_bus : Icons.directions_bus_outlined,
-                color: Colors.white,
-                size: 32,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isStarted ? Icons.directions_bus : Icons.directions_bus_outlined,
+                  color: Colors.white,
+                  size: 32,
+                ),
               ),
             ),
           ),
