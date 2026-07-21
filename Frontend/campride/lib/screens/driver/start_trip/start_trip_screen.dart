@@ -438,25 +438,31 @@ class _TripStatusCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isStarted ? 'Trip Active' : 'Ready to Start',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isStarted ? 'Trip Active' : 'Ready to Start',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Text(
-                isStarted ? 'Live tracking enabled' : 'Press Start to begin',
-                style: GoogleFonts.poppins(fontSize: 13, color: Colors.white70),
-              ),
-            ],
+                Text(
+                  isStarted ? 'Live tracking enabled' : 'Press Start to begin',
+                  style: GoogleFonts.poppins(fontSize: 13, color: Colors.white70),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
           if (isStarted) ...[
-            const Spacer(),
+            const SizedBox(width: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
