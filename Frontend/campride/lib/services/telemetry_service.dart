@@ -55,7 +55,8 @@ class TelemetryService {
       }
 
       // Connect to WebSocket
-      final wsUrl = Uri.parse('${ApiConfig.baseWsUrl}/api/v1/ws/driver/telemetry?token=$accessToken');
+      final wsUrl = Uri.parse('${ApiConfig.baseWsUrl}/ws/driver/telemetry?token=$accessToken');
+      print('[Telemetry] Connecting to: $wsUrl');
       _channel = WebSocketChannel.connect(wsUrl);
 
       // Listen for connection messages

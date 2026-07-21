@@ -375,11 +375,14 @@ class _StartTripScreenState extends State<StartTripScreen>
                     ),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    _locationSharing
-                      ? 'Sharing location — passengers can track you'
-                      : 'Trip in progress — starting location sharing...',
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppColors.success),
+                  Flexible(
+                    child: Text(
+                      _locationSharing
+                        ? 'Sharing location — passengers can track you'
+                        : 'Trip in progress — starting location sharing...',
+                      style: GoogleFonts.poppins(fontSize: 12, color: AppColors.success),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ],
               ),
