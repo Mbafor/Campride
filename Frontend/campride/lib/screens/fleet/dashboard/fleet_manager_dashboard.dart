@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
-import '../map/live_map_screen.dart';
+import '../../student/live_shuttles_screen.dart';
 
 class FleetManagerDashboard extends StatelessWidget {
   final VoidCallback? onDriversTap;
@@ -71,15 +71,14 @@ class FleetManagerDashboard extends StatelessWidget {
               const SizedBox(height: 10),
               _NavigationCard(
                 icon: Icons.location_on_outlined,
-                title: 'Live Map',
-                subtitle: 'Track fleet location (Phase 5)',
+                title: 'Live Shuttles',
+                subtitle: 'Track fleet location in real-time',
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const LiveMapScreen()),
+                    MaterialPageRoute(builder: (context) => const LiveShuttlesScreen()),
                   );
                 },
-                isPlaceholder: true,
               ),
             ],
           ),

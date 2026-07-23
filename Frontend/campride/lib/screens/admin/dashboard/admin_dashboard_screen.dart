@@ -7,7 +7,7 @@ import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../config/api_config.dart';
 import '../../../theme/app_colors.dart';
-import '../../fleet/map/live_map_screen.dart';
+import '../../student/live_shuttles_screen.dart';
 import '../staff/staff_management_screen.dart';
 import '../../fleet/shuttles/shuttles_list_screen.dart';
 import '../routes/routes_management_screen.dart';
@@ -139,15 +139,14 @@ class AdminDashboardScreen extends StatelessWidget {
                     const SizedBox(height: 10),
                     _NavigationCard(
                       icon: Icons.location_on_outlined,
-                      title: 'Live Map',
-                      subtitle: 'Track fleet location (Phase 5)',
+                      title: 'Live Shuttles',
+                      subtitle: 'Track fleet location in real-time',
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const LiveMapScreen()),
+                          MaterialPageRoute(builder: (context) => const LiveShuttlesScreen()),
                         );
                       },
-                      isPlaceholder: true,
                       color: Colors.red,
                     ),
                     const SizedBox(height: 32),

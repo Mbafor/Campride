@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../live_map/live_map_screen.dart';
+import '../live_shuttles_screen.dart';
 import '../alerts/alerts_screen.dart';
 import '../account/student_account_screen.dart';
 import '../../../widgets/common/app_drawer.dart';
@@ -25,7 +25,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           IndexedStack(
             index: _currentIndex,
             children: const [
-              LiveMapScreen(),
+              LiveShuttlesScreen(),
               AlertsScreen(),
               StudentAccountScreen(),
             ],
