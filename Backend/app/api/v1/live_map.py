@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
 from app.core.redis_client import get_all_live_locations
 from app.core.security import decode_token
-from app.models import User, ShuttleRequest, Trip, Notification, NotificationType, Route, Stop
+from app.models import User, ShuttleRequest, Trip, Notification, Route, Stop, NotificationType
 from app.database import SessionLocal
 import redis
 from app.core.config import settings
