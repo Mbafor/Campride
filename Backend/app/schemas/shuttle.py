@@ -39,3 +39,40 @@ class ShuttleResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ShuttleMatchRequest(BaseModel):
+    pickup_lat: float
+    pickup_lng: float
+    destination_lat: float
+    destination_lng: float
+
+
+class MatchedShuttleResult(BaseModel):
+    shuttle_id: str | None
+    shuttle_name: str
+    plate_number: str
+    driver_id: str
+    current_lat: float
+    current_lng: float
+    eta_minutes: int
+    distance_meters: float
+    route_name: str | None = None
+    pickup_stop: str | None = None
+    destination_stop: str | None = None
+
+
+class NearbyShuttleResult(BaseModel):
+    shuttle_id: str | None
+    shuttle_name: str
+    plate_number: str
+    driver_id: str
+    current_lat: float
+    current_lng: float
+    eta_minutes: int
+    distance_meters: float
+
+
+class ShuttleMatchResponse(BaseModel):
+    matched: list[MatchedShuttleResult]
+    nearby: list[NearbyShuttleResult]

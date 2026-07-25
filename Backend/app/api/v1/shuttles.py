@@ -4,8 +4,12 @@ from uuid import UUID
 
 from app.database import SessionLocal
 from app.models import Shuttle, User, DriverCurrentRoute
-from app.schemas.shuttle import ShuttleCreate, ShuttleUpdate, ShuttleResponse, AssignDriverRequest
+from app.schemas.shuttle import (
+    ShuttleCreate, ShuttleUpdate, ShuttleResponse, AssignDriverRequest,
+    ShuttleMatchRequest, ShuttleMatchResponse
+)
 from app.api.deps import get_db, get_current_user, require_role
+from app.core.shuttle_matching import find_matched_shuttles, find_nearby_shuttles
 
 admin_router = APIRouter(prefix="/api/v1/admin/shuttles", tags=["admin-shuttles"])
 public_router = APIRouter(prefix="/api/v1/shuttles", tags=["shuttles"])
@@ -129,3 +133,35 @@ def list_all_shuttles(
 ):
     shuttles = db.query(Shuttle).all()
     return shuttles
+
+
+@public_router.post("/match", response_model=ShuttleMatchResponse)
+def match_shuttles(
+    request: ShuttleMatchRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Find shuttles matching a pickup/destination pair."""
+    try:
+        matched = find_matched_shuttles(
+            request.pickup_lat,
+            request.pickup_lng,
+            request.destination_lat,
+            request.destination_lng,
+            db,
+            proximity_threshold_meters=300
+        )
+
+        nearby_exclude_ids = [m['driver_id'] for m in matched]
+        nearby = find_nearby_shuttles(
+            request.pickup_lat,
+            request.pickup_lng,
+            db,
+            exclude_driver_ids=nearby_exclude_ids,
+            radius_meters=1000
+        )
+
+        return ShuttleMatchResponse(matched=matched, nearby=nearby)
+    except Exception as e:
+        print(f"[Match Endpoint] Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Matching error: {str(e)}")
