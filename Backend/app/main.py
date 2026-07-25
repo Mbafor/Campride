@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, Query
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.auth import router as auth_router, admin_router as auth_admin_router
+from app.api.v1.users import router as users_router
 from app.api.v1.shuttles import admin_router as shuttles_admin_router, public_router as shuttles_public_router
 from app.api.v1.routes import admin_router as routes_admin_router, admin_stops_router, public_router as routes_public_router
 from app.api.v1.driver import router as driver_router, close_active_trip
@@ -27,6 +28,9 @@ app.add_middleware(
 # Auth routers
 app.include_router(auth_router)
 app.include_router(auth_admin_router)
+
+# User routers
+app.include_router(users_router)
 
 # Shuttle routers
 app.include_router(shuttles_admin_router)
