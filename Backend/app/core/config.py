@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str
     RESEND_API_KEY: str
     REDIS_URL: str
+    FIREBASE_SERVICE_ACCOUNT_JSON: str
 
     # Optional environment variables
     GOOGLE_OAUTH_CLIENT_ID: str = ""
