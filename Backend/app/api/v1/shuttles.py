@@ -3,13 +3,15 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.database import SessionLocal
-from app.models import Shuttle, User, DriverCurrentRoute
+from app.models import Shuttle, User, DriverCurrentRoute, ShuttleRequest, ShuttleRequestStatus, Trip
 from app.schemas.shuttle import (
     ShuttleCreate, ShuttleUpdate, ShuttleResponse, AssignDriverRequest,
     ShuttleMatchRequest, ShuttleMatchResponse
 )
 from app.api.deps import get_db, get_current_user, require_role
 from app.core.shuttle_matching import find_matched_shuttles, find_nearby_shuttles
+from geoalchemy2.elements import WKTElement
+from uuid import uuid4
 
 admin_router = APIRouter(prefix="/api/v1/admin/shuttles", tags=["admin-shuttles"])
 public_router = APIRouter(prefix="/api/v1/shuttles", tags=["shuttles"])
@@ -160,6 +162,44 @@ def match_shuttles(
             exclude_driver_ids=nearby_exclude_ids,
             radius_meters=1000
         )
+
+        # Create/update ShuttleRequest record
+        pickup_point = WKTElement(f"POINT({request.pickup_lng} {request.pickup_lat})", srid=4326)
+        destination_point = WKTElement(f"POINT({request.destination_lng} {request.destination_lat})", srid=4326)
+
+        shuttle_request = ShuttleRequest(
+            id=uuid4(),
+            student_id=current_user.id,
+            pickup_location=pickup_point,
+            destination_location=destination_point,
+            status=ShuttleRequestStatus.matched if matched else ShuttleRequestStatus.pending,
+            matched_trip_id=None,
+            last_notification_level=None
+        )
+
+        # If there are matches, pick the best one (soonest ETA)
+        if matched:
+            best_match = min(matched, key=lambda m: m['eta_minutes'])
+
+            # Look up the active trip for this driver
+            active_trip = db.query(Trip).filter(
+                Trip.driver_id == best_match['driver_id'],
+                Trip.status.in_(['in_progress', 'active'])
+            ).first()
+
+            if active_trip:
+                shuttle_request.matched_trip_id = active_trip.id
+                print(f"[Match] Created ShuttleRequest {shuttle_request.id} for student {current_user.id}")
+                print(f"[Match] Best match: {best_match['shuttle_name']} with ETA {best_match['eta_minutes']}min, trip_id={active_trip.id}")
+            else:
+                print(f"[Match] Created ShuttleRequest {shuttle_request.id} for student {current_user.id}")
+                print(f"[Match] Best match: {best_match['shuttle_name']} with ETA {best_match['eta_minutes']}min, but no active trip found")
+        else:
+            print(f"[Match] Created ShuttleRequest {shuttle_request.id} for student {current_user.id} with status=pending (no matches)")
+
+        db.add(shuttle_request)
+        db.commit()
+        db.refresh(shuttle_request)
 
         return ShuttleMatchResponse(matched=matched, nearby=nearby)
     except Exception as e:
