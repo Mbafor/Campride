@@ -34,6 +34,7 @@ class UserResponse(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
+    fcm_token: str | None = None
 
     class Config:
         from_attributes = True
