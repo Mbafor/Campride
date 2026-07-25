@@ -51,10 +51,17 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       _channel!.stream.listen(
         (message) {
           try {
+            // LOG: Raw message as received from WebSocket
+            print('[LiveMap] RAW MESSAGE RECEIVED: $message');
+
             final data = jsonDecode(message);
+            print('[LiveMap] DECODED JSON: $data');
+            print('[LiveMap] Message type: ${data['type']}');
+
             _handleLiveMapMessage(data);
           } catch (e) {
-            print('[LiveMap] Error decoding message: $e');
+            print('[LiveMap] ERROR decoding message: $e');
+            print('[LiveMap] Failed message was: $message');
           }
         },
         onError: (error) {
@@ -83,31 +90,46 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
   void _handleLiveMapMessage(Map<String, dynamic> data) {
     final type = data['type'] as String?;
+    print('[LiveMap] Handling message type: $type');
+    print('[LiveMap] Full data keys: ${data.keys.toList()}');
 
     if (type == 'initial_snapshot') {
       // Initial snapshot of all active shuttles
+      print('[LiveMap] Processing initial_snapshot');
       final drivers = data['drivers'] as List? ?? [];
+      print('[LiveMap] Number of drivers in snapshot: ${drivers.length}');
+
       final newShuttles = <String, ShuttleData>{};
 
       for (final driver in drivers) {
+        print('[LiveMap] Processing driver: $driver');
         final driverId = driver['driver_id'] as String?;
         if (driverId != null) {
           newShuttles[driverId] = ShuttleData.fromJson(driver);
+          print('[LiveMap] Added shuttle for driver: $driverId');
+        } else {
+          print('[LiveMap] WARNING: driver_id not found in: $driver');
         }
       }
 
+      print('[LiveMap] Total shuttles loaded: ${newShuttles.length}');
       setState(() {
         _shuttles = newShuttles;
         _errorMessage = null;
       });
     } else if (type == 'driver_location_update') {
       // Real-time location update for a specific driver
+      print('[LiveMap] Processing driver_location_update');
+      print('[LiveMap] Update data: $data');
       final driverId = data['driver_id'] as String?;
+      print('[LiveMap] Driver ID from update: $driverId');
+
       if (driverId != null) {
         final updatedData = ShuttleData.fromJson(data);
 
         setState(() {
           _shuttles[driverId] = updatedData;
+          print('[LiveMap] Updated shuttle for driver: $driverId');
           // Trigger pulse animation on this shuttle
           _pulsingShuttles.add(driverId);
         });
@@ -118,7 +140,12 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
             setState(() => _pulsingShuttles.remove(driverId));
           }
         });
+      } else {
+        print('[LiveMap] WARNING: driver_id is null in update');
       }
+    } else {
+      print('[LiveMap] WARNING: Unknown message type: $type');
+      print('[LiveMap] Message data: $data');
     }
   }
 
