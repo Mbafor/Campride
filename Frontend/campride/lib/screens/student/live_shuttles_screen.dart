@@ -28,6 +28,8 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   @override
   void initState() {
     super.initState();
+    print('[LiveMap] ===== SCREEN INITSTATE CALLED =====');
+    print('[LiveMap] Screen is mounting, about to connect to WebSocket');
     _connectToLiveMap();
   }
 
