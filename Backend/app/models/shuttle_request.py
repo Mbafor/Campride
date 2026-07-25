@@ -25,5 +25,6 @@ class ShuttleRequest(Base):
     destination_name = Column(String, nullable=True)
     matched_trip_id = Column(UUID(as_uuid=True), ForeignKey("trips.id"), nullable=True)
     status = Column(SQLEnum(ShuttleRequestStatus), nullable=False)
+    last_notification_level = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
