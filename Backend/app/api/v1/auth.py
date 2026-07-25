@@ -282,6 +282,29 @@ def google_sign_in(request: GoogleSignInRequest, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/diagnostic/firebase")
+def check_firebase_status():
+    """Check if Firebase Admin SDK is initialized (for testing only)"""
+    try:
+        from app.core.notifications import _firebase_app, _initialize_firebase
+
+        # Try to initialize if not already done
+        _initialize_firebase()
+
+        return {
+            "status": "initialized",
+            "firebase_ready": _firebase_app is not None,
+            "notifications_available": True
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "firebase_ready": False,
+            "notifications_available": False,
+            "error": str(e)
+        }
+
+
 class UserCountByRole(BaseModel):
     student: int
     driver: int
