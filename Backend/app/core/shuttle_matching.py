@@ -64,25 +64,31 @@ def find_matched_shuttles(
                 # Get the route's ordered stops
                 route = db.query(Route).filter(Route.id == trip.route_id).first()
                 if not route:
-                    print(f"[Matching] Route {trip.route_id} not found for trip {trip.id}")
+                    print(f"[Matching]   Route {trip.route_id} not found for trip {trip.id}")
                     continue
+
+                print(f"[Matching]   Route found: {route.name} (ID: {trip.route_id})")
 
                 stops = db.query(Stop).filter(
                     Stop.route_id == route.id
                 ).order_by(Stop.order).all()
 
+                print(f"[Matching]   Found {len(stops)} stops for route {route.id}")
+                for idx, stop in enumerate(stops):
+                    print(f"[Matching]     Stop {idx}: {stop.name} at ({stop.latitude:.6f}, {stop.longitude:.6f})")
+
                 if not stops:
-                    print(f"[Matching] No stops found for route {route.id}")
+                    print(f"[Matching]   ERROR: No stops found for route {route.id}")
                     continue
 
-                print(f"[Matching] Checking driver {driver_id} with {len(stops)} stops on route {route.name}")
+                print(f"[Matching]   Checking driver {driver_id} with {len(stops)} stops on route {route.name}")
 
                 # Find stop closest to pickup
                 pickup_stop_idx = None
                 pickup_stop_distance = float('inf')
 
                 for idx, stop in enumerate(stops):
-                    dist = haversine_distance(pickup_lat, pickup_lng, stop.latitude, stop.longitude)
+                    dist = haversine_distance(pickup_lat, pickup_lng, stop.location.y, stop.location.x)
                     print(f"  [Matching]   Stop {idx} ({stop.name}): {dist:.0f}m from pickup")
 
                     if dist < pickup_stop_distance:
@@ -100,7 +106,7 @@ def find_matched_shuttles(
 
                 for idx in range(pickup_stop_idx + 1, len(stops)):
                     stop = stops[idx]
-                    dist = haversine_distance(destination_lat, destination_lng, stop.latitude, stop.longitude)
+                    dist = haversine_distance(destination_lat, destination_lng, stop.location.y, stop.location.x)
                     print(f"  [Matching]   Stop {idx} ({stop.name}): {dist:.0f}m from destination")
 
                     if dist < dest_stop_distance:
