@@ -1,6 +1,7 @@
 """Firebase Cloud Messaging notifications."""
 import json
 import logging
+import sys
 import firebase_admin
 from firebase_admin import credentials, messaging
 from app.core.config import settings
@@ -49,6 +50,7 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
     """
     if not fcm_token:
         logger.warning("Cannot send notification: fcm_token is empty")
+        print(f"[FCM] ERROR: Cannot send notification - fcm_token is empty", file=sys.stderr)
         return False
 
     try:
@@ -63,15 +65,22 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
             token=fcm_token
         )
 
+        print(f"[FCM] Sending notification to token={fcm_token[:20]}...", file=sys.stderr)
         response = messaging.send(message)
         logger.info(f"Push notification sent successfully: {response}")
+        print(f"[FCM] SUCCESS - Firebase message ID: {response}", file=sys.stderr)
         return True
     except messaging.InvalidArgumentError as e:
         logger.warning(f"Invalid FCM token or message: {e}")
+        print(f"[FCM] InvalidArgumentError: {e}", file=sys.stderr)
         return False
     except messaging.UnregisteredError as e:
         logger.warning(f"FCM token is unregistered/expired: {e}")
+        print(f"[FCM] UnregisteredError: {e}", file=sys.stderr)
         return False
     except Exception as e:
         logger.error(f"Error sending push notification: {e}")
+        print(f"[FCM] EXCEPTION: {type(e).__name__}: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         return False

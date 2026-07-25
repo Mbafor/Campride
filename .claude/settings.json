@@ -39,7 +39,9 @@
       "Bash(python -m py_compile app/api/v1/shuttles.py app/core/shuttle_matching.py app/schemas/shuttle.py)",
       "Bash(git reset *)",
       "Bash(python -m alembic revision --autogenerate -m \"Add last_notification_level to ShuttleRequest\")",
-      "Bash(python -m py_compile app/models/__init__.py app/api/v1/live_map.py app/api/v1/shuttles.py)"
+      "Bash(python -m py_compile app/models/__init__.py app/api/v1/live_map.py app/api/v1/shuttles.py)",
+      "Bash(export DATABASE_URL=\"postgresql://postgres:CampRide2026SecurePG@centerbeam.proxy.rlwy.net:14837/railway\")",
+      "Bash(python -m alembic upgrade head)"
     ]
   }
 }
