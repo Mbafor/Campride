@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'package:http/http.dart' as http;
 
 import '../../config/api_config.dart';
 import '../../providers/authentication_provider.dart';
@@ -22,6 +23,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   bool _isConnected = false;
   String? _errorMessage;
 
+  // Shuttle lookup: driver_id -> (shuttle_name, plate_number)
+  Map<String, Map<String, String>> _shuttleLookup = {};
+
   // Track which shuttle was just updated for pulse animation
   final Set<String> _pulsingShuttles = {};
 
@@ -30,7 +34,49 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
     super.initState();
     print('[LiveMap] ===== SCREEN INITSTATE CALLED =====');
     print('[LiveMap] Screen is mounting, about to connect to WebSocket');
+    _loadShuttleLookup();
     _connectToLiveMap();
+  }
+
+  Future<void> _loadShuttleLookup() async {
+    final auth = context.read<AuthenticationProvider>();
+    if (auth.accessToken == null) {
+      print('[LiveMap] No auth token for shuttle lookup');
+      return;
+    }
+
+    try {
+      print('[LiveMap] Fetching shuttles for driver lookup...');
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseHttpUrl}/shuttles'),
+        headers: {'Authorization': 'Bearer ${auth.accessToken}'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final shuttles = jsonDecode(response.body) as List;
+        final lookup = <String, Map<String, String>>{};
+
+        for (final shuttle in shuttles) {
+          final driverId = shuttle['driver_id'] as String?;
+          final name = shuttle['name'] as String? ?? 'Unknown';
+          final plate = shuttle['plate_number'] as String? ?? 'N/A';
+
+          if (driverId != null && driverId.isNotEmpty) {
+            lookup[driverId] = {'name': name, 'plate': plate};
+            print('[LiveMap] Mapped driver $driverId -> $name ($plate)');
+          }
+        }
+
+        setState(() {
+          _shuttleLookup = lookup;
+        });
+        print('[LiveMap] Loaded ${lookup.length} shuttle mappings');
+      } else {
+        print('[LiveMap] Failed to fetch shuttles: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('[LiveMap] Error loading shuttle lookup: $e');
+    }
   }
 
   @override
@@ -267,10 +313,13 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
             final driverId = entry.key;
             final shuttle = entry.value;
             final isPulsing = _pulsingShuttles.contains(driverId);
+            final shuttleInfo = _shuttleLookup[driverId];
 
             return _ShuttleCard(
               shuttle: shuttle,
               isPulsing: isPulsing,
+              shuttleName: shuttleInfo?['name'] ?? 'Unknown Shuttle',
+              plateNumber: shuttleInfo?['plate'] ?? 'N/A',
             );
           }),
         ],
@@ -327,10 +376,14 @@ class ShuttleData {
 class _ShuttleCard extends StatelessWidget {
   final ShuttleData shuttle;
   final bool isPulsing;
+  final String shuttleName;
+  final String plateNumber;
 
   const _ShuttleCard({
     required this.shuttle,
     required this.isPulsing,
+    required this.shuttleName,
+    required this.plateNumber,
   });
 
   @override
@@ -360,7 +413,7 @@ class _ShuttleCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        shuttle.shuttleName,
+                        shuttleName,
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -368,7 +421,7 @@ class _ShuttleCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Driver ID: ${shuttle.driverId}',
+                        'Plate: $plateNumber',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: AppColors.textSecondaryLight,
