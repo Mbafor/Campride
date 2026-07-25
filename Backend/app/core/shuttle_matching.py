@@ -1,7 +1,7 @@
 """Shuttle matching logic for student requests."""
 from typing import List, Dict, Tuple, Any
 from sqlalchemy.orm import Session
-from app.models import Driver, Trip, Route, Stop, Shuttle
+from app.models import Trip, Route, Stop, Shuttle
 from app.core.redis_client import get_all_live_locations
 from app.core.eta import haversine_distance, calculate_eta, calculate_straight_line_eta
 
