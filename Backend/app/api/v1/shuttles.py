@@ -184,7 +184,7 @@ def match_shuttles(
             # Look up the active trip for this driver
             active_trip = db.query(Trip).filter(
                 Trip.driver_id == best_match['driver_id'],
-                Trip.status.in_(['in_progress', 'active'])
+                Trip.status == "active"
             ).first()
 
             if active_trip:
