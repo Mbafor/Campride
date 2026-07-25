@@ -26,6 +26,7 @@ def _initialize_firebase():
         # Initialize Firebase Admin
         cred = credentials.Certificate(service_account_dict)
         _firebase_app = firebase_admin.initialize_app(cred)
+        print(f"[FIREBASE] Initialized successfully (project: {service_account_dict.get('project_id', 'unknown')})")
         logger.info("Firebase Admin SDK initialized successfully")
         return _firebase_app
     except Exception as e:

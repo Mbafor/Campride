@@ -8,6 +8,7 @@ from app.api.v1.fleet import router as fleet_router
 from app.api.v1.telemetry import router as telemetry_router
 from app.api.v1.live_map import router as live_map_router, live_map_subscription_task
 from app.core.redis_client import cleanup_stale_drivers
+from app.core.notifications import _initialize_firebase
 from app.database import SessionLocal
 import json
 import asyncio
@@ -129,6 +130,14 @@ async def startup_event():
         print("  NONE FOUND!", file=sys.stderr)
 
     print("="*80 + "\n", file=sys.stderr)
+
+    # Initialize Firebase Admin SDK
+    print("[STARTUP] Initializing Firebase Admin SDK", file=sys.stderr)
+    try:
+        _initialize_firebase()
+    except Exception as e:
+        print(f"[STARTUP] WARNING: Firebase initialization failed: {e}", file=sys.stderr)
+        print("[STARTUP] Continuing without Firebase - notifications will not work", file=sys.stderr)
 
     # Spawn the background cleanup task
     print("[STARTUP] Spawning stale driver cleanup background task", file=sys.stderr)
