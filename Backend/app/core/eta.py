@@ -1,6 +1,7 @@
 """ETA calculation helpers for shuttle matching."""
 import math
 from typing import Tuple
+from geoalchemy2.shape import to_shape
 
 
 def haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -70,7 +71,8 @@ def calculate_eta(
     closest_distance = float('inf')
 
     for idx, stop in enumerate(route_stops_ordered):
-        dist = haversine_distance(shuttle_current_lat, shuttle_current_lng, stop.latitude, stop.longitude)
+        point = to_shape(stop.location)
+        dist = haversine_distance(shuttle_current_lat, shuttle_current_lng, point.y, point.x)
         if dist < closest_distance:
             closest_distance = dist
             closest_stop_idx = idx
@@ -83,7 +85,8 @@ def calculate_eta(
     dest_stop_distance = float('inf')
 
     for idx, stop in enumerate(route_stops_ordered):
-        dist = haversine_distance(stop.latitude, stop.longitude, destination_lat, destination_lng)
+        point = to_shape(stop.location)
+        dist = haversine_distance(point.y, point.x, destination_lat, destination_lng)
         if dist < dest_stop_distance:
             dest_stop_distance = dist
             dest_stop_idx = idx
@@ -91,11 +94,13 @@ def calculate_eta(
     # Sum cumulative distances from closest_stop to dest_stop
     for i in range(closest_stop_idx, dest_stop_idx):
         if i + 1 < len(route_stops_ordered):
+            point1 = to_shape(route_stops_ordered[i].location)
+            point2 = to_shape(route_stops_ordered[i + 1].location)
             total_distance += haversine_distance(
-                route_stops_ordered[i].latitude,
-                route_stops_ordered[i].longitude,
-                route_stops_ordered[i + 1].latitude,
-                route_stops_ordered[i + 1].longitude
+                point1.y,
+                point1.x,
+                point2.y,
+                point2.x
             )
 
     # Add distance from last stop in route to destination
