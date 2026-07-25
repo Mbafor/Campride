@@ -1,6 +1,7 @@
 """Shuttle matching logic for student requests."""
 from typing import List, Dict, Tuple, Any
 from sqlalchemy.orm import Session
+from geoalchemy2.shape import to_shape
 from app.models import Trip, Route, Stop, Shuttle
 from app.core.redis_client import get_all_live_locations
 from app.core.eta import haversine_distance, calculate_eta, calculate_straight_line_eta
@@ -75,7 +76,11 @@ def find_matched_shuttles(
 
                 print(f"[Matching]   Found {len(stops)} stops for route {route.id}")
                 for idx, stop in enumerate(stops):
-                    print(f"[Matching]     Stop {idx}: {stop.name} at ({stop.latitude:.6f}, {stop.longitude:.6f})")
+                    try:
+                        point = to_shape(stop.location)
+                        print(f"[Matching]     Stop {idx}: {stop.name} at ({point.y:.6f}, {point.x:.6f})")
+                    except Exception as e:
+                        print(f"[Matching]     Stop {idx}: ERROR extracting coordinates - {e}")
 
                 if not stops:
                     print(f"[Matching]   ERROR: No stops found for route {route.id}")
@@ -88,8 +93,15 @@ def find_matched_shuttles(
                 pickup_stop_distance = float('inf')
 
                 for idx, stop in enumerate(stops):
-                    dist = haversine_distance(pickup_lat, pickup_lng, stop.location.y, stop.location.x)
-                    print(f"  [Matching]   Stop {idx} ({stop.name}): {dist:.0f}m from pickup")
+                    try:
+                        point = to_shape(stop.location)
+                        stop_lat = point.y
+                        stop_lng = point.x
+                        dist = haversine_distance(pickup_lat, pickup_lng, stop_lat, stop_lng)
+                        print(f"  [Matching]   Stop {idx} ({stop.name}): extracted ({stop_lat:.6f}, {stop_lng:.6f}), distance to pickup ({pickup_lat:.6f}, {pickup_lng:.6f}) = {dist:.1f}m")
+                    except Exception as e:
+                        print(f"  [Matching]   Stop {idx}: ERROR - {e}")
+                        continue
 
                     if dist < pickup_stop_distance:
                         pickup_stop_distance = dist
@@ -106,8 +118,15 @@ def find_matched_shuttles(
 
                 for idx in range(pickup_stop_idx + 1, len(stops)):
                     stop = stops[idx]
-                    dist = haversine_distance(destination_lat, destination_lng, stop.location.y, stop.location.x)
-                    print(f"  [Matching]   Stop {idx} ({stop.name}): {dist:.0f}m from destination")
+                    try:
+                        point = to_shape(stop.location)
+                        stop_lat = point.y
+                        stop_lng = point.x
+                        dist = haversine_distance(destination_lat, destination_lng, stop_lat, stop_lng)
+                        print(f"  [Matching]   Stop {idx} ({stop.name}): extracted ({stop_lat:.6f}, {stop_lng:.6f}), distance to dest ({destination_lat:.6f}, {destination_lng:.6f}) = {dist:.1f}m")
+                    except Exception as e:
+                        print(f"  [Matching]   Stop {idx}: ERROR - {e}")
+                        continue
 
                     if dist < dest_stop_distance:
                         dest_stop_distance = dist
