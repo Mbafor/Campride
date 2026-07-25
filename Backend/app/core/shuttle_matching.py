@@ -36,22 +36,30 @@ def find_matched_shuttles(
     try:
         # Get all active drivers from Redis
         live_locations = get_all_live_locations()
-        print(f"[Matching] Found {len(live_locations)} active drivers")
+        print(f"[Matching] Found {len(live_locations)} active drivers in Redis")
 
         for driver_id, location_data in live_locations.items():
             try:
                 shuttle_lat = location_data['lat']
                 shuttle_lng = location_data['lng']
+                print(f"[Matching] Checking driver {driver_id} at ({shuttle_lat:.6f}, {shuttle_lng:.6f})")
 
                 # Find driver's current trip
+                all_trips = db.query(Trip).filter(Trip.driver_id == driver_id).all()
+                print(f"[Matching]   Total trips in DB for this driver: {len(all_trips)}")
+                for t in all_trips:
+                    print(f"[Matching]     Trip {t.id}: status={t.status}, route_id={t.route_id}")
+
                 trip = db.query(Trip).filter(
                     Trip.driver_id == driver_id,
                     Trip.status == "active"
                 ).first()
 
                 if not trip:
-                    print(f"[Matching] Driver {driver_id} has no active trip")
+                    print(f"[Matching]   NO ACTIVE TRIP FOUND - will only appear in nearby search")
                     continue
+
+                print(f"[Matching]   ACTIVE TRIP FOUND: {trip.id} on route {trip.route_id}")
 
                 # Get the route's ordered stops
                 route = db.query(Route).filter(Route.id == trip.route_id).first()
