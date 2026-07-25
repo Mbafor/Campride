@@ -98,21 +98,22 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
     if (type == 'initial_snapshot') {
       // Initial snapshot of all active shuttles
       print('[LiveMap] Processing initial_snapshot');
-      final drivers = data['drivers'] as List? ?? [];
-      print('[LiveMap] Number of drivers in snapshot: ${drivers.length}');
+      final snapshotData = data['data'] as Map<String, dynamic>? ?? {};
+      print('[LiveMap] Number of drivers in snapshot: ${snapshotData.length}');
 
       final newShuttles = <String, ShuttleData>{};
 
-      for (final driver in drivers) {
-        print('[LiveMap] Processing driver: $driver');
-        final driverId = driver['driver_id'] as String?;
-        if (driverId != null) {
-          newShuttles[driverId] = ShuttleData.fromJson(driver);
+      snapshotData.forEach((driverId, driverData) {
+        print('[LiveMap] Processing driver: $driverId -> $driverData');
+        if (driverId.isNotEmpty && driverData is Map<String, dynamic>) {
+          // Add driver_id to the data object for ShuttleData.fromJson
+          final driverWithId = {...driverData, 'driver_id': driverId};
+          newShuttles[driverId] = ShuttleData.fromJson(driverWithId);
           print('[LiveMap] Added shuttle for driver: $driverId');
         } else {
-          print('[LiveMap] WARNING: driver_id not found in: $driver');
+          print('[LiveMap] WARNING: Invalid driver data for $driverId: $driverData');
         }
-      }
+      });
 
       print('[LiveMap] Total shuttles loaded: ${newShuttles.length}');
       setState(() {
@@ -123,11 +124,12 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       // Real-time location update for a specific driver
       print('[LiveMap] Processing driver_location_update');
       print('[LiveMap] Update data: $data');
-      final driverId = data['driver_id'] as String?;
+      final updateData = data['data'] as Map<String, dynamic>?;
+      final driverId = updateData?['driver_id'] as String?;
       print('[LiveMap] Driver ID from update: $driverId');
 
-      if (driverId != null) {
-        final updatedData = ShuttleData.fromJson(data);
+      if (driverId != null && updateData != null) {
+        final updatedData = ShuttleData.fromJson(updateData);
 
         setState(() {
           _shuttles[driverId] = updatedData;
