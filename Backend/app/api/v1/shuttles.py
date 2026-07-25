@@ -165,3 +165,48 @@ def match_shuttles(
     except Exception as e:
         print(f"[Match Endpoint] Error: {e}")
         raise HTTPException(status_code=500, detail=f"Matching error: {str(e)}")
+
+
+@public_router.post("/match/debug")
+def match_shuttles_debug(
+    request: ShuttleMatchRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Debug version of matching that returns logs and calculations."""
+    import io
+    import sys
+
+    # Capture stdout
+    log_capture = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = log_capture
+
+    try:
+        matched = find_matched_shuttles(
+            request.pickup_lat,
+            request.pickup_lng,
+            request.destination_lat,
+            request.destination_lng,
+            db,
+            proximity_threshold_meters=300
+        )
+
+        nearby_exclude_ids = [m['driver_id'] for m in matched]
+        nearby = find_nearby_shuttles(
+            request.pickup_lat,
+            request.pickup_lng,
+            db,
+            exclude_driver_ids=nearby_exclude_ids,
+            radius_meters=1000
+        )
+
+        logs = log_capture.getvalue()
+
+        return {
+            "matched": matched,
+            "nearby": nearby,
+            "debug_logs": logs
+        }
+    finally:
+        sys.stdout = old_stdout
