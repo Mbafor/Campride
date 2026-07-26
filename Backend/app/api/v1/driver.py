@@ -156,7 +156,7 @@ def driver_offline(
 
 @router.get("/trips/summary")
 def get_trip_summary(
-    target_date: date = Query(None, description="Date in YYYY-MM-DD format. Defaults to today."),
+    target_date: date = Query(None, alias="date", description="Date in YYYY-MM-DD format. Defaults to today."),
     current_user: User = Depends(require_role(["driver"])),
     db: Session = Depends(get_db),
 ):
