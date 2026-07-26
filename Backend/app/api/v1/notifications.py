@@ -52,13 +52,13 @@ def mark_notification_read(
     ).first()
 
     if not notification:
-        raise HTTPException(status_code=404, detail="Notification not found")
+        raise HTTPException(status_code=404, detail={"error_code": "NOTIF_001", "message": "Notification not found"})
 
     # Verify ownership - user can only mark their own notifications as read
     if notification.user_id != current_user.id:
         raise HTTPException(
             status_code=403,
-            detail="You do not have permission to update this notification"
+            detail={"error_code": "NOTIF_002", "message": "You do not have permission to update this notification"}
         )
 
     notification.is_read = True

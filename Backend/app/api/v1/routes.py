@@ -53,7 +53,7 @@ def get_route(
 ):
     route = db.query(Route).filter(Route.id == route_id).first()
     if not route:
-        raise HTTPException(status_code=404, detail="Route not found")
+        raise HTTPException(status_code=404, detail={"error_code": "ROUTE_001", "message": "Route not found"})
     return RouteResponse.from_orm_with_geometry(route)
 
 
@@ -66,7 +66,7 @@ def update_route(
 ):
     route = db.query(Route).filter(Route.id == route_id).first()
     if not route:
-        raise HTTPException(status_code=404, detail="Route not found")
+        raise HTTPException(status_code=404, detail={"error_code": "ROUTE_001", "message": "Route not found"})
 
     route.name = route_data.name
     route.start_name = route_data.start_name
@@ -87,7 +87,7 @@ def delete_route(
 ):
     route = db.query(Route).filter(Route.id == route_id).first()
     if not route:
-        raise HTTPException(status_code=404, detail="Route not found")
+        raise HTTPException(status_code=404, detail={"error_code": "ROUTE_001", "message": "Route not found"})
 
     db.delete(route)
     db.commit()
@@ -103,7 +103,7 @@ def add_stop(
 ):
     route = db.query(Route).filter(Route.id == route_id).first()
     if not route:
-        raise HTTPException(status_code=404, detail="Route not found")
+        raise HTTPException(status_code=404, detail={"error_code": "ROUTE_001", "message": "Route not found"})
 
     location = WKTElement(f"POINT({stop_data.lng} {stop_data.lat})", srid=4326)
     new_stop = Stop(
@@ -127,7 +127,7 @@ def get_stops(
 ):
     route = db.query(Route).filter(Route.id == route_id).first()
     if not route:
-        raise HTTPException(status_code=404, detail="Route not found")
+        raise HTTPException(status_code=404, detail={"error_code": "ROUTE_001", "message": "Route not found"})
 
     stops = db.query(Stop).filter(Stop.route_id == route_id).order_by(Stop.order).all()
     return [StopResponse.from_orm_with_geometry(s) for s in stops]

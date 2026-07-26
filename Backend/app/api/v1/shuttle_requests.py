@@ -53,27 +53,27 @@ def board_shuttle(
     ).first()
 
     if not shuttle_request:
-        raise HTTPException(status_code=404, detail="Shuttle request not found")
+        raise HTTPException(status_code=404, detail={"error_code": "REQUEST_001", "message": "Shuttle request not found"})
 
     # Verify ownership — student can only board their own request
     if shuttle_request.student_id != current_user.id:
         raise HTTPException(
             status_code=403,
-            detail="You can only board your own shuttle requests"
+            detail={"error_code": "REQUEST_002", "message": "You can only board your own shuttle requests"}
         )
 
     # Verify status is "matched"
     if shuttle_request.status != ShuttleRequestStatus.matched:
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot board — request status is {shuttle_request.status}, must be 'matched'"
+            detail={"error_code": "REQUEST_003", "message": f"Cannot board — request status is {shuttle_request.status}, must be 'matched'"}
         )
 
     # Verify the request has a matched trip
     if not shuttle_request.matched_trip_id:
         raise HTTPException(
             status_code=400,
-            detail="Shuttle request has no matched trip"
+            detail={"error_code": "REQUEST_004", "message": "Shuttle request has no matched trip"}
         )
 
     # Create RideHistory record

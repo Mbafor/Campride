@@ -55,7 +55,7 @@ def get_driver_details(
     """Get one driver's details including shuttle and route assignments"""
     driver = db.query(User).filter(User.id == driver_id, User.role == "driver").first()
     if not driver:
-        raise HTTPException(status_code=404, detail="Driver not found")
+        raise HTTPException(status_code=404, detail={"error_code": "FLEET_001", "message": "Driver not found"})
 
     shuttle = db.query(Shuttle).filter(Shuttle.driver_id == driver.id).first()
     route_assignment = db.query(DriverCurrentRoute).filter(DriverCurrentRoute.driver_id == driver.id).first()
@@ -122,7 +122,7 @@ def get_driver_rides(
     # Verify driver exists
     driver = db.query(User).filter(User.id == driver_id, User.role == "driver").first()
     if not driver:
-        raise HTTPException(status_code=404, detail="Driver not found")
+        raise HTTPException(status_code=404, detail={"error_code": "FLEET_001", "message": "Driver not found"})
 
     if target_date is None:
         target_date = date.today()
@@ -190,7 +190,7 @@ def get_driver_routes(
     # Verify driver exists
     driver = db.query(User).filter(User.id == driver_id, User.role == "driver").first()
     if not driver:
-        raise HTTPException(status_code=404, detail="Driver not found")
+        raise HTTPException(status_code=404, detail={"error_code": "FLEET_001", "message": "Driver not found"})
 
     # Query completed trips and group by route
     trips = db.query(

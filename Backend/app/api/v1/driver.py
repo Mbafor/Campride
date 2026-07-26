@@ -88,7 +88,7 @@ def update_driver_route(
     """Update the driver's route selection (persists until explicitly changed)"""
     route = db.query(Route).filter(Route.id == request.route_id).first()
     if not route:
-        raise HTTPException(status_code=404, detail="Route not found")
+        raise HTTPException(status_code=404, detail={"error_code": "DRIVER_001", "message": "Route not found"})
 
     driver_route = db.query(DriverCurrentRoute).filter(DriverCurrentRoute.driver_id == current_user.id).first()
     if driver_route:

@@ -25,7 +25,7 @@ def create_shuttle(
 ):
     existing = db.query(Shuttle).filter(Shuttle.plate_number == shuttle_data.plate_number).first()
     if existing:
-        raise HTTPException(status_code=409, detail="Shuttle with this plate number already exists")
+        raise HTTPException(status_code=409, detail={"error_code": "SHUTTLE_001", "message": "Shuttle with this plate number already exists"})
 
     new_shuttle = Shuttle(
         name=shuttle_data.name,
@@ -56,7 +56,7 @@ def get_shuttle(
 ):
     shuttle = db.query(Shuttle).filter(Shuttle.id == shuttle_id).first()
     if not shuttle:
-        raise HTTPException(status_code=404, detail="Shuttle not found")
+        raise HTTPException(status_code=404, detail={"error_code": "SHUTTLE_002", "message": "Shuttle not found"})
     return shuttle
 
 
@@ -69,7 +69,7 @@ def update_shuttle(
 ):
     shuttle = db.query(Shuttle).filter(Shuttle.id == shuttle_id).first()
     if not shuttle:
-        raise HTTPException(status_code=404, detail="Shuttle not found")
+        raise HTTPException(status_code=404, detail={"error_code": "SHUTTLE_002", "message": "Shuttle not found"})
 
     if shuttle_data.plate_number and shuttle_data.plate_number != shuttle.plate_number:
         existing = db.query(Shuttle).filter(Shuttle.plate_number == shuttle_data.plate_number).first()
@@ -100,7 +100,7 @@ def delete_shuttle(
 ):
     shuttle = db.query(Shuttle).filter(Shuttle.id == shuttle_id).first()
     if not shuttle:
-        raise HTTPException(status_code=404, detail="Shuttle not found")
+        raise HTTPException(status_code=404, detail={"error_code": "SHUTTLE_002", "message": "Shuttle not found"})
 
     db.delete(shuttle)
     db.commit()
@@ -116,11 +116,11 @@ def assign_driver(
 ):
     shuttle = db.query(Shuttle).filter(Shuttle.id == shuttle_id).first()
     if not shuttle:
-        raise HTTPException(status_code=404, detail="Shuttle not found")
+        raise HTTPException(status_code=404, detail={"error_code": "SHUTTLE_002", "message": "Shuttle not found"})
 
     driver = db.query(User).filter(User.id == request.driver_id, User.role == "driver").first()
     if not driver:
-        raise HTTPException(status_code=404, detail="Driver not found or user is not a driver")
+        raise HTTPException(status_code=404, detail={"error_code": "SHUTTLE_003", "message": "Driver not found or user is not a driver"})
 
     shuttle.driver_id = request.driver_id
     db.commit()
