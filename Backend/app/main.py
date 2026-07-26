@@ -99,14 +99,88 @@ def health_check():
     return {"status": "ok", "version": "websockets_dependency_added_v3"}
 
 
-@app.get("/api/v1/test/error")
-def test_unhandled_error():
-    """Debug endpoint (dev-only) to verify global exception handler. Removed in production."""
+@app.get("/api/v1/test/email/resend")
+def test_resend_email():
+    """Debug endpoint: test Resend email service, show real exception if it fails"""
     import os
-    if os.getenv("ENVIRONMENT") != "development":
+    if os.getenv("ENVIRONMENT") == "production":
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Not found")
-    raise RuntimeError("This is a test error to verify exception handler works correctly")
+
+    from app.core.email import send_email
+    try:
+        result = send_email("test@example.com", "Test Email", "This is a test email via Resend")
+        return {
+            "service": "Resend",
+            "success": result,
+            "message": "Email sent successfully via Resend" if result else "Resend returned False (no ID in response)"
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "service": "Resend",
+            "success": False,
+            "exception_type": type(e).__name__,
+            "exception_message": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
+@app.get("/api/v1/test/email/gmail")
+def test_gmail_smtp():
+    """Debug endpoint: test Gmail SMTP directly, show real exception if it fails"""
+    import os
+    if os.getenv("ENVIRONMENT") == "production":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not found")
+
+    from app.core.config import settings
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    try:
+        gmail_address = settings.GMAIL_ADDRESS
+        gmail_password = settings.GMAIL_APP_PASSWORD
+
+        if not gmail_address or not gmail_password:
+            return {
+                "service": "Gmail SMTP",
+                "success": False,
+                "error": "GMAIL_ADDRESS or GMAIL_APP_PASSWORD not configured",
+                "gmail_address": gmail_address,
+                "has_password": bool(gmail_password)
+            }
+
+        # Try to connect and send
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+        server.starttls()
+        server.login(gmail_address, gmail_password)
+
+        msg = MIMEMultipart()
+        msg["From"] = gmail_address
+        msg["To"] = "test@example.com"
+        msg["Subject"] = "Test Email from Railway"
+        msg.attach(MIMEText("This is a test email via Gmail SMTP from Railway", "plain"))
+
+        server.send_message(msg)
+        server.quit()
+
+        return {
+            "service": "Gmail SMTP",
+            "success": True,
+            "message": "Email sent successfully via Gmail SMTP",
+            "gmail_address": gmail_address
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "service": "Gmail SMTP",
+            "success": False,
+            "exception_type": type(e).__name__,
+            "exception_message": str(e),
+            "traceback": traceback.format_exc()
+        }
 
 
 @app.websocket("/api/v1/ws/test-direct")
