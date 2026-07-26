@@ -66,7 +66,7 @@ def close_active_trip(driver_id: str | UUID, db: Session) -> dict:
         }
 
 
-@router.get("/route", response_model=dict | None)
+@router.get("/route", response_model=RouteResponse | None)
 def get_driver_route(
     current_user: User = Depends(require_role(["driver"])),
     db: Session = Depends(get_db),
