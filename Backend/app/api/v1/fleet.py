@@ -8,6 +8,7 @@ from app.database import SessionLocal
 from app.models import User, Shuttle, DriverCurrentRoute, RideHistory, Trip, Route
 from app.schemas.shuttle import ShuttleResponse
 from app.api.deps import get_db, get_current_user, require_role
+from app.core.redis_client import get_all_live_locations
 
 router = APIRouter(prefix="/api/v1/fleet", tags=["fleet"])
 
@@ -222,4 +223,73 @@ def get_driver_routes(
         "driver_name": driver.name,
         "total_distinct_routes": len(routes),
         "routes": routes
+    }
+
+
+@router.get("/shuttles/active")
+def get_active_shuttles(
+    current_user: User = Depends(require_role(["fleet_manager", "super_admin"])),
+    db: Session = Depends(get_db),
+):
+    """
+    Get all shuttles with drivers currently transmitting telemetry.
+    Returns real-time location data from Redis (not stale Shuttle.status).
+    """
+    live_locations = get_all_live_locations()
+
+    if not live_locations:
+        return {
+            "total_active": 0,
+            "shuttles": []
+        }
+
+    active_shuttles = []
+
+    for driver_id_str, location in live_locations.items():
+        try:
+            driver_id = UUID(driver_id_str)
+        except (ValueError, TypeError):
+            continue
+
+        # Get driver info
+        driver = db.query(User).filter(User.id == driver_id).first()
+        if not driver:
+            continue
+
+        # Get shuttle assignment
+        shuttle = db.query(Shuttle).filter(Shuttle.driver_id == driver_id).first()
+        if not shuttle:
+            continue
+
+        # Get current trip to get route name
+        active_trip = db.query(Trip).filter(
+            Trip.driver_id == driver_id,
+            Trip.status == "active"
+        ).first()
+
+        route_name = None
+        if active_trip and active_trip.route_id:
+            route = db.query(Route).filter(Route.id == active_trip.route_id).first()
+            if route:
+                route_name = route.name
+
+        active_shuttles.append({
+            "shuttle_id": str(shuttle.id),
+            "shuttle_name": shuttle.name,
+            "shuttle_plate": shuttle.plate_number,
+            "capacity": shuttle.capacity,
+            "driver_id": str(driver_id),
+            "driver_name": driver.name,
+            "driver_email": driver.email,
+            "current_lat": location["lat"],
+            "current_lng": location["lng"],
+            "heading": location["heading"],
+            "accuracy": location["accuracy"],
+            "last_updated": location["last_updated"],
+            "current_route": route_name,
+        })
+
+    return {
+        "total_active": len(active_shuttles),
+        "shuttles": active_shuttles
     }
