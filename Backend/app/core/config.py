@@ -15,6 +15,8 @@ class Settings(BaseSettings):
 
     # Optional environment variables
     GOOGLE_OAUTH_CLIENT_ID: str = ""
+    GMAIL_ADDRESS: str = ""
+    GMAIL_APP_PASSWORD: str = ""
 
     # Fixed configuration (not environment-dependent)
     JWT_ALGORITHM: str = "HS256"
