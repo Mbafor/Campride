@@ -8,7 +8,7 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
     try:
         response = resend.Emails.send(
             {
-                "from": "CampRide <onboarding@resend.dev>",
+                "from": "CampRide <noreply@cosssached.org>",
                 "to": to_email,
                 "subject": subject,
                 "text": body,
