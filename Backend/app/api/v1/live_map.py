@@ -45,13 +45,27 @@ async def broadcast_location_update(message: dict):
 def _check_and_trigger_notifications(driver_id: str, shuttle_lat: float, shuttle_lng: float, db) -> None:
     """Check for matched shuttle requests and trigger notifications based on distance thresholds."""
     try:
+        from uuid import UUID as PYUUID
+
+        # Convert driver_id string to UUID for database comparison
+        try:
+            driver_uuid = PYUUID(driver_id)
+        except:
+            print(f"[NOTIFICATIONS] Invalid driver_id format: {driver_id}", file=sys.stderr)
+            return
+
         # Find all matched shuttle requests for this driver
         matched_requests = db.query(ShuttleRequest).join(
             Trip, ShuttleRequest.matched_trip_id == Trip.id
         ).filter(
-            Trip.driver_id == driver_id,
+            Trip.driver_id == driver_uuid,
             ShuttleRequest.status == "matched"
         ).all()
+
+        if matched_requests:
+            print(f"[NOTIFICATIONS] Found {len(matched_requests)} matched requests for driver {driver_id}", file=sys.stderr)
+        else:
+            print(f"[NOTIFICATIONS] No matched requests found for driver {driver_id}", file=sys.stderr)
 
         for request in matched_requests:
             try:
