@@ -45,6 +45,16 @@ def list_routes(
     return [RouteResponse.from_orm_with_geometry(r) for r in routes]
 
 
+@public_router.get("", response_model=list[RouteResponse])
+def list_routes(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List all available routes (public endpoint for students to select from)"""
+    routes = db.query(Route).all()
+    return [RouteResponse.from_orm_with_geometry(r) for r in routes]
+
+
 @public_router.get("/{route_id}", response_model=RouteResponse)
 def get_route(
     route_id: UUID,
