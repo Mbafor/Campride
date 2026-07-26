@@ -55,9 +55,13 @@ def _log_firebase_call(user_id, fcm_token: str, status: str, message_id: str = N
         )
         db.add(log)
         db.commit()
+        print(f"[FCM-LOG] Created firebase_logs record: status={status}, error={error_type}", file=sys.stderr)
         db.close()
     except Exception as e:
         logger.error(f"Failed to log Firebase call: {e}")
+        print(f"[FCM-LOG-ERROR] Exception logging Firebase call: {type(e).__name__}: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
 
 
 def send_push_notification(fcm_token: str, title: str, body: str, data_payload: dict = None, user_id = None, notification_id = None) -> bool:
@@ -75,6 +79,8 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
     Returns:
         True if sent successfully, False otherwise
     """
+    print(f"[FCM] send_push_notification() called: token={fcm_token[:20]}..., user_id={user_id}, notif_id={notification_id}", file=sys.stderr)
+
     if not fcm_token:
         logger.warning("Cannot send notification: fcm_token is empty")
         print(f"[FCM] ERROR: Cannot send notification - fcm_token is empty", file=sys.stderr)
