@@ -72,114 +72,22 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
             token=fcm_token
         )
 
-        print(f"[FCM] Calling firebase_admin.messaging.send() with token={fcm_token[:20]}...", file=sys.stderr)
+        print(f"[FIREBASE] Calling messaging.send()", file=sys.stderr)
         response = messaging.send(message)
         logger.info(f"Push notification sent successfully: {response}")
-        print(f"[FCM] SUCCESS - Firebase message ID: {response}", file=sys.stderr)
-
-        # Log to database using raw SQL to avoid session issues
-        if user_id:
-            print(f"[FCM-LOG] Logging Firebase call for user_id={user_id}, notification_id={notification_id}", file=sys.stderr)
-            try:
-                from uuid import uuid4
-                import psycopg2
-                from app.core.config import settings
-
-                log_id = str(uuid4())
-                conn = psycopg2.connect(settings.DATABASE_URL)
-                cursor = conn.cursor()
-
-                print(f"[FCM-LOG] Executing INSERT into firebase_logs...", file=sys.stderr)
-                cursor.execute("""
-                    INSERT INTO firebase_logs (id, user_id, notification_id, fcm_token, status, message_id, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (log_id, str(user_id), str(notification_id), fcm_token, "sent", str(response), datetime.utcnow()))
-
-                conn.commit()
-                cursor.close()
-                conn.close()
-                print(f"[FCM-LOG] SUCCESS - logged to firebase_logs", file=sys.stderr)
-            except Exception as log_err:
-                print(f"[FCM-LOG-ERROR] {type(log_err).__name__}: {log_err}", file=sys.stderr)
-
+        print(f"[FIREBASE] SUCCESS: message_id={response}", file=sys.stderr)
         return True
     except messaging.InvalidArgumentError as e:
         logger.warning(f"Invalid FCM token or message: {e}")
-        print(f"[FCM] InvalidArgumentError: {e}", file=sys.stderr)
-
-        # Log to database
-        if user_id:
-            try:
-                from uuid import uuid4
-                import psycopg2
-                from app.core.config import settings
-
-                log_id = str(uuid4())
-                conn = psycopg2.connect(settings.DATABASE_URL)
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO firebase_logs (id, user_id, notification_id, fcm_token, status, error_type, error_message, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (log_id, str(user_id), str(notification_id), fcm_token, "error", "InvalidArgumentError", str(e), datetime.utcnow()))
-                conn.commit()
-                cursor.close()
-                conn.close()
-                print(f"[FCM-LOG] Logged InvalidArgumentError to firebase_logs", file=sys.stderr)
-            except Exception as log_err:
-                print(f"[FCM-LOG-ERROR] {log_err}", file=sys.stderr)
-
+        print(f"[FIREBASE] InvalidArgumentError: {e}", file=sys.stderr)
         return False
     except messaging.UnregisteredError as e:
         logger.warning(f"FCM token is unregistered/expired: {e}")
-        print(f"[FCM] UnregisteredError: {e}", file=sys.stderr)
-
-        # Log to database
-        if user_id:
-            try:
-                from uuid import uuid4
-                import psycopg2
-                from app.core.config import settings
-
-                log_id = str(uuid4())
-                conn = psycopg2.connect(settings.DATABASE_URL)
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO firebase_logs (id, user_id, notification_id, fcm_token, status, error_type, error_message, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (log_id, str(user_id), str(notification_id), fcm_token, "error", "UnregisteredError", str(e), datetime.utcnow()))
-                conn.commit()
-                cursor.close()
-                conn.close()
-                print(f"[FCM-LOG] Logged UnregisteredError to firebase_logs", file=sys.stderr)
-            except Exception as log_err:
-                print(f"[FCM-LOG-ERROR] {log_err}", file=sys.stderr)
-
+        print(f"[FIREBASE] UnregisteredError: {e}", file=sys.stderr)
         return False
     except Exception as e:
         logger.error(f"Error sending push notification: {e}")
-        print(f"[FCM] EXCEPTION: {type(e).__name__}: {e}", file=sys.stderr)
+        print(f"[FIREBASE] EXCEPTION: {type(e).__name__}: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc(file=sys.stderr)
-
-        # Log to database
-        if user_id:
-            try:
-                from uuid import uuid4
-                import psycopg2
-                from app.core.config import settings
-
-                log_id = str(uuid4())
-                conn = psycopg2.connect(settings.DATABASE_URL)
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO firebase_logs (id, user_id, notification_id, fcm_token, status, error_type, error_message, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (log_id, str(user_id), str(notification_id), fcm_token, "error", type(e).__name__, str(e)[:500], datetime.utcnow()))
-                conn.commit()
-                cursor.close()
-                conn.close()
-                print(f"[FCM-LOG] Logged {type(e).__name__} to firebase_logs", file=sys.stderr)
-            except Exception as log_err:
-                print(f"[FCM-LOG-ERROR] {log_err}", file=sys.stderr)
-
         return False
