@@ -12,6 +12,30 @@ from app.models import User
 router = APIRouter(prefix="/api/v1/shuttle-requests", tags=["shuttle-requests"])
 
 
+@router.get("")
+def list_my_shuttle_requests(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List current user's (student's) shuttle requests, most recent first."""
+    requests = db.query(ShuttleRequest).filter(
+        ShuttleRequest.student_id == current_user.id
+    ).order_by(ShuttleRequest.created_at.desc()).all()
+
+    return {
+        "shuttle_requests": [
+            {
+                "id": str(r.id),
+                "status": r.status,
+                "matched_trip_id": str(r.matched_trip_id) if r.matched_trip_id else None,
+                "created_at": r.created_at.isoformat(),
+                "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+            }
+            for r in requests
+        ]
+    }
+
+
 @router.post("/{shuttle_request_id}/board")
 def board_shuttle(
     shuttle_request_id: UUID,

@@ -74,5 +74,6 @@ class NearbyShuttleResult(BaseModel):
 
 
 class ShuttleMatchResponse(BaseModel):
+    shuttle_request_id: UUID | None = None
     matched: list[MatchedShuttleResult]
     nearby: list[NearbyShuttleResult]

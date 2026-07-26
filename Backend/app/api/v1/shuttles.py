@@ -201,7 +201,11 @@ def match_shuttles(
         db.commit()
         db.refresh(shuttle_request)
 
-        return ShuttleMatchResponse(matched=matched, nearby=nearby)
+        return ShuttleMatchResponse(
+            shuttle_request_id=shuttle_request.id,
+            matched=matched,
+            nearby=nearby
+        )
     except Exception as e:
         print(f"[Match Endpoint] Error: {e}")
         raise HTTPException(status_code=500, detail=f"Matching error: {str(e)}")
