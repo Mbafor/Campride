@@ -101,19 +101,38 @@ def health_check():
 
 @app.get("/api/v1/test/email/resend")
 def test_resend_email():
-    """Debug endpoint: test Resend email service, show real exception if it fails"""
+    """Debug endpoint: test Resend email service, show actual API response"""
     import os
     if os.getenv("ENVIRONMENT") == "production":
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Not found")
 
-    from app.core.email import send_email
+    from app.core.config import settings
+    import resend
+
     try:
-        result = send_email("test@example.com", "Test Email", "This is a test email via Resend")
+        resend.api_key = settings.RESEND_API_KEY
+
+        if not settings.RESEND_API_KEY:
+            return {
+                "service": "Resend",
+                "success": False,
+                "error": "RESEND_API_KEY not configured"
+            }
+
+        response = resend.Emails.send({
+            "from": "CampRide <onboarding@resend.dev>",
+            "to": "test@example.com",
+            "subject": "Test Email",
+            "text": "This is a test email via Resend"
+        })
+
         return {
             "service": "Resend",
-            "success": result,
-            "message": "Email sent successfully via Resend" if result else "Resend returned False (no ID in response)"
+            "success": bool(response.get("id")),
+            "response": response,
+            "has_id": "id" in response if isinstance(response, dict) else False,
+            "api_key_configured": bool(settings.RESEND_API_KEY)
         }
     except Exception as e:
         import traceback
@@ -122,7 +141,8 @@ def test_resend_email():
             "success": False,
             "exception_type": type(e).__name__,
             "exception_message": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
+            "api_key_configured": bool(settings.RESEND_API_KEY)
         }
 
 
