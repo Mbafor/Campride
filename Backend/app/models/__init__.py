@@ -9,6 +9,7 @@ from app.models.ride_history import RideHistory
 from app.models.shuttle_request import ShuttleRequest, ShuttleRequestStatus
 from app.models.verification_code import VerificationCode
 from app.models.driver_current_route import DriverCurrentRoute
+from app.models.firebase_log import FirebaseLog
 
 __all__ = [
     "User",
@@ -26,4 +27,5 @@ __all__ = [
     "ShuttleRequestStatus",
     "VerificationCode",
     "DriverCurrentRoute",
+    "FirebaseLog",
 ]

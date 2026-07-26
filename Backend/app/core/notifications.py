@@ -5,6 +5,7 @@ import sys
 import firebase_admin
 from firebase_admin import credentials, messaging
 from app.core.config import settings
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,31 @@ def _initialize_firebase():
         raise
 
 
-def send_push_notification(fcm_token: str, title: str, body: str, data_payload: dict = None) -> bool:
+def _log_firebase_call(user_id, fcm_token: str, status: str, message_id: str = None, error_type: str = None, error_message: str = None, notification_id = None):
+    """Log Firebase call to database for auditing."""
+    try:
+        from app.database import SessionLocal
+        from app.models import FirebaseLog
+
+        db = SessionLocal()
+        log = FirebaseLog(
+            user_id=user_id,
+            notification_id=notification_id,
+            fcm_token=fcm_token,
+            status=status,
+            message_id=message_id,
+            error_type=error_type,
+            error_message=error_message,
+            created_at=datetime.utcnow()
+        )
+        db.add(log)
+        db.commit()
+        db.close()
+    except Exception as e:
+        logger.error(f"Failed to log Firebase call: {e}")
+
+
+def send_push_notification(fcm_token: str, title: str, body: str, data_payload: dict = None, user_id = None, notification_id = None) -> bool:
     """
     Send a push notification via Firebase Cloud Messaging.
 
@@ -44,6 +69,8 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
         title: Notification title
         body: Notification body
         data_payload: Optional dict of additional data to send
+        user_id: Optional user ID for logging
+        notification_id: Optional notification ID for logging
 
     Returns:
         True if sent successfully, False otherwise
@@ -65,22 +92,42 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
             token=fcm_token
         )
 
-        print(f"[FCM] Sending notification to token={fcm_token[:20]}...", file=sys.stderr)
+        print(f"[FCM] Calling firebase_admin.messaging.send() with token={fcm_token[:20]}...", file=sys.stderr)
         response = messaging.send(message)
         logger.info(f"Push notification sent successfully: {response}")
         print(f"[FCM] SUCCESS - Firebase message ID: {response}", file=sys.stderr)
+
+        # Log to database
+        if user_id:
+            _log_firebase_call(user_id, fcm_token, "sent", message_id=response, notification_id=notification_id)
+
         return True
     except messaging.InvalidArgumentError as e:
         logger.warning(f"Invalid FCM token or message: {e}")
         print(f"[FCM] InvalidArgumentError: {e}", file=sys.stderr)
+
+        # Log to database
+        if user_id:
+            _log_firebase_call(user_id, fcm_token, "error", error_type="InvalidArgumentError", error_message=str(e), notification_id=notification_id)
+
         return False
     except messaging.UnregisteredError as e:
         logger.warning(f"FCM token is unregistered/expired: {e}")
         print(f"[FCM] UnregisteredError: {e}", file=sys.stderr)
+
+        # Log to database
+        if user_id:
+            _log_firebase_call(user_id, fcm_token, "error", error_type="UnregisteredError", error_message=str(e), notification_id=notification_id)
+
         return False
     except Exception as e:
         logger.error(f"Error sending push notification: {e}")
         print(f"[FCM] EXCEPTION: {type(e).__name__}: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc(file=sys.stderr)
+
+        # Log to database
+        if user_id:
+            _log_firebase_call(user_id, fcm_token, "error", error_type=type(e).__name__, error_message=str(e), notification_id=notification_id)
+
         return False

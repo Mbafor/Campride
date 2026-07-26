@@ -143,9 +143,11 @@ def _check_and_trigger_notifications(driver_id: str, shuttle_lat: float, shuttle
                     try:
                         send_push_notification(
                             fcm_token=student.fcm_token,
-                            title=f"Shuttle Update",
+                            title="Shuttle Update",
                             body=f"Your shuttle is {new_threshold.replace('_', ' ')}",
-                            data_payload={"notification_id": str(notification.id), "trip_id": str(request.matched_trip_id)}
+                            data_payload={"notification_id": str(notification.id), "trip_id": str(request.matched_trip_id)},
+                            user_id=student.id,
+                            notification_id=notification.id
                         )
                         print(f"[NOTIFICATIONS] Sent push notification to {student.email} for {new_threshold}", file=sys.stderr)
                     except Exception as e:
