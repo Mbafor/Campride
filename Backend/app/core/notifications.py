@@ -79,10 +79,18 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
 
         # Log to database
         if user_id:
+            print(f"[FCM-LOG-START] Attempting to log: user_id={user_id}, notification_id={notification_id}", file=sys.stderr)
             try:
+                print(f"[FCM-LOG-IMPORT] Starting imports...", file=sys.stderr)
                 from app.database import SessionLocal
                 from app.models import FirebaseLog
+                print(f"[FCM-LOG-IMPORT] Imports successful", file=sys.stderr)
+
+                print(f"[FCM-LOG-SESSION] Creating database session...", file=sys.stderr)
                 db_log = SessionLocal()
+                print(f"[FCM-LOG-SESSION] Session created", file=sys.stderr)
+
+                print(f"[FCM-LOG-CREATE] Creating FirebaseLog object...", file=sys.stderr)
                 log = FirebaseLog(
                     user_id=user_id,
                     notification_id=notification_id,
@@ -91,12 +99,22 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
                     message_id=str(response),
                     created_at=datetime.utcnow()
                 )
+                print(f"[FCM-LOG-CREATE] FirebaseLog object created", file=sys.stderr)
+
+                print(f"[FCM-LOG-ADD] Adding to session...", file=sys.stderr)
                 db_log.add(log)
+                print(f"[FCM-LOG-COMMIT] Committing...", file=sys.stderr)
                 db_log.commit()
+                print(f"[FCM-LOG-CLOSE] Closing session...", file=sys.stderr)
                 db_log.close()
-                print(f"[FCM-LOGGED] Firebase call recorded in firebase_logs", file=sys.stderr)
+                print(f"[FCM-LOG-SUCCESS] Firebase call recorded in firebase_logs", file=sys.stderr)
             except Exception as log_err:
-                print(f"[FCM-LOG-ERROR] Failed to log: {type(log_err).__name__}: {log_err}", file=sys.stderr)
+                print(f"[FCM-LOG-ERROR] FAILED AT STEP", file=sys.stderr)
+                print(f"[FCM-LOG-ERROR] Exception type: {type(log_err).__name__}", file=sys.stderr)
+                print(f"[FCM-LOG-ERROR] Exception message: {log_err}", file=sys.stderr)
+                import traceback
+                print(f"[FCM-LOG-ERROR] Traceback:", file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
 
         return True
     except messaging.InvalidArgumentError as e:
