@@ -9,6 +9,7 @@ from app.api.v1.fleet import router as fleet_router
 from app.api.v1.telemetry import router as telemetry_router
 from app.api.v1.live_map import router as live_map_router, live_map_subscription_task
 from app.api.v1.notifications import router as notifications_router
+from app.api.v1.shuttle_requests import router as shuttle_requests_router
 from app.core.redis_client import cleanup_stale_drivers
 from app.core.notifications import _initialize_firebase
 from app.database import SessionLocal
@@ -56,6 +57,9 @@ app.include_router(live_map_router)
 
 # Notification routers
 app.include_router(notifications_router)
+
+# Shuttle request routers
+app.include_router(shuttle_requests_router)
 
 
 @app.get("/health")

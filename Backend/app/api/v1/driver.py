@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 from app.database import SessionLocal
-from app.models import User, Route, DriverCurrentRoute, Shuttle, Trip
+from app.models import User, Route, DriverCurrentRoute, Shuttle, Trip, RideHistory
 from app.schemas.route import RouteResponse
 from app.schemas.shuttle import ShuttleResponse
 from app.api.deps import get_db, get_current_user, require_role
@@ -21,6 +21,7 @@ class DriverRouteRequest(BaseModel):
 def close_active_trip(driver_id: str | UUID, db: Session) -> dict:
     """
     Find driver's active trip and mark it as completed.
+    Automatically sets alighted_at for any RideHistory records in that trip.
     Returns dict with trip_id (if closed) or None (if no active trip).
     Used by both /driver/offline endpoint and stale cleanup task.
     """
@@ -38,10 +39,24 @@ def close_active_trip(driver_id: str | UUID, db: Session) -> dict:
         active_trip.ended_at = datetime.utcnow()
         db.commit()
         db.refresh(active_trip)
+
+        # Automatically set alighted_at for any open ride histories on this trip
+        open_rides = db.query(RideHistory).filter(
+            RideHistory.trip_id == active_trip.id,
+            RideHistory.alighted_at == None
+        ).all()
+
+        for ride in open_rides:
+            ride.alighted_at = active_trip.ended_at
+
+        if open_rides:
+            db.commit()
+
         return {
             "closed": True,
             "trip_id": str(active_trip.id),
-            "ended_at": active_trip.ended_at.isoformat()
+            "ended_at": active_trip.ended_at.isoformat(),
+            "rides_closed": len(open_rides)
         }
     else:
         return {
