@@ -99,13 +99,6 @@ def health_check():
     return {"status": "ok", "version": "websockets_dependency_added_v3"}
 
 
-@app.get("/api/v1/test/error")
-def test_unhandled_error():
-    """Temporary test endpoint to verify global exception handler catches unhandled errors"""
-    # This will raise an unhandled exception (deliberately for testing)
-    raise RuntimeError("This is a test error to verify exception handler works correctly")
-
-
 @app.websocket("/api/v1/ws/test-direct")
 async def test_websocket_direct(websocket: WebSocket):
     """Test WebSocket endpoint registered directly on app (not via router)"""
