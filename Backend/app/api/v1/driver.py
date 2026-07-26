@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, date
+from sqlalchemy import func
 
 from app.database import SessionLocal
 from app.models import User, Route, DriverCurrentRoute, Shuttle, Trip, RideHistory
@@ -151,3 +152,46 @@ def driver_offline(
             "message": "Driver removed from live tracking. No active trip to close.",
             "trip_id": None
         }
+
+
+@router.get("/trips/summary")
+def get_trip_summary(
+    target_date: date = Query(None, description="Date in YYYY-MM-DD format. Defaults to today."),
+    current_user: User = Depends(require_role(["driver"])),
+    db: Session = Depends(get_db),
+):
+    """
+    Get trip summary for driver for a specific date.
+    Returns total completed trips and route breakdown.
+    """
+    if target_date is None:
+        target_date = date.today()
+
+    # Query completed trips for this driver on this date
+    trips = db.query(Trip).filter(
+        Trip.driver_id == current_user.id,
+        Trip.status == "completed",
+        func.date(Trip.ended_at) == target_date
+    ).all()
+
+    total_trips = len(trips)
+
+    # Count trips by route
+    route_counts = {}
+    for trip in trips:
+        if trip.route_id:
+            route = db.query(Route).filter(Route.id == trip.route_id).first()
+            if route:
+                route_name = route.name
+                route_counts[route_name] = route_counts.get(route_name, 0) + 1
+
+    routes = [
+        {"route_name": route_name, "count": count}
+        for route_name, count in sorted(route_counts.items())
+    ]
+
+    return {
+        "date": target_date.isoformat(),
+        "total_completed_trips": total_trips,
+        "routes": routes
+    }
