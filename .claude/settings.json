@@ -43,7 +43,8 @@
       "Bash(export DATABASE_URL=\"postgresql://postgres:CampRide2026SecurePG@centerbeam.proxy.rlwy.net:14837/railway\")",
       "Bash(python -m alembic upgrade head)",
       "Bash(python -m py_compile app/core/notifications.py app/models/firebase_log.py app/models/__init__.py app/api/v1/live_map.py)",
-      "Bash(python -m py_compile Backend/app/core/notifications.py)"
+      "Bash(python -m py_compile Backend/app/core/notifications.py)",
+      "Bash(python -m py_compile app/core/notifications.py)"
     ]
   }
 }

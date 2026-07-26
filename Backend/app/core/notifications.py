@@ -36,32 +36,6 @@ def _initialize_firebase():
         raise
 
 
-def _log_firebase_call(user_id, fcm_token: str, status: str, message_id: str = None, error_type: str = None, error_message: str = None, notification_id = None):
-    """Log Firebase call to database for auditing."""
-    try:
-        from app.database import SessionLocal
-        from app.models import FirebaseLog
-
-        db = SessionLocal()
-        log = FirebaseLog(
-            user_id=user_id,
-            notification_id=notification_id,
-            fcm_token=fcm_token,
-            status=status,
-            message_id=message_id,
-            error_type=error_type,
-            error_message=error_message,
-            created_at=datetime.utcnow()
-        )
-        db.add(log)
-        db.commit()
-        print(f"[FCM-LOG] Created firebase_logs record: status={status}, error={error_type}", file=sys.stderr)
-        db.close()
-    except Exception as e:
-        logger.error(f"Failed to log Firebase call: {e}")
-        print(f"[FCM-LOG-ERROR] Exception logging Firebase call: {type(e).__name__}: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
 
 
 def send_push_notification(fcm_token: str, title: str, body: str, data_payload: dict = None, user_id = None, notification_id = None) -> bool:
@@ -105,7 +79,24 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
 
         # Log to database
         if user_id:
-            _log_firebase_call(user_id, fcm_token, "sent", message_id=response, notification_id=notification_id)
+            try:
+                from app.database import SessionLocal
+                from app.models import FirebaseLog
+                db_log = SessionLocal()
+                log = FirebaseLog(
+                    user_id=user_id,
+                    notification_id=notification_id,
+                    fcm_token=fcm_token,
+                    status="sent",
+                    message_id=str(response),
+                    created_at=datetime.utcnow()
+                )
+                db_log.add(log)
+                db_log.commit()
+                db_log.close()
+                print(f"[FCM-LOGGED] Firebase call recorded in firebase_logs", file=sys.stderr)
+            except Exception as log_err:
+                print(f"[FCM-LOG-ERROR] Failed to log: {type(log_err).__name__}: {log_err}", file=sys.stderr)
 
         return True
     except messaging.InvalidArgumentError as e:
@@ -114,7 +105,24 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
 
         # Log to database
         if user_id:
-            _log_firebase_call(user_id, fcm_token, "error", error_type="InvalidArgumentError", error_message=str(e), notification_id=notification_id)
+            try:
+                from app.database import SessionLocal
+                from app.models import FirebaseLog
+                db_log = SessionLocal()
+                log = FirebaseLog(
+                    user_id=user_id,
+                    notification_id=notification_id,
+                    fcm_token=fcm_token,
+                    status="error",
+                    error_type="InvalidArgumentError",
+                    error_message=str(e),
+                    created_at=datetime.utcnow()
+                )
+                db_log.add(log)
+                db_log.commit()
+                db_log.close()
+            except Exception as log_err:
+                print(f"[FCM-LOG-ERROR] Failed to log error: {log_err}", file=sys.stderr)
 
         return False
     except messaging.UnregisteredError as e:
@@ -123,7 +131,24 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
 
         # Log to database
         if user_id:
-            _log_firebase_call(user_id, fcm_token, "error", error_type="UnregisteredError", error_message=str(e), notification_id=notification_id)
+            try:
+                from app.database import SessionLocal
+                from app.models import FirebaseLog
+                db_log = SessionLocal()
+                log = FirebaseLog(
+                    user_id=user_id,
+                    notification_id=notification_id,
+                    fcm_token=fcm_token,
+                    status="error",
+                    error_type="UnregisteredError",
+                    error_message=str(e),
+                    created_at=datetime.utcnow()
+                )
+                db_log.add(log)
+                db_log.commit()
+                db_log.close()
+            except Exception as log_err:
+                print(f"[FCM-LOG-ERROR] Failed to log error: {log_err}", file=sys.stderr)
 
         return False
     except Exception as e:
@@ -134,6 +159,23 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
 
         # Log to database
         if user_id:
-            _log_firebase_call(user_id, fcm_token, "error", error_type=type(e).__name__, error_message=str(e), notification_id=notification_id)
+            try:
+                from app.database import SessionLocal
+                from app.models import FirebaseLog
+                db_log = SessionLocal()
+                log = FirebaseLog(
+                    user_id=user_id,
+                    notification_id=notification_id,
+                    fcm_token=fcm_token,
+                    status="error",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                    created_at=datetime.utcnow()
+                )
+                db_log.add(log)
+                db_log.commit()
+                db_log.close()
+            except Exception as log_err:
+                print(f"[FCM-LOG-ERROR] Failed to log error: {log_err}", file=sys.stderr)
 
         return False
