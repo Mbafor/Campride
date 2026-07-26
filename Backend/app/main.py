@@ -146,6 +146,45 @@ def test_resend_email():
         }
 
 
+@app.post("/api/v1/test/email/resend-real")
+def test_resend_with_real_email(to_email: str = "ernestmpiani15@gmail.com"):
+    """Debug endpoint: test Resend with a real email address (not example.com)"""
+    import os
+    if os.getenv("ENVIRONMENT") == "production":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not found")
+
+    from app.core.config import settings
+    import resend
+
+    try:
+        resend.api_key = settings.RESEND_API_KEY
+
+        response = resend.Emails.send({
+            "from": "CampRide <onboarding@resend.dev>",
+            "to": to_email,
+            "subject": "CampRide Test Email",
+            "text": "This is a test email from CampRide via Resend SMTP. If you received this, Resend is working!"
+        })
+
+        return {
+            "service": "Resend",
+            "success": bool(response.get("id")),
+            "email_id": response.get("id"),
+            "to_email": to_email,
+            "message": "Email sent successfully!" if response.get("id") else "Failed to get email ID"
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "service": "Resend",
+            "success": False,
+            "to_email": to_email,
+            "exception_type": type(e).__name__,
+            "exception_message": str(e)
+        }
+
+
 @app.get("/api/v1/test/email/gmail")
 def test_gmail_smtp():
     """Debug endpoint: test Gmail SMTP directly, show real exception if it fails"""
