@@ -28,6 +28,18 @@ class EmailVerificationRequest(BaseModel):
     code: str
 
 
+class RegisterResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    role: str
+    is_active: bool
+    is_verified: bool
+    created_at: str
+    email_sent: bool
+    email_error_message: str | None = None
+
+
 class EmailResendRequest(BaseModel):
     email: str
 
@@ -36,7 +48,7 @@ def generate_verification_code() -> str:
     return ''.join(random.choices(string.digits, k=6))
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=RegisterResponse)
 def register(user_data: UserRegister, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
@@ -68,9 +80,22 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
     db.add(verification)
     db.commit()
 
-    send_verification_email(new_user.email, code)
+    email_sent = send_verification_email(new_user.email, code)
+    email_error = None
+    if not email_sent:
+        email_error = "Failed to send verification email. Check your email settings or use resend-verification if it doesn't arrive."
 
-    return new_user
+    return RegisterResponse(
+        id=str(new_user.id),
+        name=new_user.name,
+        email=new_user.email,
+        role=new_user.role,
+        is_active=new_user.is_active,
+        is_verified=new_user.is_verified,
+        created_at=new_user.created_at.isoformat(),
+        email_sent=email_sent,
+        email_error_message=email_error
+    )
 
 
 @router.post("/verify-email")
@@ -128,9 +153,12 @@ def resend_verification(request: EmailResendRequest, db: Session = Depends(get_d
     db.add(verification)
     db.commit()
 
-    send_verification_email(user.email, code)
+    email_sent = send_verification_email(user.email, code)
 
-    return {"message": "Verification code sent"}
+    if email_sent:
+        return {"message": "Verification code sent", "email_sent": True}
+    else:
+        return {"message": "Account created but email delivery failed. Check your email or try again shortly.", "email_sent": False, "error": "Email service unavailable"}
 
 
 @router.post("/login", response_model=TokenResponse)
