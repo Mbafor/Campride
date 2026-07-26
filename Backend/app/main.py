@@ -1,5 +1,7 @@
-from fastapi import FastAPI, WebSocket, Query
+from fastapi import FastAPI, WebSocket, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.requests import Request
 from app.api.v1.auth import router as auth_router, admin_router as auth_admin_router
 from app.api.v1.users import router as users_router
 from app.api.v1.shuttles import admin_router as shuttles_admin_router, public_router as shuttles_public_router
@@ -17,6 +19,7 @@ from app.database import SessionLocal
 import json
 import asyncio
 import sys
+import traceback
 
 app = FastAPI(title="CampRide API", version="1.0.0")
 
@@ -27,6 +30,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Catch any unhandled exception and return a clean JSON response.
+    Log full traceback server-side for debugging.
+    Never expose Python traceback, file paths, or code details to the client.
+    """
+    # Log full exception details server-side for debugging
+    print(f"\n[EXCEPTION-HANDLER] UNHANDLED EXCEPTION", file=sys.stderr)
+    print(f"[EXCEPTION-HANDLER] Request path: {request.url.path}", file=sys.stderr)
+    print(f"[EXCEPTION-HANDLER] Exception type: {type(exc).__name__}", file=sys.stderr)
+    print(f"[EXCEPTION-HANDLER] Exception message: {str(exc)}", file=sys.stderr)
+    print(f"[EXCEPTION-HANDLER] Full traceback:", file=sys.stderr)
+    traceback.print_exc(file=sys.stderr)
+
+    # Return clean generic error to client
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error_code": "INTERNAL_ERROR",
+            "message": "Something went wrong. Please try again."
+        }
+    )
 
 # Auth routers
 app.include_router(auth_router)
