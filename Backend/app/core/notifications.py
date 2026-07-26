@@ -4,6 +4,7 @@ import logging
 import sys
 import firebase_admin
 from firebase_admin import credentials, messaging
+from firebase_admin.exceptions import InvalidArgumentError, UnregisteredError
 from app.core.config import settings
 from datetime import datetime
 
@@ -77,13 +78,13 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
         logger.info(f"Push notification sent successfully: {response}")
         print(f"[FIREBASE] SUCCESS: message_id={response}", file=sys.stderr)
         return True
-    except messaging.InvalidArgumentError as e:
+    except InvalidArgumentError as e:
         logger.warning(f"Invalid FCM token or message: {e}")
-        print(f"[FIREBASE] InvalidArgumentError: {e}", file=sys.stderr)
+        print(f"[FIREBASE] EXCEPTION: InvalidArgumentError: {e}", file=sys.stderr)
         return False
-    except messaging.UnregisteredError as e:
+    except UnregisteredError as e:
         logger.warning(f"FCM token is unregistered/expired: {e}")
-        print(f"[FIREBASE] UnregisteredError: {e}", file=sys.stderr)
+        print(f"[FIREBASE] EXCEPTION: UnregisteredError: {e}", file=sys.stderr)
         return False
     except Exception as e:
         logger.error(f"Error sending push notification: {e}")
