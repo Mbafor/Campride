@@ -77,44 +77,30 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
         logger.info(f"Push notification sent successfully: {response}")
         print(f"[FCM] SUCCESS - Firebase message ID: {response}", file=sys.stderr)
 
-        # Log to database
+        # Log to database using raw SQL to avoid session issues
         if user_id:
-            print(f"[FCM-LOG-START] Attempting to log: user_id={user_id}, notification_id={notification_id}", file=sys.stderr)
+            print(f"[FCM-LOG] Logging Firebase call for user_id={user_id}, notification_id={notification_id}", file=sys.stderr)
             try:
-                print(f"[FCM-LOG-IMPORT] Starting imports...", file=sys.stderr)
-                from app.database import SessionLocal
-                from app.models import FirebaseLog
-                print(f"[FCM-LOG-IMPORT] Imports successful", file=sys.stderr)
+                from uuid import uuid4
+                import psycopg2
+                from app.core.config import settings
 
-                print(f"[FCM-LOG-SESSION] Creating database session...", file=sys.stderr)
-                db_log = SessionLocal()
-                print(f"[FCM-LOG-SESSION] Session created", file=sys.stderr)
+                log_id = str(uuid4())
+                conn = psycopg2.connect(settings.DATABASE_URL)
+                cursor = conn.cursor()
 
-                print(f"[FCM-LOG-CREATE] Creating FirebaseLog object...", file=sys.stderr)
-                log = FirebaseLog(
-                    user_id=user_id,
-                    notification_id=notification_id,
-                    fcm_token=fcm_token,
-                    status="sent",
-                    message_id=str(response),
-                    created_at=datetime.utcnow()
-                )
-                print(f"[FCM-LOG-CREATE] FirebaseLog object created", file=sys.stderr)
+                print(f"[FCM-LOG] Executing INSERT into firebase_logs...", file=sys.stderr)
+                cursor.execute("""
+                    INSERT INTO firebase_logs (id, user_id, notification_id, fcm_token, status, message_id, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (log_id, str(user_id), str(notification_id), fcm_token, "sent", str(response), datetime.utcnow()))
 
-                print(f"[FCM-LOG-ADD] Adding to session...", file=sys.stderr)
-                db_log.add(log)
-                print(f"[FCM-LOG-COMMIT] Committing...", file=sys.stderr)
-                db_log.commit()
-                print(f"[FCM-LOG-CLOSE] Closing session...", file=sys.stderr)
-                db_log.close()
-                print(f"[FCM-LOG-SUCCESS] Firebase call recorded in firebase_logs", file=sys.stderr)
+                conn.commit()
+                cursor.close()
+                conn.close()
+                print(f"[FCM-LOG] SUCCESS - logged to firebase_logs", file=sys.stderr)
             except Exception as log_err:
-                print(f"[FCM-LOG-ERROR] FAILED AT STEP", file=sys.stderr)
-                print(f"[FCM-LOG-ERROR] Exception type: {type(log_err).__name__}", file=sys.stderr)
-                print(f"[FCM-LOG-ERROR] Exception message: {log_err}", file=sys.stderr)
-                import traceback
-                print(f"[FCM-LOG-ERROR] Traceback:", file=sys.stderr)
-                traceback.print_exc(file=sys.stderr)
+                print(f"[FCM-LOG-ERROR] {type(log_err).__name__}: {log_err}", file=sys.stderr)
 
         return True
     except messaging.InvalidArgumentError as e:
@@ -124,23 +110,23 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
         # Log to database
         if user_id:
             try:
-                from app.database import SessionLocal
-                from app.models import FirebaseLog
-                db_log = SessionLocal()
-                log = FirebaseLog(
-                    user_id=user_id,
-                    notification_id=notification_id,
-                    fcm_token=fcm_token,
-                    status="error",
-                    error_type="InvalidArgumentError",
-                    error_message=str(e),
-                    created_at=datetime.utcnow()
-                )
-                db_log.add(log)
-                db_log.commit()
-                db_log.close()
+                from uuid import uuid4
+                import psycopg2
+                from app.core.config import settings
+
+                log_id = str(uuid4())
+                conn = psycopg2.connect(settings.DATABASE_URL)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO firebase_logs (id, user_id, notification_id, fcm_token, status, error_type, error_message, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (log_id, str(user_id), str(notification_id), fcm_token, "error", "InvalidArgumentError", str(e), datetime.utcnow()))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                print(f"[FCM-LOG] Logged InvalidArgumentError to firebase_logs", file=sys.stderr)
             except Exception as log_err:
-                print(f"[FCM-LOG-ERROR] Failed to log error: {log_err}", file=sys.stderr)
+                print(f"[FCM-LOG-ERROR] {log_err}", file=sys.stderr)
 
         return False
     except messaging.UnregisteredError as e:
@@ -150,23 +136,23 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
         # Log to database
         if user_id:
             try:
-                from app.database import SessionLocal
-                from app.models import FirebaseLog
-                db_log = SessionLocal()
-                log = FirebaseLog(
-                    user_id=user_id,
-                    notification_id=notification_id,
-                    fcm_token=fcm_token,
-                    status="error",
-                    error_type="UnregisteredError",
-                    error_message=str(e),
-                    created_at=datetime.utcnow()
-                )
-                db_log.add(log)
-                db_log.commit()
-                db_log.close()
+                from uuid import uuid4
+                import psycopg2
+                from app.core.config import settings
+
+                log_id = str(uuid4())
+                conn = psycopg2.connect(settings.DATABASE_URL)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO firebase_logs (id, user_id, notification_id, fcm_token, status, error_type, error_message, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (log_id, str(user_id), str(notification_id), fcm_token, "error", "UnregisteredError", str(e), datetime.utcnow()))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                print(f"[FCM-LOG] Logged UnregisteredError to firebase_logs", file=sys.stderr)
             except Exception as log_err:
-                print(f"[FCM-LOG-ERROR] Failed to log error: {log_err}", file=sys.stderr)
+                print(f"[FCM-LOG-ERROR] {log_err}", file=sys.stderr)
 
         return False
     except Exception as e:
@@ -178,22 +164,22 @@ def send_push_notification(fcm_token: str, title: str, body: str, data_payload: 
         # Log to database
         if user_id:
             try:
-                from app.database import SessionLocal
-                from app.models import FirebaseLog
-                db_log = SessionLocal()
-                log = FirebaseLog(
-                    user_id=user_id,
-                    notification_id=notification_id,
-                    fcm_token=fcm_token,
-                    status="error",
-                    error_type=type(e).__name__,
-                    error_message=str(e),
-                    created_at=datetime.utcnow()
-                )
-                db_log.add(log)
-                db_log.commit()
-                db_log.close()
+                from uuid import uuid4
+                import psycopg2
+                from app.core.config import settings
+
+                log_id = str(uuid4())
+                conn = psycopg2.connect(settings.DATABASE_URL)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO firebase_logs (id, user_id, notification_id, fcm_token, status, error_type, error_message, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (log_id, str(user_id), str(notification_id), fcm_token, "error", type(e).__name__, str(e)[:500], datetime.utcnow()))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                print(f"[FCM-LOG] Logged {type(e).__name__} to firebase_logs", file=sys.stderr)
             except Exception as log_err:
-                print(f"[FCM-LOG-ERROR] Failed to log error: {log_err}", file=sys.stderr)
+                print(f"[FCM-LOG-ERROR] {log_err}", file=sys.stderr)
 
         return False

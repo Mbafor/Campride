@@ -154,18 +154,16 @@ def _check_and_trigger_notifications(driver_id: str, shuttle_lat: float, shuttle
                 # Get student FCM token and send push notification
                 student = db.query(User).filter(User.id == request.student_id).first()
                 if student and student.fcm_token:
-                    try:
-                        send_push_notification(
-                            fcm_token=student.fcm_token,
-                            title="Shuttle Update",
-                            body=f"Your shuttle is {new_threshold.replace('_', ' ')}",
-                            data_payload={"notification_id": str(notification.id), "trip_id": str(request.matched_trip_id)},
-                            user_id=student.id,
-                            notification_id=notification.id
-                        )
-                        print(f"[NOTIFICATIONS] Sent push notification to {student.email} for {new_threshold}", file=sys.stderr)
-                    except Exception as e:
-                        print(f"[NOTIFICATIONS] Failed to send push for {student.email}: {e}", file=sys.stderr)
+                    print(f"[FCM-CALL-START] Calling send_push_notification for {student.email}", file=sys.stderr)
+                    result = send_push_notification(
+                        fcm_token=student.fcm_token,
+                        title="Shuttle Update",
+                        body=f"Your shuttle is {new_threshold.replace('_', ' ')}",
+                        data_payload={"notification_id": str(notification.id), "trip_id": str(request.matched_trip_id)},
+                        user_id=student.id,
+                        notification_id=notification.id
+                    )
+                    print(f"[FCM-CALL-RESULT] send_push_notification returned: {result}", file=sys.stderr)
                 else:
                     print(f"[NOTIFICATIONS] No FCM token for student {request.student_id}", file=sys.stderr)
 
