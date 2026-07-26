@@ -99,6 +99,16 @@ def health_check():
     return {"status": "ok", "version": "websockets_dependency_added_v3"}
 
 
+@app.get("/api/v1/test/error")
+def test_unhandled_error():
+    """Debug endpoint (dev-only) to verify global exception handler. Removed in production."""
+    import os
+    if os.getenv("ENVIRONMENT") != "development":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Not found")
+    raise RuntimeError("This is a test error to verify exception handler works correctly")
+
+
 @app.websocket("/api/v1/ws/test-direct")
 async def test_websocket_direct(websocket: WebSocket):
     """Test WebSocket endpoint registered directly on app (not via router)"""
