@@ -326,11 +326,6 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Your shuttle request info
-                  if (_matchingResult!['shuttle_request'] != null)
-                    _RequestInfoCard(
-                      request: _matchingResult!['shuttle_request'],
-                    ),
                   const SizedBox(height: 16),
                   // Matched shuttles
                   if (_matchingResult!['matched'] != null &&
@@ -443,47 +438,6 @@ class _StopDropdown extends StatelessWidget {
                 child: Text(stop.displayLabel),
               ))
           .toList(),
-    );
-  }
-}
-
-class _RequestInfoCard extends StatelessWidget {
-  final Map<String, dynamic> request;
-
-  const _RequestInfoCard({required this.request});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Your Request',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.blue,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Status: ${request['status'] ?? 'pending'}',
-            style: GoogleFonts.poppins(fontSize: 12),
-          ),
-          if (request['matched_trip_id'] != null)
-            Text(
-              'Matched Trip ID: ${(request['matched_trip_id'] as String).substring(0, 8)}...',
-              style: GoogleFonts.poppins(fontSize: 12),
-            ),
-        ],
-      ),
     );
   }
 }
