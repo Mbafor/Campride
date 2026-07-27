@@ -454,7 +454,7 @@ class _ShuttleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = shuttle['shuttle_name'] ?? shuttle['name'] ?? 'Unknown';
-    final eta = shuttle['eta'] ?? 'N/A';
+    final eta = shuttle['eta_minutes'] ?? shuttle['eta'] ?? 'N/A';
     final route = shuttle['route_name'] ?? 'Route Unknown';
 
     return Container(
@@ -506,7 +506,7 @@ class _ShuttleCard extends StatelessWidget {
               Icon(Icons.schedule, size: 14, color: Colors.grey[600]),
               const SizedBox(width: 4),
               Text(
-                'ETA: $eta',
+                eta == 'N/A' ? 'ETA: $eta' : 'ETA: ${eta}min',
                 style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
               ),
               const SizedBox(width: 12),
