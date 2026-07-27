@@ -164,8 +164,8 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
       _isLoading = false;
       if (response.success && response.data != null) {
         _matchingResult = response.data;
-        if (response.data!['shuttle_request'] != null) {
-          _activeRequestId = response.data!['shuttle_request']['id'];
+        if (response.data!['shuttle_request_id'] != null) {
+          _activeRequestId = response.data!['shuttle_request_id'];
         }
       } else {
         _errorMessage = response.message ?? 'Failed to match shuttles';
