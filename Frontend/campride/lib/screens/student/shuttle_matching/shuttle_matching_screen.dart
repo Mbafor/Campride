@@ -43,6 +43,7 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
   Map<String, dynamic>? _matchingResult;
   String? _errorMessage;
   String? _activeRequestId;
+  int _currentMatchRequestId = 0;
 
   @override
   void initState() {
@@ -131,6 +132,10 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
       return;
     }
 
+    // Increment request ID to mark this as the current request
+    _currentMatchRequestId++;
+    final thisRequestId = _currentMatchRequestId;
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -159,6 +164,11 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
       destLat: destStop.lat,
       destLng: destStop.lng,
     );
+
+    // IGNORE STALE RESPONSES: only update UI if this is still the current request
+    if (thisRequestId != _currentMatchRequestId) {
+      return; // Discard stale response, newer request is in progress
+    }
 
     setState(() {
       _isLoading = false;
