@@ -7,7 +7,6 @@ import '../../providers/authentication_provider.dart';
 import '../../providers/user_role_provider.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_colors.dart';
-import '../../widgets/auth/google_signin_button.dart';
 import 'otp_screen.dart';
 import 'signup_screen.dart';
 
@@ -196,10 +195,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: _isLoading ? null : _handleContinue,
                   isLoading: _isLoading,
                 ),
-                const SizedBox(height: 24),
-                _OrDivider(),
-                const SizedBox(height: 24),
-                GoogleSignInButton(role: widget.role),
                 const SizedBox(height: 36),
                 Center(child: _TermsText()),
                 const SizedBox(height: 20),
@@ -368,30 +363,6 @@ class _PrimaryButton extends StatelessWidget {
                     color: Colors.white),
               ),
       ),
-    );
-  }
-}
-
-class _OrDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-            child: Divider(color: Colors.grey[300], thickness: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Text(
-            'OR',
-            style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[500]),
-          ),
-        ),
-        Expanded(
-            child: Divider(color: Colors.grey[300], thickness: 1)),
-      ],
     );
   }
 }

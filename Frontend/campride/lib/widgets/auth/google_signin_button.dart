@@ -83,20 +83,72 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
     }
   }
 
+  Widget _buildContent() {
+    return _isLoading
+        ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const _GoogleIcon(),
+              const SizedBox(width: 12),
+              Text(
+                'Continue with Google',
+                style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87),
+              ),
+            ],
+          );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Shared visual: outlined pill, matching the "Continue with Email" button
+    // on the Welcome screen exactly (border, radius, height, font).
+    final look = Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!, width: 1.5),
+        borderRadius: BorderRadius.circular(27),
+      ),
+      child: _buildContent(),
+    );
+
     if (kIsWeb) {
+      // The real Google-rendered button must stay in the tree to receive the
+      // click (Google Identity Services requires an actual button element),
+      // but we render it invisible and stretch it over our styled look so
+      // the two auth buttons appear identical.
       return SizedBox(
         width: double.infinity,
         height: 54,
-        child: renderButton(
-          configuration: GSIButtonConfiguration(
-            theme: GSIButtonTheme.outline,
-            size: GSIButtonSize.large,
-            shape: GSIButtonShape.pill,
-            text: GSIButtonText.continueWith,
-            type: GSIButtonType.standard,
-          ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            IgnorePointer(child: look),
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.0,
+                child: FittedBox(
+                  fit: BoxFit.fill,
+                  child: renderButton(
+                    configuration: GSIButtonConfiguration(
+                      theme: GSIButtonTheme.outline,
+                      size: GSIButtonSize.large,
+                      shape: GSIButtonShape.pill,
+                      text: GSIButtonText.continueWith,
+                      type: GSIButtonType.standard,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     } else {
@@ -114,26 +166,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(27)),
           ),
-          child: _isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const _GoogleIcon(),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Continue with Google',
-                      style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87),
-                    ),
-                  ],
-                ),
+          child: _buildContent(),
         ),
       );
     }
@@ -146,7 +179,7 @@ class _GoogleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-        width: 22, height: 22, child: CustomPaint(painter: _GIconPainter()));
+        width: 20, height: 20, child: CustomPaint(painter: _GIconPainter()));
   }
 }
 
