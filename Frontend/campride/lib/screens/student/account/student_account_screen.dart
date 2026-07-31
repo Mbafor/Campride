@@ -22,17 +22,7 @@ class StudentAccountScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 20),
               _AccountHeader(),
-              const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _QuickActionsGrid(),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _SafetyCheckupCard(),
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               _MenuRow(
                 icon: Icons.person_outline,
                 label: 'Profile',
@@ -42,9 +32,7 @@ class StudentAccountScreen extends StatelessWidget {
                 ),
               ),
               _RowDivider(),
-              const _MenuRow(icon: Icons.settings_outlined, label: 'Settings'),
-              _RowDivider(),
-              const _MenuRow(icon: Icons.location_on_outlined, label: 'Saved places'),
+              _MenuRow(icon: Icons.settings_outlined, label: 'Settings', onTap: () {}),
               _RowDivider(),
               const _MenuRow(icon: Icons.headset_mic_outlined, label: 'Support'),
               _RowDivider(),
@@ -54,7 +42,7 @@ class StudentAccountScreen extends StatelessWidget {
                   icon: Icons.dark_mode_outlined,
                   label: 'Dark Mode',
                   value: themeProvider.isDarkMode,
-                  onChanged: (_) => themeProvider.toggleTheme(),
+                  onChanged: (_) async => await themeProvider.toggleTheme(),
                 ),
               ),
               _RowDivider(),
@@ -65,8 +53,11 @@ class StudentAccountScreen extends StatelessWidget {
                 iconColor: Colors.red[600],
                 labelColor: Colors.red[600],
                 onTap: () async {
+                  if (!context.mounted) return;
                   final auth = context.read<AuthenticationProvider>();
                   await auth.signOut();
+                  // Wait a moment to ensure state updates propagate, then navigate
+                  await Future.delayed(const Duration(milliseconds: 100));
                   if (context.mounted) context.go(RouteNames.welcome);
                 },
               ),
@@ -88,33 +79,23 @@ class _AccountHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Edwin Kobina Armah',
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
+            child: Consumer<AuthenticationProvider>(
+              builder: (context, auth, _) {
+                final userName = auth.user?.name ?? 'User';
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.star, color: Colors.black, size: 16),
-                    const SizedBox(width: 4),
                     Text(
-                      '5.0',
+                      userName,
                       style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
                     ),
                   ],
-                ),
-              ],
+                );
+              },
             ),
           ),
           Container(
@@ -130,148 +111,6 @@ class _AccountHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-class _QuickActionsGrid extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: _QuickBtn(icon: Icons.help_outline, label: 'Help')),
-            const SizedBox(width: 12),
-            Expanded(child: _QuickBtn(icon: Icons.verified_user_outlined, label: 'Safety')),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: _QuickBtn(icon: Icons.mail_outline, label: 'Inbox')),
-            const SizedBox(width: 12),
-            Expanded(child: Container(
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.quickActionBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-            )),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _QuickBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _QuickBtn({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      decoration: BoxDecoration(
-        color: AppColors.quickActionBg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 20, color: Colors.black87),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SafetyCheckupCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.quickActionBg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Safety checkup',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Learn ways to make rides safer',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 46,
-            height: 46,
-            child: CustomPaint(painter: _DashedCirclePainter()),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashedCirclePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey[400]!
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 4;
-
-    const dashCount = 14;
-    const dashAngle = 0.18;
-    const gapAngle = 0.27;
-    double angle = -3.14159 / 2;
-
-    for (int i = 0; i < dashCount; i++) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        angle,
-        dashAngle,
-        false,
-        paint,
-      );
-      angle += dashAngle + gapAngle;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _MenuRow extends StatelessWidget {
@@ -331,16 +170,19 @@ class _MenuRowToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
-          Icon(icon, size: 24, color: Colors.black87),
+          Icon(icon, size: 24, color: textColor),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.poppins(fontSize: 16, color: Colors.black87),
+              style: GoogleFonts.poppins(fontSize: 16, color: textColor),
             ),
           ),
           Switch(

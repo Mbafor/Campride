@@ -53,6 +53,10 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
           title: Text('Driver Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
         ),
         body: Center(
@@ -66,6 +70,10 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
     if (_driver == null) {
       return Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
           title: Text('Driver Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
         ),
         body: Center(
@@ -79,6 +87,10 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           _driver!.name,
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),

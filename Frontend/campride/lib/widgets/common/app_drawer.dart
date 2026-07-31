@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../routes/route_names.dart';
+import 'package:provider/provider.dart';
+import '../../providers/authentication_provider.dart';
+import '../../screens/student/rides/rides_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -33,13 +34,18 @@ class AppDrawer extends StatelessWidget {
                     ),
                     const SizedBox(width: 14),
                     Expanded(
-                      child: Text(
-                        'Hi Edwin',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
+                      child: Consumer<AuthenticationProvider>(
+                        builder: (context, auth, _) {
+                          final userName = auth.user?.name ?? 'Guest';
+                          return Text(
+                            'Hi $userName',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const Icon(Icons.chevron_right, color: Color(0xFF757575), size: 26),
@@ -53,7 +59,13 @@ class AppDrawer extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    _DrawerItem(label: 'Request History', onTap: () => Navigator.pop(context)),
+                    _DrawerItem(
+                      label: 'Request History',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const RidesScreen()));
+                      },
+                    ),
                     _DrawerItem(label: 'Couriers', onTap: () => Navigator.pop(context)),
                     _DrawerItem(label: 'Notifications', onTap: () => Navigator.pop(context)),
                     _DrawerItem(label: 'Safety', onTap: () => Navigator.pop(context)),
@@ -61,33 +73,6 @@ class AppDrawer extends StatelessWidget {
                     _DrawerItem(label: 'Help', onTap: () => Navigator.pop(context)),
                     _DrawerItem(label: 'Support', onTap: () => Navigator.pop(context)),
                   ],
-                ),
-              ),
-            ),
-            // Driver Mode button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  context.go(RouteNames.driverDashboard);
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Driver Mode',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
                 ),
               ),
             ),

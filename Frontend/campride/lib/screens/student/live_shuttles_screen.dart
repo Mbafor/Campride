@@ -67,9 +67,11 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           }
         }
 
-        setState(() {
-          _shuttleLookup = lookup;
-        });
+        if (mounted) {
+          setState(() {
+            _shuttleLookup = lookup;
+          });
+        }
         print('[LiveMap] Loaded ${lookup.length} shuttle mappings');
       } else {
         print('[LiveMap] Failed to fetch shuttles: ${response.statusCode}');
@@ -88,7 +90,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   Future<void> _connectToLiveMap() async {
     final auth = context.read<AuthenticationProvider>();
     if (auth.accessToken == null) {
-      setState(() => _errorMessage = 'Authentication token not found');
+      if (mounted) {
+        setState(() => _errorMessage = 'Authentication token not found');
+      }
       return;
     }
 
@@ -114,25 +118,41 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         },
         onError: (error) {
           print('[LiveMap] WebSocket error: $error');
-          setState(() {
-            _isConnected = false;
-            _errorMessage = 'Connection error: $error';
-          });
+          if (mounted) {
+            setState(() {
+              _isConnected = false;
+              _errorMessage = 'Connection error: $error';
+            });
+          }
           // Attempt reconnection after 3 seconds
-          Future.delayed(const Duration(seconds: 3), _connectToLiveMap);
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              _connectToLiveMap();
+            }
+          });
         },
         onDone: () {
           print('[LiveMap] WebSocket closed');
-          setState(() => _isConnected = false);
+          if (mounted) {
+            setState(() => _isConnected = false);
+          }
           // Attempt reconnection after 3 seconds
-          Future.delayed(const Duration(seconds: 3), _connectToLiveMap);
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              _connectToLiveMap();
+            }
+          });
         },
       );
 
-      setState(() => _isConnected = true);
+      if (mounted) {
+        setState(() => _isConnected = true);
+      }
     } catch (e) {
       print('[LiveMap] Connection error: $e');
-      setState(() => _errorMessage = 'Failed to connect: $e');
+      if (mounted) {
+        setState(() => _errorMessage = 'Failed to connect: $e');
+      }
     }
   }
 
@@ -162,10 +182,12 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       });
 
       print('[LiveMap] Total shuttles loaded: ${newShuttles.length}');
-      setState(() {
-        _shuttles = newShuttles;
-        _errorMessage = null;
-      });
+      if (mounted) {
+        setState(() {
+          _shuttles = newShuttles;
+          _errorMessage = null;
+        });
+      }
     } else if (type == 'driver_location_update') {
       // Real-time location update for a specific driver
       print('[LiveMap] Processing driver_location_update');
@@ -177,12 +199,14 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       if (driverId != null && updateData != null) {
         final updatedData = ShuttleData.fromJson(updateData);
 
-        setState(() {
-          _shuttles[driverId] = updatedData;
-          print('[LiveMap] Updated shuttle for driver: $driverId');
-          // Trigger pulse animation on this shuttle
-          _pulsingShuttles.add(driverId);
-        });
+        if (mounted) {
+          setState(() {
+            _shuttles[driverId] = updatedData;
+            print('[LiveMap] Updated shuttle for driver: $driverId');
+            // Trigger pulse animation on this shuttle
+            _pulsingShuttles.add(driverId);
+          });
+        }
 
         // Remove pulse after 600ms
         Future.delayed(const Duration(milliseconds: 600), () {

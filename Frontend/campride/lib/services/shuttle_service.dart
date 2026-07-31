@@ -807,4 +807,96 @@ class ShuttleService {
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
+
+  // STUDENT ENDPOINTS - SHUTTLE MATCHING & BOARDING
+
+  /// Match available shuttles for the student's pickup/destination
+  Future<ApiResponse<Map<String, dynamic>>> matchShuttles({
+    required String accessToken,
+    required double pickupLat,
+    required double pickupLng,
+    required double destLat,
+    required double destLng,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseHttpUrl}/shuttles/match'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'pickup_lat': pickupLat,
+          'pickup_lng': pickupLng,
+          'destination_lat': destLat,
+          'destination_lng': destLng,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return ApiResponse(success: true, data: json);
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Failed to match shuttles (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// Confirm boarding for a matched shuttle request
+  Future<ApiResponse<Map<String, dynamic>>> boardShuttle({
+    required String accessToken,
+    required String shuttleRequestId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseHttpUrl}/shuttle-requests/$shuttleRequestId/board'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return ApiResponse(success: true, data: json);
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Failed to confirm boarding (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// Get student's ride history
+  Future<ApiResponse<List<Map<String, dynamic>>>> getRideHistory({
+    required String accessToken,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseHttpUrl}/students/me/rides'),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as List;
+        final rides = json.cast<Map<String, dynamic>>();
+        return ApiResponse(success: true, data: rides);
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Failed to get ride history (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
 }

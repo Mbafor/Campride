@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../models/user_model.dart';
 import '../services/auth_api_service.dart';
+import '../config/api_config.dart';
 
 enum AuthState { initial, loading, authenticated, unauthenticated, error }
 
@@ -22,6 +26,63 @@ class AuthenticationProvider extends ChangeNotifier {
   String? get errorCode => _errorCode;
   bool get isAuthenticated => _state == AuthState.authenticated;
   String? get accessToken => _accessToken;
+
+  // Request FCM notification permission and get device token
+  Future<String?> _requestNotificationPermission() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+
+      // Request permission
+      final settings = await messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        print('[FCM] Notification permission denied');
+        return null;
+      }
+
+      // Get device token
+      final token = await messaging.getToken();
+      print('[FCM] Device token obtained: $token');
+      return token;
+    } catch (e) {
+      print('[FCM] Error requesting notification permission: $e');
+      return null;
+    }
+  }
+
+  // Register device token with backend
+  Future<void> _registerDeviceToken(String token) async {
+    try {
+      if (_accessToken == null) {
+        print('[FCM] No access token available for device token registration');
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseHttpUrl}/users/fcm-token'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'fcm_token': token}),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        print('[FCM] Device token registered successfully');
+      } else {
+        print('[FCM] Failed to register device token: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('[FCM] Error registering device token: $e');
+    }
+  }
 
   // Register new user with email/password
   Future<bool> register({
@@ -147,6 +208,12 @@ class AuthenticationProvider extends ChangeNotifier {
         if (userResponse.success && userResponse.data != null) {
           _user = userResponse.data;
           _state = AuthState.authenticated;
+
+          // Register FCM device token for push notifications
+          final deviceToken = await _requestNotificationPermission();
+          if (deviceToken != null) {
+            await _registerDeviceToken(deviceToken);
+          }
         } else {
           _state = AuthState.error;
           _errorMessage = 'Failed to load user info';
@@ -191,6 +258,12 @@ class AuthenticationProvider extends ChangeNotifier {
         if (userResponse.success && userResponse.data != null) {
           _user = userResponse.data;
           _state = AuthState.authenticated;
+
+          // Register FCM device token for push notifications
+          final deviceToken = await _requestNotificationPermission();
+          if (deviceToken != null) {
+            await _registerDeviceToken(deviceToken);
+          }
         } else {
           _state = AuthState.error;
           _errorMessage = 'Failed to load user info';

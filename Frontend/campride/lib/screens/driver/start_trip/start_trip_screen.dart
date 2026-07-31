@@ -7,6 +7,7 @@ import '../../../services/telemetry_service.dart';
 import '../../../services/driver_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/buttons/custom_button.dart';
+import '../change_route/change_route_screen.dart';
 
 class StartTripScreen extends StatefulWidget {
   const StartTripScreen({super.key});
@@ -276,13 +277,14 @@ class _StartTripScreenState extends State<StartTripScreen>
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Route selection coming soon'),
-                    duration: Duration(seconds: 2),
-                  ),
+              onPressed: () async {
+                final result = await Navigator.push<DriverRoute>(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChangeRouteScreen()),
                 );
+                if (result != null) {
+                  await _loadDriverData();
+                }
               },
               icon: const Icon(Icons.edit, size: 18),
               label: Text(

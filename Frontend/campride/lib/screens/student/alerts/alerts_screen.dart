@@ -1,46 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../config/api_config.dart';
+import '../../../providers/authentication_provider.dart';
 import '../../../theme/app_colors.dart';
-
-class _AlertItem {
-  final String date;
-  final String location;
-  const _AlertItem({required this.date, required this.location});
-}
-
-class _AlertGroup {
-  final String monthYear;
-  final List<_AlertItem> items;
-  const _AlertGroup({required this.monthYear, required this.items});
-}
-
-const _pastGroups = [
-  _AlertGroup(
-    monthYear: 'May 2026',
-    items: [
-      _AlertItem(date: '25 May , 14:56', location: 'Brunei Complex'),
-      _AlertItem(date: '22 May , 08:10', location: 'Tech Junction'),
-      _AlertItem(date: '18 May , 17:30', location: 'Unity Hall'),
-    ],
-  ),
-  _AlertGroup(
-    monthYear: 'April 2026',
-    items: [
-      _AlertItem(date: '30 Apr , 09:45', location: 'Kotei Bus Stop'),
-      _AlertItem(date: '15 Apr , 13:22', location: 'Brunei Complex'),
-    ],
-  ),
-];
-
-const _upcomingGroups = [
-  _AlertGroup(
-    monthYear: 'June 2026',
-    items: [
-      _AlertItem(date: '26 Jun , 07:00', location: 'Brunei Complex'),
-      _AlertItem(date: '28 Jun , 12:30', location: 'Main Gate'),
-    ],
-  ),
-];
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -50,94 +15,129 @@ class AlertsScreen extends StatefulWidget {
 }
 
 class _AlertsScreenState extends State<AlertsScreen> {
-  int _tab = 0;
+  List<Map<String, dynamic>> _notifications = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    try {
+      final auth = context.read<AuthenticationProvider>();
+      if (auth.accessToken == null) {
+        setState(() {
+          _errorMessage = 'Authentication failed';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseHttpUrl}/notifications'),
+        headers: {
+          'Authorization': 'Bearer ${auth.accessToken}',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _notifications = List<Map<String, dynamic>>.from(data['notifications'] ?? []);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Failed to load notifications';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading notifications: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _markAsRead(String notificationId) async {
+    try {
+      final auth = context.read<AuthenticationProvider>();
+      if (auth.accessToken == null) return;
+
+      await http.put(
+        Uri.parse('${ApiConfig.baseHttpUrl}/notifications/$notificationId/read'),
+        headers: {
+          'Authorization': 'Bearer ${auth.accessToken}',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      // Reload notifications to reflect the read status
+      if (mounted) {
+        _loadNotifications();
+      }
+    } catch (e) {
+      print('Error marking notification as read: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final groups = _tab == 0 ? _pastGroups : _upcomingGroups;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
-              child: Row(
-                children: [
-                  Text(
-                    'Alerts',
-                    style: GoogleFonts.poppins(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.info_outline,
-                      size: 22, color: Colors.black54),
-                ],
+              child: Text(
+                'Notifications',
+                style: GoogleFonts.poppins(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            // Tab switcher
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _Tab(
-                    label: 'Past',
-                    isActive: _tab == 0,
-                    onTap: () => setState(() => _tab = 0),
-                  ),
-                  const SizedBox(width: 24),
-                  _Tab(
-                    label: 'Upcoming',
-                    isActive: _tab == 1,
-                    onTap: () => setState(() => _tab = 1),
-                  ),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: Colors.grey[200]),
-            const SizedBox(height: 8),
-            // Alert list
+            const SizedBox(height: 24),
             Expanded(
-              child: groups.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No alerts',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: groups.length,
-                      itemBuilder: (_, gi) {
-                        final group = groups[gi];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 12),
-                            Text(
-                              group.monthYear,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                      ? Center(
+                          child: Text(
+                            _errorMessage!,
+                            style: GoogleFonts.poppins(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      : _notifications.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No notifications yet',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
                               ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: _notifications.length,
+                              itemBuilder: (context, index) {
+                                final notif = _notifications[index];
+                                return _NotificationTile(
+                                  notification: notif,
+                                  onTap: () => _markAsRead(notif['id']),
+                                );
+                              },
                             ),
-                            const SizedBox(height: 8),
-                            ...group.items.map((item) => _AlertTile(item: item)),
-                          ],
-                        );
-                      },
-                    ),
             ),
           ],
         ),
@@ -146,90 +146,122 @@ class _AlertsScreenState extends State<AlertsScreen> {
   }
 }
 
-class _Tab extends StatelessWidget {
-  final String label;
-  final bool isActive;
+class _NotificationTile extends StatelessWidget {
+  final Map<String, dynamic> notification;
   final VoidCallback onTap;
 
-  const _Tab(
-      {required this.label, required this.isActive, required this.onTap});
+  const _NotificationTile({
+    required this.notification,
+    required this.onTap,
+  });
+
+  String _formatDateTime(String dateTimeString) {
+    try {
+      final dt = DateTime.parse(dateTimeString);
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+
+      if (diff.inMinutes < 1) {
+        return 'now';
+      } else if (diff.inHours < 1) {
+        return '${diff.inMinutes}m ago';
+      } else if (diff.inDays < 1) {
+        return '${diff.inHours}h ago';
+      } else {
+        return '${dt.day}/${dt.month}/${dt.year}';
+      }
+    } catch (e) {
+      return dateTimeString;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isRead = notification['is_read'] == true;
+    final type = notification['type'] ?? 'notification';
+    final message = notification['message'] ?? '';
+    final createdAt = notification['created_at'] ?? '';
+    final formattedTime = _formatDateTime(createdAt);
+
     return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-              color: isActive ? AppColors.primaryGreenLight : Colors.grey[500],
-            ),
+      onTap: isRead ? null : onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isRead ? Colors.white : AppColors.primaryGreen.withValues(alpha: 0.08),
+          border: Border.all(
+            color: isRead ? Colors.grey[200]! : AppColors.primaryGreen,
+            width: isRead ? 1 : 1.5,
           ),
-          const SizedBox(height: 6),
-          Container(
-            height: 2,
-            width: label.length * 8.5,
-            decoration: BoxDecoration(
-              color: isActive ? AppColors.primaryGreenLight : Colors.transparent,
-              borderRadius: BorderRadius.circular(1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isRead ? Colors.grey[200] : AppColors.primaryGreen,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _getIconForType(type),
+                color: isRead ? Colors.grey[600] : Colors.white,
+                size: 20,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: isRead ? FontWeight.w400 : FontWeight.w500,
+                      color: isRead ? Colors.black54 : Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$formattedTime • $type',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!isRead)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGreen,
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
-}
 
-class _AlertTile extends StatelessWidget {
-  final _AlertItem item;
-  const _AlertTile({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.directions_bus,
-                color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.date,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                Text(
-                  item.location,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.replay, size: 22, color: Colors.black87),
-        ],
-      ),
-    );
+  IconData _getIconForType(String type) {
+    switch (type.toLowerCase()) {
+      case 'shuttle':
+        return Icons.directions_bus;
+      case 'driver':
+        return Icons.person;
+      case 'system':
+        return Icons.notifications;
+      default:
+        return Icons.info;
+    }
   }
 }

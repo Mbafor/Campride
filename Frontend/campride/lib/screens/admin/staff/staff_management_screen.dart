@@ -237,6 +237,19 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('Staff Management', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
     if (_loading) {
       return Center(
         child: CircularProgressIndicator(

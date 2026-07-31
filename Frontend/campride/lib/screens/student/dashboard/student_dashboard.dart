@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../live_shuttles_screen.dart';
 import '../alerts/alerts_screen.dart';
 import '../account/student_account_screen.dart';
+import '../shuttle_matching/shuttle_matching_screen.dart';
 import '../../../widgets/common/app_drawer.dart';
 
 class StudentDashboard extends StatefulWidget {
@@ -25,12 +26,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
           IndexedStack(
             index: _currentIndex,
             children: const [
+              ShuttleMatchingScreen(),
               LiveShuttlesScreen(),
               AlertsScreen(),
               StudentAccountScreen(),
             ],
           ),
-          // Floating hamburger — only visible on Home tab
+          // Floating hamburger — only visible on Matching tab
           if (_currentIndex == 0)
             Builder(
               builder: (innerContext) => SafeArea(
@@ -88,25 +90,32 @@ class _BottomNav extends StatelessWidget {
           child: Row(
             children: [
               _NavTab(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home,
-                label: 'Home',
+                icon: Icons.search_outlined,
+                activeIcon: Icons.search,
+                label: 'Find',
                 isActive: currentIndex == 0,
                 onTap: () => onTap(0),
+              ),
+              _NavTab(
+                icon: Icons.location_on_outlined,
+                activeIcon: Icons.location_on,
+                label: 'Live',
+                isActive: currentIndex == 1,
+                onTap: () => onTap(1),
               ),
               _NavTab(
                 icon: Icons.notifications_outlined,
                 activeIcon: Icons.notifications,
                 label: 'Alerts',
-                isActive: currentIndex == 1,
-                onTap: () => onTap(1),
+                isActive: currentIndex == 2,
+                onTap: () => onTap(2),
               ),
               _NavTab(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
                 label: 'Account',
-                isActive: currentIndex == 2,
-                onTap: () => onTap(2),
+                isActive: currentIndex == 3,
+                onTap: () => onTap(3),
               ),
             ],
           ),
