@@ -151,18 +151,14 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Trip History',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Trip History',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
           Expanded(
             child: _loading && _trips.isEmpty
                 ? const Center(child: CircularProgressIndicator())
