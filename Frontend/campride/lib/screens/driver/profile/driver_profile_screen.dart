@@ -2,287 +2,434 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../../../models/user_model.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../providers/authentication_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../routes/route_names.dart';
-import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
+import '../../../config/api_config.dart';
 
-class DriverProfileScreen extends StatelessWidget {
+class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<AuthenticationProvider>(
-      builder: (context, auth, _) {
-        final driver = auth.user;
-        if (driver == null) {
-          return Center(
-            child: Text(
-              'User data not available',
-              style: GoogleFonts.poppins(color: AppColors.textSecondaryLight),
-            ),
-          );
-        }
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _DriverHeader(driver: driver),
-              const SizedBox(height: 20),
-              _ComingSoonStats(),
-              const SizedBox(height: 16),
-              _VehicleCard(),
-              const SizedBox(height: 16),
-              _SettingsCard(),
-              const SizedBox(height: 24),
-              _SignOutButton(),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  State<DriverProfileScreen> createState() => _DriverProfileScreenState();
 }
 
-class _DriverHeader extends StatelessWidget {
-  final UserModel driver;
-  const _DriverHeader({required this.driver});
+class _DriverProfileScreenState extends State<DriverProfileScreen> {
+  final _nameController = TextEditingController();
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryGreenDark, AppColors.primaryGreen],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: AppColors.accentGold,
-                child: Text(
-                  driver.name.substring(0, 1),
-                  style: GoogleFonts.poppins(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryGreenDark,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
-                child: const Icon(Icons.check, size: 12, color: Colors.white),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            driver.name,
-            style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          Text(
-            driver.email,
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.white70),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Verified Driver',
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ComingSoonStats extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.dividerLight),
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey[50],
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, color: AppColors.textSecondaryLight, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Trip Statistics Coming Soon',
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Trips, passengers, and rating data will appear here once you complete rides',
-                  style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VehicleCard extends StatefulWidget {
-  const _VehicleCard();
-
-  @override
-  State<_VehicleCard> createState() => _VehicleCardState();
-}
-
-class _VehicleCardState extends State<_VehicleCard> {
-  final _shuttleService = ShuttleService();
-  ShuttleInfo? _shuttle;
-  DriverRoute? _route;
-  bool _loading = true;
+  String? _nameError;
+  String? _nameSuccess;
+  String? _passwordError;
+  String? _passwordSuccess;
+  bool _loadingName = false;
+  bool _loadingPassword = false;
 
   @override
   void initState() {
     super.initState();
-    _loadVehicleData();
+    final auth = context.read<AuthenticationProvider>();
+    _nameController.text = auth.user?.name ?? '';
   }
 
-  Future<void> _loadVehicleData() async {
-    final auth = context.read<AuthenticationProvider>();
-    if (auth.accessToken == null) {
-      setState(() => _loading = false);
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateName() async {
+    if (_nameController.text.isEmpty) {
+      setState(() => _nameError = 'Name cannot be empty');
       return;
     }
 
-    // Load shuttle and route in parallel
-    final shuttleResult = await _shuttleService.getDriverShuttle(accessToken: auth.accessToken!);
-    final routeResult = await _shuttleService.getDriverRoute(accessToken: auth.accessToken!);
+    setState(() {
+      _loadingName = true;
+      _nameError = null;
+      _nameSuccess = null;
+    });
 
-    if (mounted) {
-      setState(() {
-        _shuttle = shuttleResult.data;
-        _route = routeResult.data;
-        _loading = false;
-      });
+    try {
+      final auth = context.read<AuthenticationProvider>();
+      if (auth.accessToken == null) throw Exception('Not authenticated');
+
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseHttpUrl}/users/me'),
+        headers: {
+          'Authorization': 'Bearer ${auth.accessToken}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'name': _nameController.text}),
+      ).timeout(const Duration(seconds: 10));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        setState(() => _nameSuccess = 'Name updated successfully');
+      } else {
+        setState(() => _nameError = 'Failed to update name');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _nameError = 'Error: $e');
+    } finally {
+      if (mounted) setState(() => _loadingName = false);
+    }
+  }
+
+  Future<void> _changePassword() async {
+    if (_currentPasswordController.text.isEmpty) {
+      setState(() => _passwordError = 'Current password required');
+      return;
+    }
+    if (_newPasswordController.text.isEmpty) {
+      setState(() => _passwordError = 'New password required');
+      return;
+    }
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      setState(() => _passwordError = 'Passwords do not match');
+      return;
+    }
+    if (_newPasswordController.text.length < 8) {
+      setState(() => _passwordError = 'Password must be at least 8 characters');
+      return;
+    }
+
+    setState(() {
+      _loadingPassword = true;
+      _passwordError = null;
+      _passwordSuccess = null;
+    });
+
+    try {
+      final auth = context.read<AuthenticationProvider>();
+      if (auth.accessToken == null) throw Exception('Not authenticated');
+
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseHttpUrl}/auth/change-password'),
+        headers: {
+          'Authorization': 'Bearer ${auth.accessToken}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'current_password': _currentPasswordController.text,
+          'new_password': _newPasswordController.text,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _passwordSuccess = 'Password changed successfully';
+          _currentPasswordController.clear();
+          _newPasswordController.clear();
+          _confirmPasswordController.clear();
+        });
+      } else if (response.statusCode == 401) {
+        setState(() => _passwordError = 'Current password is incorrect');
+      } else {
+        setState(() => _passwordError = 'Failed to change password');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _passwordError = 'Error: $e');
+    } finally {
+      if (mounted) setState(() => _loadingPassword = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
-          ),
-        ),
-      );
-    }
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              _AccountHeader(),
+              const SizedBox(height: 32),
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Vehicle & Route Info', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
-            const SizedBox(height: 12),
-            if (_shuttle != null) ...[
-              _InfoRow(icon: Icons.directions_bus_outlined, label: 'Plate Number', value: _shuttle!.plateNumber),
-              _InfoRow(icon: Icons.category_outlined, label: 'Capacity', value: '${_shuttle!.capacity} seats'),
-              _InfoRow(
-                icon: Icons.circle,
-                label: 'Shuttle Status',
-                value: _shuttle!.status.substring(0, 1).toUpperCase() + _shuttle!.status.substring(1),
+              // Edit Name Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Edit Name',
+                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter your name',
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                    ),
+                    if (_nameError != null) ...[
+                      const SizedBox(height: 8),
+                      Text(_nameError!, style: GoogleFonts.poppins(fontSize: 12, color: Colors.red[600])),
+                    ],
+                    if (_nameSuccess != null) ...[
+                      const SizedBox(height: 8),
+                      Text(_nameSuccess!, style: GoogleFonts.poppins(fontSize: 12, color: Colors.green[600])),
+                    ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _loadingName ? null : _updateName,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGreen,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: _loadingName
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                'Save Name',
+                                style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ] else
-              _InfoRow(icon: Icons.directions_bus_outlined, label: 'Shuttle', value: 'Not assigned'),
-            const SizedBox(height: 8),
-            if (_route != null)
-              _InfoRow(icon: Icons.route_outlined, label: 'Assigned Route', value: _route!.name)
-            else
-              _InfoRow(icon: Icons.route_outlined, label: 'Assigned Route', value: 'Not assigned'),
-          ],
+              const SizedBox(height: 32),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
+              const SizedBox(height: 24),
+
+              // Change Password Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Change Password',
+                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _currentPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: 'Current password',
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _newPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: 'New password',
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: 'Confirm new password',
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                    ),
+                    if (_passwordError != null) ...[
+                      const SizedBox(height: 8),
+                      Text(_passwordError!, style: GoogleFonts.poppins(fontSize: 12, color: Colors.red[600])),
+                    ],
+                    if (_passwordSuccess != null) ...[
+                      const SizedBox(height: 8),
+                      Text(_passwordSuccess!, style: GoogleFonts.poppins(fontSize: 12, color: Colors.green[600])),
+                    ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _loadingPassword ? null : _changePassword,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGreen,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: _loadingPassword
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                'Change Password',
+                                style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
+              const SizedBox(height: 24),
+
+              // Dark mode toggle
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Consumer<ThemeProvider>(
+                  builder: (ctx, themeProvider, _) => _MenuRowToggle(
+                    icon: Icons.dark_mode_outlined,
+                    label: 'Dark Mode',
+                    value: themeProvider.isDarkMode,
+                    onChanged: (_) async => await themeProvider.toggleTheme(),
+                  ),
+                ),
+              ),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
+
+              // Logout
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _MenuRow(
+                  icon: Icons.logout,
+                  label: 'Log out',
+                  iconColor: Colors.red[600],
+                  labelColor: Colors.red[600],
+                  onTap: () async {
+                    if (!context.mounted) return;
+                    final auth = context.read<AuthenticationProvider>();
+                    await auth.signOut();
+                    await Future.delayed(const Duration(milliseconds: 100));
+                    if (context.mounted) context.go(RouteNames.welcome);
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoRow({required this.icon, required this.label, required this.value});
-
+class _AccountHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: AppColors.primaryGreen),
-          const SizedBox(width: 12),
-          Text(label, style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight)),
-          const Spacer(),
-          Text(value, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
+          Expanded(
+            child: Consumer<AuthenticationProvider>(
+              builder: (context, auth, _) {
+                final userName = auth.user?.name ?? 'User';
+                final userEmail = auth.user?.email ?? 'N/A';
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userName,
+                      style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      userEmail,
+                      style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
+            child: Icon(Icons.person, size: 32, color: Colors.grey[600]),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SettingsCard extends StatelessWidget {
+class _MenuRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final Color? iconColor;
+  final Color? labelColor;
+
+  const _MenuRow({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.iconColor,
+    this.labelColor,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return InkWell(
+      onTap: onTap ?? () {},
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(vertical: 17),
+        child: Row(
           children: [
-            Text('Settings', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
-            const SizedBox(height: 12),
-            Consumer<ThemeProvider>(
-              builder: (context, theme, _) => Row(
-                children: [
-                  const Icon(Icons.dark_mode_outlined, size: 20, color: AppColors.primaryGreen),
-                  const SizedBox(width: 12),
-                  Text('Dark Mode', style: GoogleFonts.poppins(fontSize: 14)),
-                  const Spacer(),
-                  Switch(
-                    value: theme.isDarkMode,
-                    onChanged: (_) => theme.toggleTheme(),
-                    activeColor: AppColors.primaryGreen,
-                  ),
-                ],
+            Icon(icon, size: 24, color: iconColor ?? Colors.black87),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.poppins(fontSize: 16, color: labelColor ?? Colors.black87),
               ),
             ),
+            Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
           ],
         ),
       ),
@@ -290,27 +437,51 @@ class _SettingsCard extends StatelessWidget {
   }
 }
 
-class _SignOutButton extends StatelessWidget {
+class _MenuRowToggle extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _MenuRowToggle({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () async {
-          await context.read<AuthenticationProvider>().signOut();
-          if (context.mounted) context.go(RouteNames.welcome);
-        },
-        icon: const Icon(Icons.logout_rounded, color: AppColors.error),
-        label: Text(
-          'Sign Out',
-          style: GoogleFonts.poppins(color: AppColors.error, fontWeight: FontWeight.w600),
-        ),
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.error),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 24, color: textColor),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(fontSize: 16, color: textColor),
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.primaryGreenLight,
+            activeTrackColor: AppColors.brandGreen.withValues(alpha: 0.4),
+          ),
+        ],
       ),
     );
+  }
+}
+
+class _RowDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Divider(height: 1, thickness: 1, color: Colors.grey[200]);
   }
 }
