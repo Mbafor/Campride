@@ -118,7 +118,15 @@
       "Bash(psql \"postgresql://postgres:CampRide2026SecurePG@centerbeam.proxy.rlwy.net:14837/railway\" -c \"SELECT email FROM users WHERE email LIKE '%testdriver_full%';\")",
       "Bash(curl -s -X POST http://localhost:8000/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"testdriver_full@test.com\",\"password\":\"password123\"}')",
       "Bash(python manage.py shell -c ' *)",
-      "Bash(psql postgresql://postgres:CampRide2026SecurePG@centerbeam.proxy.rlwy.net:14837/railway -c ' *)"
+      "Bash(psql postgresql://postgres:CampRide2026SecurePG@centerbeam.proxy.rlwy.net:14837/railway -c ' *)",
+      "Bash(psql \"postgresql://postgres:CampRide2026SecurePG@centerbeam.proxy.rlwy.net:14837/railway\" -c \"\\\\d routes\")",
+      "Bash(psql \"postgresql://postgres:CampRide2026SecurePG@centerbeam.proxy.rlwy.net:14837/railway\" -c \"\\\\d stops\")",
+      "Bash(cat)",
+      "Bash(bash /tmp/test_rides_api.sh)",
+      "Bash(gh --version)",
+      "Bash(git credential-osxkeychain *)",
+      "Bash(git credential-wincred *)",
+      "Bash(git credential-cache *)"
     ]
   }
 }

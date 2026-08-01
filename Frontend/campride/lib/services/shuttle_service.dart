@@ -41,10 +41,10 @@ class DriverRoute {
       name: json['name'] ?? '',
       startName: json['start_name'] ?? '',
       endName: json['end_name'] ?? '',
-      startLat: (json['start_location']?['coordinates']?[1] ?? 0.0).toDouble(),
-      startLng: (json['start_location']?['coordinates']?[0] ?? 0.0).toDouble(),
-      endLat: (json['end_location']?['coordinates']?[1] ?? 0.0).toDouble(),
-      endLng: (json['end_location']?['coordinates']?[0] ?? 0.0).toDouble(),
+      startLat: (json['start_lat'] ?? 0.0).toDouble(),
+      startLng: (json['start_lng'] ?? 0.0).toDouble(),
+      endLat: (json['end_lat'] ?? 0.0).toDouble(),
+      endLng: (json['end_lng'] ?? 0.0).toDouble(),
     );
   }
 }
@@ -68,9 +68,9 @@ class Stop {
     return Stop(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
-      lat: (json['location']?['coordinates']?[1] ?? 0.0).toDouble(),
-      lng: (json['location']?['coordinates']?[0] ?? 0.0).toDouble(),
-      order: json['order'] ?? 0,
+      lat: (json['lat'] ?? 0.0).toDouble(),
+      lng: (json['lng'] ?? 0.0).toDouble(),
+      order: (json['order'] ?? 0) is int ? json['order'] : int.parse(json['order'].toString()),
     );
   }
 }

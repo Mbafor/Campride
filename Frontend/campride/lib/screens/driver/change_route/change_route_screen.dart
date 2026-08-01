@@ -40,8 +40,10 @@ class _ChangeRouteScreenState extends State<ChangeRouteScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final routes = (data['data'] as List? ?? [])
-            .map((r) => DriverRoute.fromJson(r))
+        // API returns list directly, not wrapped in 'data' key
+        final list = data is List ? data : (data['data'] as List? ?? []);
+        final routes = list
+            .map((r) => DriverRoute.fromJson(r as Map<String, dynamic>))
             .toList();
         return routes;
       } else {
@@ -66,8 +68,10 @@ class _ChangeRouteScreenState extends State<ChangeRouteScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final stops = (data['data'] as List? ?? [])
-            .map((s) => Stop.fromJson(s))
+        // API returns list directly, not wrapped in 'data' key
+        final list = data is List ? data : (data['data'] as List? ?? []);
+        final stops = list
+            .map((s) => Stop.fromJson(s as Map<String, dynamic>))
             .toList();
 
         if (mounted) {
