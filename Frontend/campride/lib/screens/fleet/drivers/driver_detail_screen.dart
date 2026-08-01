@@ -1,9 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:intl/intl.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
+import '../../../config/api_config.dart';
 import '../../../theme/app_colors.dart';
+import 'driver_trip_history_full_screen.dart';
+
+class FleetRoute {
+  final String routeId;
+  final String routeName;
+  final String startName;
+  final String endName;
+  final int tripCount;
+  final DateTime lastUsed;
+
+  FleetRoute({
+    required this.routeId,
+    required this.routeName,
+    required this.startName,
+    required this.endName,
+    required this.tripCount,
+    required this.lastUsed,
+  });
+
+  factory FleetRoute.fromJson(Map<String, dynamic> json) {
+    return FleetRoute(
+      routeId: json['route_id'] ?? '',
+      routeName: json['route_name'] ?? '',
+      startName: json['start_name'] ?? '',
+      endName: json['end_name'] ?? '',
+      tripCount: (json['trip_count'] ?? 0) is int ? json['trip_count'] : int.parse(json['trip_count'].toString()),
+      lastUsed: DateTime.parse(json['last_used'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+}
 
 class DriverDetailScreen extends StatefulWidget {
   final String driverId;
@@ -21,11 +55,14 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
   final _shuttleService = ShuttleService();
   DriverInfo? _driver;
   bool _loading = true;
+  List<FleetRoute> _routes = [];
+  bool _loadingRoutes = false;
 
   @override
   void initState() {
     super.initState();
     _loadDriver();
+    _loadRoutes();
   }
 
   Future<void> _loadDriver() async {
@@ -45,6 +82,38 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
         _driver = result.data;
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _loadRoutes() async {
+    if (!mounted) return;
+    setState(() => _loadingRoutes = true);
+
+    try {
+      final auth = context.read<AuthenticationProvider>();
+      if (auth.accessToken == null) throw Exception('Not authenticated');
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseHttpUrl}/fleet/drivers/${widget.driverId}/routes'),
+        headers: {'Authorization': 'Bearer ${auth.accessToken}'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        // API returns wrapped response: {"driver_id": "...", "routes": [...]}
+        final list = data is List ? data : (data['routes'] as List? ?? []);
+        final routes = list.map((r) => FleetRoute.fromJson(r as Map<String, dynamic>)).toList();
+        setState(() {
+          _routes = routes;
+          _loadingRoutes = false;
+        });
+      } else {
+        setState(() => _loadingRoutes = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadingRoutes = false);
     }
   }
 
@@ -105,12 +174,17 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
             _PersonalInfoCard(driver: _driver!),
             const SizedBox(height: 24),
 
-            // Ride History Section (Phase 5 Placeholder)
-            _RideHistorySection(),
+            // Ride History Section - Summary with link to full screen
+            _TripHistorySummarySection(
+              driver: _driver!,
+            ),
             const SizedBox(height: 24),
 
-            // Live Location Section (Phase 5 Placeholder)
-            _LiveLocationSection(),
+            // Routes History Section
+            _RoutesHistorySection(
+              routes: _routes,
+              loading: _loadingRoutes,
+            ),
           ],
         ),
       ),
@@ -194,70 +268,44 @@ class _PersonalInfoCard extends StatelessWidget {
   }
 }
 
-class _RideHistorySection extends StatelessWidget {
-  const _RideHistorySection();
+class _TripHistorySummarySection extends StatelessWidget {
+  final DriverInfo driver;
+
+  const _TripHistorySummarySection({required this.driver});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
+        Text(
+          'Trip History',
+          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            border: Border.all(color: Colors.blue[200]!),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.blue[700], size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Ride history — available in Phase 5',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.blue[900],
+          child: ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DriverTripHistoryFullScreen(
+                    driverId: driver.id,
+                    driverName: driver.name,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Trip History (Example Preview)',
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 12),
-        _DummyTripCard(
-          date: 'Nov 15, 2024',
-          time: '9:00 AM - 10:30 AM',
-          route: 'Downtown Loop',
-          passengers: 12,
-        ),
-        const SizedBox(height: 8),
-        _DummyTripCard(
-          date: 'Nov 14, 2024',
-          time: '2:15 PM - 3:45 PM',
-          route: 'University Route',
-          passengers: 15,
-        ),
-        const SizedBox(height: 8),
-        _DummyTripCard(
-          date: 'Nov 13, 2024',
-          time: '8:00 AM - 9:15 AM',
-          route: 'Airport Express',
-          passengers: 8,
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: Text(
-            '⚠️ These are example rows only — not real data',
-            style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight, fontStyle: FontStyle.italic),
+              );
+            },
+            icon: const Icon(Icons.arrow_forward, size: 16),
+            label: Text(
+              'View Full Trip History',
+              style: GoogleFonts.poppins(fontSize: 13),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
           ),
         ),
       ],
@@ -265,18 +313,63 @@ class _RideHistorySection extends StatelessWidget {
   }
 }
 
-class _DummyTripCard extends StatelessWidget {
-  final String date;
-  final String time;
-  final String route;
-  final int passengers;
+class _RoutesHistorySection extends StatelessWidget {
+  final List<FleetRoute> routes;
+  final bool loading;
 
-  const _DummyTripCard({
-    required this.date,
-    required this.time,
-    required this.route,
-    required this.passengers,
+  const _RoutesHistorySection({
+    required this.routes,
+    required this.loading,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Routes History',
+          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 12),
+        if (loading)
+          const Center(child: CircularProgressIndicator())
+        else if (routes.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                children: [
+                  Icon(Icons.route_outlined, size: 48, color: AppColors.textSecondaryLight),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No routes yet',
+                    style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Column(
+            children: routes
+                .asMap()
+                .entries
+                .map((e) => Padding(
+                  padding: EdgeInsets.only(bottom: e.key < routes.length - 1 ? 8 : 0),
+                  child: _RouteCard(route: e.value),
+                ))
+                .toList(),
+          ),
+      ],
+    );
+  }
+}
+
+class _RouteCard extends StatelessWidget {
+  final FleetRoute route;
+
+  const _RouteCard({required this.route});
 
   @override
   Widget build(BuildContext context) {
@@ -288,32 +381,23 @@ class _DummyTripCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.history, size: 18, color: AppColors.primaryGreen),
+                Icon(Icons.route, size: 18, color: AppColors.primaryGreen),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        route,
+                        route.routeName,
                         style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
                       ),
                       Text(
-                        date,
+                        '${route.startName} → ${route.endName}',
                         style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'Completed',
-                    style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.success),
                   ),
                 ),
               ],
@@ -321,17 +405,17 @@ class _DummyTripCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.access_time, size: 14, color: AppColors.textSecondaryLight),
-                const SizedBox(width: 6),
-                Text(
-                  time,
-                  style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
-                ),
-                const Spacer(),
-                Icon(Icons.people, size: 14, color: AppColors.textSecondaryLight),
+                Icon(Icons.repeat, size: 14, color: AppColors.textSecondaryLight),
                 const SizedBox(width: 4),
                 Text(
-                  '$passengers passengers',
+                  '${route.tripCount} trips',
+                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondaryLight),
+                ),
+                const Spacer(),
+                Icon(Icons.schedule, size: 14, color: AppColors.textSecondaryLight),
+                const SizedBox(width: 4),
+                Text(
+                  'Last: ${DateFormat('MMM dd').format(route.lastUsed)}',
                   style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
                 ),
               ],
@@ -339,138 +423,6 @@ class _DummyTripCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _LiveLocationSection extends StatelessWidget {
-  const _LiveLocationSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.orange[50],
-            border: Border.all(color: Colors.orange[200]!),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.orange[700], size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Live location tracking — available in Phase 5',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.orange[900],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Live Location (Static Example)',
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 48,
-                        color: AppColors.primaryGreen,
-                      ),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.success,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'In Session',
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Icon(Icons.location_on_outlined, size: 16, color: AppColors.primaryGreen),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Current Location: Downtown District',
-                      style: GoogleFonts.poppins(fontSize: 13),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.speed, size: 16, color: AppColors.primaryGreen),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Speed: 32 km/h',
-                      style: GoogleFonts.poppins(fontSize: 13),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.directions_bus, size: 16, color: AppColors.primaryGreen),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Route: Downtown Loop',
-                      style: GoogleFonts.poppins(fontSize: 13),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: Text(
-                    '⚠️ This is a static example — real-time tracking coming in Phase 5',
-                    style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight, fontStyle: FontStyle.italic),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

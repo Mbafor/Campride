@@ -111,33 +111,37 @@ def list_all_shuttles(
 @router.get("/drivers/{driver_id}/rides")
 def get_driver_rides(
     driver_id: UUID,
-    target_date: date = Query(None, alias="date", description="Date in YYYY-MM-DD format. Defaults to today."),
+    target_date: date = Query(None, alias="date", description="Optional: filter to specific date in YYYY-MM-DD format. If omitted, returns all trips."),
+    limit: int = Query(20, description="Number of rides per page (default 20, max 100)"),
+    offset: int = Query(0, description="Pagination offset (default 0)"),
     current_user: User = Depends(require_role(["fleet_manager", "super_admin"])),
     db: Session = Depends(get_db),
 ):
     """
-    Get all rides for a specific driver on a specific date.
+    Get rides for a specific driver.
+    - If 'date' param provided: returns rides only for that date (backwards compatible)
+    - If 'date' param omitted: returns ALL completed trips, most recent first, with pagination
     Fleet managers/admins can view any driver's ride data.
     """
+    # Validate pagination params
+    limit = min(max(1, limit), 100)  # Clamp between 1 and 100
+    offset = max(0, offset)
+
     # Verify driver exists
     driver = db.query(User).filter(User.id == driver_id, User.role == "driver").first()
     if not driver:
         raise HTTPException(status_code=404, detail={"error_code": "FLEET_001", "message": "Driver not found"})
 
-    if target_date is None:
-        target_date = date.today()
-
-    # Query rides for this driver on this date
-    rides = db.query(
-        RideHistory.id,
-        RideHistory.boarded_at,
-        RideHistory.alighted_at,
+    # Build query based on whether date filter is provided
+    # Query from Trip records directly (driver trip history)
+    query = db.query(
+        Trip.id,
+        Trip.started_at.label("boarded_at"),
+        Trip.ended_at.label("alighted_at"),
         Route.name.label("route_name"),
         Shuttle.name.label("shuttle_name"),
         Shuttle.plate_number.label("shuttle_plate"),
-        RideHistory.created_at,
-    ).join(
-        Trip, RideHistory.trip_id == Trip.id
+        Trip.created_at,
     ).join(
         Route, Trip.route_id == Route.id
     ).join(
@@ -145,10 +149,21 @@ def get_driver_rides(
     ).filter(
         Trip.driver_id == driver_id,
         Trip.status == "completed",
-        func.date(Trip.ended_at) == target_date
-    ).order_by(
-        RideHistory.boarded_at.asc()
-    ).all()
+    )
+
+    # Apply date filter if provided
+    if target_date is not None:
+        query = query.filter(func.date(Trip.ended_at) == target_date)
+        order_by_column = Trip.started_at.asc()
+        result_date = target_date.isoformat()
+    else:
+        # No date filter: return all trips, most recent first
+        order_by_column = Trip.ended_at.desc()
+        result_date = None
+
+    # Apply ordering and pagination
+    total_count = query.count()
+    rides = query.order_by(order_by_column).limit(limit).offset(offset).all()
 
     ride_list = []
     for ride in rides:
@@ -171,8 +186,13 @@ def get_driver_rides(
     return {
         "driver_id": str(driver_id),
         "driver_name": driver.name,
-        "date": target_date.isoformat(),
-        "total_rides": len(ride_list),
+        "date": result_date,
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "total_count": total_count,
+            "returned_count": len(ride_list),
+        },
         "rides": ride_list
     }
 
