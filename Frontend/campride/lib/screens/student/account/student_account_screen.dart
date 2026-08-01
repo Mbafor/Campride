@@ -74,6 +74,8 @@ class _StudentAccountScreenState extends State<StudentAccountScreen> {
       if (!mounted) return;
 
       if (response.statusCode == 200) {
+        final auth = context.read<AuthenticationProvider>();
+        auth.updateUserName(_nameController.text);
         setState(() => _nameSuccess = 'Name updated successfully');
       } else {
         setState(() => _nameError = 'Failed to update name');

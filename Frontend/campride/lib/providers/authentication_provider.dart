@@ -335,6 +335,13 @@ class AuthenticationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateUserName(String newName) {
+    if (_user != null) {
+      _user!.name = newName;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _errorMessage = null;
     _errorCode = null;
