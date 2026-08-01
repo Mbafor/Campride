@@ -1,12 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import '../../../theme/app_colors.dart';
-import '../../../config/api_config.dart';
 import '../../../providers/authentication_provider.dart';
+import '../../../config/api_config.dart';
+import '../../../theme/app_colors.dart';
+
+class DriverTripData {
+  final String tripId;
+  final String routeName;
+  final String shuttleName;
+  final String shuttlePlate;
+  final DateTime startedAt;
+  final DateTime endedAt;
+  final int? durationSeconds;
+
+  DriverTripData({
+    required this.tripId,
+    required this.routeName,
+    required this.shuttleName,
+    required this.shuttlePlate,
+    required this.startedAt,
+    required this.endedAt,
+    this.durationSeconds,
+  });
+
+  factory DriverTripData.fromJson(Map<String, dynamic> json) {
+    return DriverTripData(
+      tripId: json['trip_id'] ?? '',
+      routeName: json['route_name'] ?? '',
+      shuttleName: json['shuttle_name'] ?? '',
+      shuttlePlate: json['shuttle_plate'] ?? '',
+      startedAt: DateTime.parse(json['started_at'] ?? DateTime.now().toIso8601String()),
+      endedAt: DateTime.parse(json['ended_at'] ?? DateTime.now().toIso8601String()),
+      durationSeconds: json['duration_seconds'],
+    );
+  }
+}
 
 class TripHistoryScreen extends StatefulWidget {
   const TripHistoryScreen({super.key});
@@ -16,21 +48,44 @@ class TripHistoryScreen extends StatefulWidget {
 }
 
 class _TripHistoryScreenState extends State<TripHistoryScreen> {
-  late DateTime _selectedDate;
-  Map<String, dynamic>? _summary;
+  List<DriverTripData> _trips = [];
   bool _loading = false;
+  int _totalCount = 0;
+  int _offset = 0;
+  final int _pageSize = 20;
   String? _error;
+
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now();
-    _loadSummary();
+    _loadTrips();
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _loadSummary() async {
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      if (_trips.length < _totalCount && !_loading) {
+        _loadMoreTrips();
+      }
+    }
+  }
+
+  Future<void> _loadTrips({bool reset = true}) async {
     if (!mounted) return;
+
     setState(() {
+      if (reset) {
+        _trips = [];
+        _offset = 0;
+      }
       _loading = true;
       _error = null;
     });
@@ -40,61 +95,57 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
       final token = authProvider.accessToken;
 
       if (token == null) {
-        setState(() {
-          _error = 'Not authenticated';
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _error = 'Not authenticated';
+            _loading = false;
+          });
+        }
         return;
       }
 
-      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseHttpUrl}/driver/trips/summary?date=$dateStr'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        Uri.parse('${ApiConfig.baseHttpUrl}/driver/trips?limit=$_pageSize&offset=$_offset'),
+        headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 10));
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final tripList = (data['trips'] as List? ?? [])
+            .map((t) => DriverTripData.fromJson(t as Map<String, dynamic>))
+            .toList();
+
         setState(() {
-          _summary = data['data'] ?? data;
-          _loading = false;
-        });
-      } else if (response.statusCode == 404) {
-        setState(() {
-          _summary = null;
+          if (reset) {
+            _trips = tripList;
+          } else {
+            _trips.addAll(tripList);
+          }
+          _totalCount = data['count'] ?? 0;
           _loading = false;
         });
       } else {
         setState(() {
-          _error = 'Failed to load summary (${response.statusCode})';
+          _error = 'Failed to load trips (${response.statusCode})';
           _loading = false;
         });
       }
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Error: $e';
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Error: $e';
+          _loading = false;
+        });
+      }
     }
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2024),
-      lastDate: DateTime.now(),
-    );
-
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
-      _loadSummary();
-    }
+  Future<void> _loadMoreTrips() async {
+    if (_loading) return;
+    _offset += _pageSize;
+    await _loadTrips(reset: false);
   }
 
   @override
@@ -104,40 +155,18 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Trip Summary',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      DateFormat('MMMM dd, yyyy').format(_selectedDate),
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: AppColors.textSecondaryLight,
-                      ),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: _pickDate,
-                  icon: const Icon(Icons.calendar_today),
-                  label: const Text('Change Date'),
-                ),
-              ],
+            child: Text(
+              'Trip History',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           Expanded(
-            child: _loading
+            child: _loading && _trips.isEmpty
                 ? const Center(child: CircularProgressIndicator())
-                : _error != null
+                : _error != null && _trips.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -156,7 +185,7 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
                           ],
                         ),
                       )
-                    : _summary == null || (_summary!['total_completed_trips'] == 0 && (_summary!['routes'] == null || (_summary!['routes'] as List).isEmpty))
+                    : _trips.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -168,7 +197,7 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
                                 ),
                                 const SizedBox(height: 20),
                                 Text(
-                                  'No Trips Completed',
+                                  'No Trips Yet',
                                   style: GoogleFonts.poppins(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -176,7 +205,7 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'No trips were completed on this date',
+                                  'Your completed trips will appear here',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     color: AppColors.textSecondaryLight,
@@ -185,93 +214,102 @@ class _TripHistoryScreenState extends State<TripHistoryScreen> {
                               ],
                             ),
                           )
-                        : SingleChildScrollView(
+                        : ListView.builder(
+                            controller: _scrollController,
                             padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.green[200]!),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        'Total Trips Completed',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          color: Colors.green[700],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        '${_summary!['total_completed_trips'] ?? 0}',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 40,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green[700],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                if (_summary!['routes'] != null && (_summary!['routes'] as List).isNotEmpty) ...[
-                                  Text(
-                                    'Routes Breakdown',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                            itemCount: _trips.length + (_loading ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == _trips.length) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
-                                  ...((_summary!['routes'] as List).cast<Map<String, dynamic>>().map(
-                                    (route) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[50],
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: Colors.grey[200]!),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                );
+                              }
+
+                              final trip = _trips[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
                                           children: [
-                                            Text(
-                                              route['route_name'] ?? 'Unknown Route',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
+                                            Icon(Icons.route, size: 18, color: AppColors.primaryGreen),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                trip.routeName,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.blue[100],
-                                                borderRadius: BorderRadius.circular(16),
-                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.airport_shuttle, size: 16, color: AppColors.textSecondaryLight),
+                                            const SizedBox(width: 8),
+                                            Expanded(
                                               child: Text(
-                                                '${route['count']} trips',
+                                                '${trip.shuttleName} (${trip.shuttlePlate})',
                                                 style: GoogleFonts.poppins(
                                                   fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.blue[700],
+                                                  color: AppColors.textSecondaryLight,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.schedule, size: 16, color: AppColors.textSecondaryLight),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                DateFormat('MMM dd, HH:mm').format(trip.startedAt),
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  color: AppColors.textSecondaryLight,
                                                 ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
+                                        if (trip.durationSeconds != null) ...[
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            children: [
+                                              Icon(Icons.timer, size: 16, color: AppColors.textSecondaryLight),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                '${(trip.durationSeconds! ~/ 60).toString().padLeft(2, '0')}:${(trip.durationSeconds! % 60).toString().padLeft(2, '0')} min',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  color: AppColors.textSecondaryLight,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
                                     ),
-                                  )),
-                                ],
-                              ],
-                            ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
           ),
         ],
