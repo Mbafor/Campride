@@ -32,4 +32,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # assets will be added here when real images/icons are provided
+  assets:
+    - assets/images/
