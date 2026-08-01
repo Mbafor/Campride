@@ -4,6 +4,7 @@ import '../../../theme/app_colors.dart';
 import 'fleet_manager_dashboard.dart';
 import '../drivers/drivers_list_screen.dart';
 import '../shuttles/shuttles_list_screen.dart';
+import '../account/fleet_manager_account_screen.dart';
 
 class FleetDashboard extends StatefulWidget {
   const FleetDashboard({super.key});
@@ -22,12 +23,14 @@ class _FleetDashboardState extends State<FleetDashboard> {
     ),
     DriversListScreen(),
     ShuttlesListScreen(),
+    const FleetManagerAccountScreen(),
   ];
 
   static const List<_NavItem> _navItems = [
     _NavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'Dashboard'),
     _NavItem(icon: Icons.people_outline, activeIcon: Icons.people, label: 'Drivers'),
     _NavItem(icon: Icons.airport_shuttle, activeIcon: Icons.directions_bus, label: 'Shuttles'),
+    _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Account'),
   ];
 
   String get _appBarTitle {
@@ -35,6 +38,7 @@ class _FleetDashboardState extends State<FleetDashboard> {
       case 0: return 'Fleet Manager';
       case 1: return 'Drivers';
       case 2: return 'Shuttles';
+      case 3: return 'Account';
       default: return 'Fleet Manager';
     }
   }

@@ -24,14 +24,14 @@ class _DriverDashboardState extends State<DriverDashboard> {
   static const List<_NavItem> _navItems = [
     _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
     _NavItem(icon: Icons.history_outlined, activeIcon: Icons.history, label: 'Trip History'),
-    _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
+    _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Account'),
   ];
 
   String get _appBarTitle {
     switch (_currentIndex) {
       case 0: return 'Driver Dashboard';
       case 1: return 'Trip History';
-      case 2: return 'Profile';
+      case 2: return 'Account';
       default: return 'Driver Dashboard';
     }
   }

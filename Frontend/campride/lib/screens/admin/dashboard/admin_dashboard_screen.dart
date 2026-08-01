@@ -11,6 +11,7 @@ import '../../student/live_shuttles_screen.dart';
 import '../staff/staff_management_screen.dart';
 import '../../fleet/shuttles/shuttles_list_screen.dart';
 import '../routes/routes_management_screen.dart';
+import '../account/admin_account_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -27,6 +28,27 @@ class AdminDashboardScreen extends StatelessWidget {
                 expandedHeight: 220,
                 floating: false,
                 pinned: true,
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AdminAccountScreen()),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(Icons.person_outline, color: Colors.white, size: 24),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(

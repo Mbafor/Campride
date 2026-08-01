@@ -126,7 +126,19 @@
       "Bash(gh --version)",
       "Bash(git credential-osxkeychain *)",
       "Bash(git credential-wincred *)",
-      "Bash(git credential-cache *)"
+      "Bash(git credential-cache *)",
+      "Bash(env)",
+      "Bash(xargs grep -l \"class Trip\")",
+      "Bash(bash /tmp/test_driver_trips.sh)",
+      "Bash(bash /tmp/test_driver_trips_direct.sh)",
+      "Bash(bash /tmp/test_response.sh)",
+      "Bash(bash /tmp/final_test.sh)",
+      "Bash(flutter run *)",
+      "Bash(echo \"Flutter build started \\(PID: $!\\)\")",
+      "Bash(pkill -9 -f \"flutter\")",
+      "Bash(kill -9 18028)",
+      "Bash(tee /tmp/flutter_fresh.log)",
+      "Bash(xargs grep -l \"BottomNavigationBar\\\\|role.*student\\\\|role.*driver\\\\|role.*fleet\")"
     ]
   }
 }
