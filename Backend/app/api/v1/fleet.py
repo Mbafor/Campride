@@ -141,7 +141,6 @@ def get_driver_rides(
         Route.name.label("route_name"),
         Shuttle.name.label("shuttle_name"),
         Shuttle.plate_number.label("shuttle_plate"),
-        Trip.created_at,
     ).join(
         Route, Trip.route_id == Route.id
     ).join(
@@ -180,7 +179,6 @@ def get_driver_rides(
             "boarded_at": ride.boarded_at.isoformat() if ride.boarded_at else None,
             "alighted_at": ride.alighted_at.isoformat() if ride.alighted_at else None,
             "duration_seconds": duration_seconds,
-            "created_at": ride.created_at.isoformat(),
         })
 
     return {
