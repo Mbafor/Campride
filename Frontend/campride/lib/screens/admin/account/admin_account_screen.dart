@@ -182,8 +182,9 @@ class _AdminAccountScreenState extends State<AdminAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -381,5 +382,8 @@ class _MenuRowToggle extends StatelessWidget {
 
 class _RowDivider extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Divider(height: 1, thickness: 1, color: Colors.grey[200]);
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Divider(height: 1, thickness: 1, color: isDarkMode ? Colors.grey[800] : Colors.grey[200]);
+  }
 }
