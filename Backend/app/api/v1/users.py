@@ -1,5 +1,5 @@
 """User account management endpoints."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -13,6 +13,10 @@ router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
 class FCMTokenRequest(BaseModel):
     fcm_token: str
+
+
+class UpdateUserRequest(BaseModel):
+    name: str
 
 
 @router.post("/fcm-token")
@@ -35,6 +39,19 @@ def register_fcm_token(
         "user_id": str(current_user.id),
         "fcm_token_registered": current_user.fcm_token is not None
     }
+
+
+@router.put("/me", response_model=UserResponse)
+def update_current_user(
+    request: UpdateUserRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update current user's name (email updates out of scope for now)."""
+    current_user.name = request.name
+    db.commit()
+    db.refresh(current_user)
+    return current_user
 
 
 @router.get("/me", response_model=UserResponse)

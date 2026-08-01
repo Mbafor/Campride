@@ -219,6 +219,32 @@ def logout():
     return {"message": "Logged out successfully"}
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.put("/change-password")
+def change_password(
+    request: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Change current user's password. Requires verification of current password."""
+    if not verify_password(request.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail={"error_code": "AUTH_008", "message": "Current password is incorrect"}
+        )
+
+    hashed_new_password = hash_password(request.new_password)
+    current_user.hashed_password = hashed_new_password
+    db.commit()
+    db.refresh(current_user)
+
+    return {"message": "Password changed successfully"}
+
+
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(current_user: User = Depends(get_current_user)):
     return current_user
