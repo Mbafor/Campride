@@ -165,7 +165,18 @@ def get_driver_trips(
     Optionally filter by a specific date.
     Returns: trip_id, route_name, shuttle_name, shuttle_plate, started_at, ended_at, duration (in seconds)
     """
-    query = db.query(Trip).filter(
+    query = db.query(
+        Trip.id,
+        Trip.started_at,
+        Trip.ended_at,
+        Route.name.label("route_name"),
+        Shuttle.name.label("shuttle_name"),
+        Shuttle.plate_number.label("shuttle_plate"),
+    ).join(
+        Route, Trip.route_id == Route.id
+    ).join(
+        Shuttle, Trip.shuttle_id == Shuttle.id
+    ).filter(
         Trip.driver_id == current_user.id,
         Trip.status == "completed",
         Trip.ended_at != None
@@ -178,18 +189,15 @@ def get_driver_trips(
 
     trip_list = []
     for trip in trips:
-        route = db.query(Route).filter(Route.id == trip.route_id).first()
-        shuttle = db.query(Shuttle).filter(Shuttle.id == trip.shuttle_id).first()
-
         duration_seconds = None
         if trip.started_at and trip.ended_at:
             duration_seconds = int((trip.ended_at - trip.started_at).total_seconds())
 
         trip_list.append({
             "trip_id": str(trip.id),
-            "route_name": route.name if route else "Unknown",
-            "shuttle_name": shuttle.name if shuttle else "Unknown",
-            "shuttle_plate": shuttle.plate_number if shuttle else "Unknown",
+            "route_name": trip.route_name or "Unknown",
+            "shuttle_name": trip.shuttle_name or "Unknown",
+            "shuttle_plate": trip.shuttle_plate or "Unknown",
             "started_at": trip.started_at.isoformat() if trip.started_at else None,
             "ended_at": trip.ended_at.isoformat() if trip.ended_at else None,
             "duration_seconds": duration_seconds,
