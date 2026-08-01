@@ -16,7 +16,6 @@ class FleetTripData {
   final DateTime boardedAt;
   final DateTime alightedAt;
   final int? durationSeconds;
-  final DateTime createdAt;
 
   FleetTripData({
     required this.rideId,
@@ -26,7 +25,6 @@ class FleetTripData {
     required this.boardedAt,
     required this.alightedAt,
     this.durationSeconds,
-    required this.createdAt,
   });
 
   factory FleetTripData.fromJson(Map<String, dynamic> json) {
@@ -38,7 +36,6 @@ class FleetTripData {
       boardedAt: DateTime.parse(json['boarded_at'] ?? DateTime.now().toIso8601String()),
       alightedAt: DateTime.parse(json['alighted_at'] ?? DateTime.now().toIso8601String()),
       durationSeconds: json['duration_seconds'],
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 }
