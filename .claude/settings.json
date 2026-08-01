@@ -141,7 +141,9 @@
       "Bash(xargs grep -l \"BottomNavigationBar\\\\|role.*student\\\\|role.*driver\\\\|role.*fleet\")",
       "Bash(tee /tmp/flutter_full_build.log)",
       "Bash(bash /tmp/test_endpoints.sh)",
-      "Bash(bash /tmp/restore_password.sh)"
+      "Bash(bash /tmp/restore_password.sh)",
+      "Bash(bash /tmp/test_name_update.sh)",
+      "Bash(flutter build *)"
     ]
   }
 }

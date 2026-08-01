@@ -34,4 +34,24 @@ class UserModel {
         phoneNumber: '+233 20 000 0002',
         studentId: null,
       );
+
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? photoUrl,
+    String? role,
+    String? studentId,
+    String? phoneNumber,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      photoUrl: photoUrl ?? this.photoUrl,
+      role: role ?? this.role,
+      studentId: studentId ?? this.studentId,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+    );
+  }
 }

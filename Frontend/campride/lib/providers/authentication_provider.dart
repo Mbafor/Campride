@@ -337,7 +337,7 @@ class AuthenticationProvider extends ChangeNotifier {
 
   void updateUserName(String newName) {
     if (_user != null) {
-      _user!.name = newName;
+      _user = _user!.copyWith(name: newName);
       notifyListeners();
     }
   }

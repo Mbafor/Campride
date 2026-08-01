@@ -76,7 +76,23 @@ class _AdminAccountScreenState extends State<AdminAccountScreen> {
       if (response.statusCode == 200) {
         final auth = context.read<AuthenticationProvider>();
         auth.updateUserName(_nameController.text);
-        setState(() => _nameSuccess = 'Name updated successfully');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green[600], size: 20),
+                  const SizedBox(width: 12),
+                  Text('Name updated successfully', style: GoogleFonts.poppins()),
+                ],
+              ),
+              backgroundColor: Colors.green[50],
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        setState(() => _nameSuccess = null);
       } else {
         setState(() => _nameError = 'Failed to update name');
       }
@@ -130,8 +146,24 @@ class _AdminAccountScreenState extends State<AdminAccountScreen> {
       if (!mounted) return;
 
       if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green[600], size: 20),
+                  const SizedBox(width: 12),
+                  Text('Password changed successfully', style: GoogleFonts.poppins()),
+                ],
+              ),
+              backgroundColor: Colors.green[50],
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
         setState(() {
-          _passwordSuccess = 'Password changed successfully';
+          _passwordSuccess = null;
           _currentPasswordController.clear();
           _newPasswordController.clear();
           _confirmPasswordController.clear();
