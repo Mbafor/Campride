@@ -291,33 +291,26 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                      DropdownButton<String>(
+                        isExpanded: true,
+                        value: _pickupStop,
+                        hint: Text(
+                          'Auto-detected nearby',
+                          style: GoogleFonts.poppins(fontSize: 14),
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.location_on, color: AppColors.primaryGreen, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _pickupStop != null
-                                    ? _allStops
-                                        .firstWhere(
-                                          (s) => s['id'] == _pickupStop,
-                                          orElse: () => {'name': 'Select stop'},
-                                        )['name']
-                                    : 'Auto-detected nearby',
-                                style: GoogleFonts.poppins(fontSize: 14),
-                              ),
-                            ),
-                          ],
+                        items: _allStops
+                            .map((stop) => DropdownMenuItem<String>(
+                                  value: stop['id'] as String,
+                                  child: Text(
+                                    stop['name'] as String,
+                                    style: GoogleFonts.poppins(fontSize: 14),
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (value) => setState(() => _pickupStop = value),
+                        underline: Container(
+                          height: 1,
+                          color: Colors.grey[300],
                         ),
                       ),
                       const SizedBox(height: 24),
