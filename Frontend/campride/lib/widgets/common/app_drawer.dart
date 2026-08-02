@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
 import '../../screens/student/rides/rides_screen.dart';
+import '../../screens/student/alerts/alerts_screen.dart';
+import '../../screens/student/account/student_account_screen.dart';
+import '../../theme/app_colors.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -61,17 +64,28 @@ class AppDrawer extends StatelessWidget {
                   children: [
                     _DrawerItem(
                       label: 'Request History',
+                      icon: Icons.history,
                       onTap: () {
                         Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const RidesScreen()));
                       },
                     ),
-                    _DrawerItem(label: 'Couriers', onTap: () => Navigator.pop(context)),
-                    _DrawerItem(label: 'Notifications', onTap: () => Navigator.pop(context)),
-                    _DrawerItem(label: 'Safety', onTap: () => Navigator.pop(context)),
-                    _DrawerItem(label: 'Settings', onTap: () => Navigator.pop(context)),
-                    _DrawerItem(label: 'Help', onTap: () => Navigator.pop(context)),
-                    _DrawerItem(label: 'Support', onTap: () => Navigator.pop(context)),
+                    _DrawerItem(
+                      label: 'Notifications',
+                      icon: Icons.notifications,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsScreen()));
+                      },
+                    ),
+                    _DrawerItem(
+                      label: 'Settings',
+                      icon: Icons.settings,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const StudentAccountScreen()));
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -85,9 +99,14 @@ class AppDrawer extends StatelessWidget {
 
 class _DrawerItem extends StatelessWidget {
   final String label;
+  final IconData icon;
   final VoidCallback onTap;
 
-  const _DrawerItem({required this.label, required this.onTap});
+  const _DrawerItem({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +123,8 @@ class _DrawerItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           child: Row(
             children: [
+              Icon(icon, color: AppColors.primaryGreen, size: 22),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   label,
@@ -114,7 +135,7 @@ class _DrawerItem extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Color(0xFFBDBDBD), size: 20),
+              Icon(Icons.chevron_right, color: AppColors.primaryGreen, size: 20),
             ],
           ),
         ),
