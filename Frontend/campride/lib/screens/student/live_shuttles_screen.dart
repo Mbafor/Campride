@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:convert';
@@ -28,6 +29,15 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
   // Track which shuttle was just updated for pulse animation
   final Set<String> _pulsingShuttles = {};
+
+  // Google Maps controller
+  GoogleMapController? _mapController;
+
+  // Markers on map: driver_id -> Marker
+  Map<String, Marker> _markers = {};
+
+  // KNUST campus center coordinates
+  static const LatLng _knustCenter = LatLng(6.7041, -1.5637);
 
   @override
   void initState() {
@@ -84,6 +94,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   @override
   void dispose() {
     _channel?.sink.close();
+    _mapController?.dispose();
     super.dispose();
   }
 
@@ -187,6 +198,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           _shuttles = newShuttles;
           _errorMessage = null;
         });
+        _updateMapMarkers();
       }
     } else if (type == 'driver_location_update') {
       // Real-time location update for a specific driver
@@ -206,6 +218,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
             // Trigger pulse animation on this shuttle
             _pulsingShuttles.add(driverId);
           });
+          _updateMarkerPosition(driverId, updatedData);
         }
 
         // Remove pulse after 600ms
@@ -221,6 +234,46 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       print('[LiveMap] WARNING: Unknown message type: $type');
       print('[LiveMap] Message data: $data');
     }
+  }
+
+  void _updateMapMarkers() {
+    final newMarkers = <String, Marker>{};
+
+    _shuttles.forEach((driverId, shuttle) {
+      final shuttleInfo = _shuttleLookup[driverId];
+      final title = shuttleInfo?['name'] ?? 'Unknown Shuttle';
+      final plate = shuttleInfo?['plate'] ?? 'N/A';
+
+      newMarkers[driverId] = Marker(
+        markerId: MarkerId(driverId),
+        position: LatLng(shuttle.latitude, shuttle.longitude),
+        infoWindow: InfoWindow(
+          title: title,
+          snippet: 'Plate: $plate',
+        ),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      );
+    });
+
+    setState(() => _markers = newMarkers);
+  }
+
+  void _updateMarkerPosition(String driverId, ShuttleData shuttle) {
+    final shuttleInfo = _shuttleLookup[driverId];
+    final title = shuttleInfo?['name'] ?? 'Unknown Shuttle';
+    final plate = shuttleInfo?['plate'] ?? 'N/A';
+
+    final updatedMarker = Marker(
+      markerId: MarkerId(driverId),
+      position: LatLng(shuttle.latitude, shuttle.longitude),
+      infoWindow: InfoWindow(
+        title: title,
+        snippet: 'Plate: $plate',
+      ),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+    );
+
+    setState(() => _markers[driverId] = updatedMarker);
   }
 
   @override
@@ -276,78 +329,79 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       );
     }
 
-    if (_shuttles.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.directions_bus_filled,
-              size: 64,
-              color: AppColors.primaryGreen.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No Shuttles Currently Active',
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Check back when a driver starts their trip',
-              style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
-            ),
-          ],
+    return Stack(
+      children: [
+        // Google Map
+        GoogleMap(
+          onMapCreated: (GoogleMapController controller) {
+            _mapController = controller;
+          },
+          initialCameraPosition: CameraPosition(
+            target: _knustCenter,
+            zoom: 15,
+          ),
+          markers: Set<Marker>.of(_markers.values),
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: true,
+          mapType: MapType.normal,
         ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        _connectToLiveMap();
-        await Future.delayed(const Duration(seconds: 1));
-      },
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (!_isConnected)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  border: Border.all(color: Colors.orange),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning, color: Colors.orange, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Reconnecting to live updates...',
-                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.orange[900]),
-                      ),
+        // Connection warning banner
+        if (!_isConnected)
+          Positioned(
+            top: 16,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                border: Border.all(color: Colors.orange),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Reconnecting to live updates...',
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.orange[900]),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // Shuttle count info
+        if (_shuttles.isNotEmpty)
+          Positioned(
+            bottom: 16,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: AppColors.dividerLight),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: Text(
+                '${_shuttles.length} shuttle${_shuttles.length == 1 ? '' : 's'} active',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryGreen,
                 ),
               ),
             ),
-          ..._shuttles.entries.map((entry) {
-            final driverId = entry.key;
-            final shuttle = entry.value;
-            final isPulsing = _pulsingShuttles.contains(driverId);
-            final shuttleInfo = _shuttleLookup[driverId];
-
-            return _ShuttleCard(
-              shuttle: shuttle,
-              isPulsing: isPulsing,
-              shuttleName: shuttleInfo?['name'] ?? 'Unknown Shuttle',
-              plateNumber: shuttleInfo?['plate'] ?? 'N/A',
-            );
-          }),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
@@ -397,147 +451,3 @@ class ShuttleData {
   }
 }
 
-class _ShuttleCard extends StatelessWidget {
-  final ShuttleData shuttle;
-  final bool isPulsing;
-  final String shuttleName;
-  final String plateNumber;
-
-  const _ShuttleCard({
-    required this.shuttle,
-    required this.isPulsing,
-    required this.shuttleName,
-    required this.plateNumber,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isPulsing ? AppColors.success.withValues(alpha: 0.1) : Colors.white,
-        border: Border.all(
-          color: isPulsing ? AppColors.success : AppColors.dividerLight,
-          width: isPulsing ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.directions_bus, color: AppColors.primaryGreen, size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        shuttleName,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                        ),
-                      ),
-                      Text(
-                        'Plate: $plateNumber',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppColors.textSecondaryLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (isPulsing)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.success,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Live',
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    Text(
-                      shuttle.lastUpdatedText,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: AppColors.textSecondaryLight,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 16, color: AppColors.primaryGreen),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Latitude: ${shuttle.latitude.toStringAsFixed(6)}',
-                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 16, color: AppColors.primaryGreen),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Longitude: ${shuttle.longitude.toStringAsFixed(6)}',
-                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (shuttle.heading != null) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.navigation, size: 16, color: AppColors.primaryGreen),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Heading: ${shuttle.heading!.toStringAsFixed(1)}°',
-                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
