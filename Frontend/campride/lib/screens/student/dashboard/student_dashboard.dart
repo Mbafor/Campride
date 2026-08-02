@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../live_shuttles_screen.dart';
 import '../alerts/alerts_screen.dart';
 import '../account/student_account_screen.dart';
-import '../shuttle_matching/shuttle_matching_screen.dart';
 import '../../../widgets/common/app_drawer.dart';
+import '../../../theme/app_colors.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -26,13 +26,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
           IndexedStack(
             index: _currentIndex,
             children: const [
-              ShuttleMatchingScreen(),
-              LiveShuttlesScreen(),
-              AlertsScreen(),
-              StudentAccountScreen(),
+              LiveShuttlesScreen(), // Home tab (index 0)
+              AlertsScreen(),       // Alerts tab (index 1)
+              StudentAccountScreen(), // Account tab (index 2)
             ],
           ),
-          // Floating hamburger — only visible on Matching tab
+          // Floating hamburger — visible on Home tab
           if (_currentIndex == 0)
             Builder(
               builder: (innerContext) => SafeArea(
@@ -58,6 +57,65 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     ),
                   ),
                 ),
+              ),
+            ),
+          // Floating search bar — visible on Home tab
+          if (_currentIndex == 0)
+            Positioned(
+              bottom: 80,
+              left: 16,
+              right: 16,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Where to?',
+                    hintStyle: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey[600], size: 20),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  style: GoogleFonts.poppins(fontSize: 14),
+                  readOnly: true,
+                  onTap: () {
+                    // TODO: Navigate to Route screen
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Route screen coming soon')),
+                    );
+                  },
+                ),
+              ),
+            ),
+          // Recenter button — visible on Home tab
+          if (_currentIndex == 0)
+            Positioned(
+              bottom: 80,
+              right: 16,
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.primaryGreen,
+                elevation: 4,
+                onPressed: () {
+                  // TODO: Implement recenter to user location
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Recenter to my location')),
+                  );
+                },
+                child: const Icon(Icons.my_location, size: 20),
               ),
             ),
         ],
@@ -90,32 +148,25 @@ class _BottomNav extends StatelessWidget {
           child: Row(
             children: [
               _NavTab(
-                icon: Icons.search_outlined,
-                activeIcon: Icons.search,
-                label: 'Find',
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                label: 'Home',
                 isActive: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _NavTab(
-                icon: Icons.location_on_outlined,
-                activeIcon: Icons.location_on,
-                label: 'Live',
+                icon: Icons.calendar_today_outlined,
+                activeIcon: Icons.calendar_today,
+                label: 'Alerts',
                 isActive: currentIndex == 1,
                 onTap: () => onTap(1),
-              ),
-              _NavTab(
-                icon: Icons.notifications_outlined,
-                activeIcon: Icons.notifications,
-                label: 'Alerts',
-                isActive: currentIndex == 2,
-                onTap: () => onTap(2),
               ),
               _NavTab(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
                 label: 'Account',
-                isActive: currentIndex == 3,
-                onTap: () => onTap(3),
+                isActive: currentIndex == 2,
+                onTap: () => onTap(2),
               ),
             ],
           ),
@@ -142,7 +193,7 @@ class _NavTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? Colors.black : Colors.grey[500]!;
+    final color = isActive ? AppColors.primaryGreen : Colors.grey[500]!;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
