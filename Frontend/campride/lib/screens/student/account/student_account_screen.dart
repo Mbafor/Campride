@@ -183,7 +183,27 @@ class _StudentAccountScreenState extends State<StudentAccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
+        title: Text(
+          'Settings',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        centerTitle: false,
+      ),
       body: SafeArea(
+        top: false,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../live_shuttles_screen.dart';
 import '../alerts/alerts_screen.dart';
 import '../account/student_account_screen.dart';
+import '../route_search/route_search_screen.dart';
 import '../../../widgets/common/app_drawer.dart';
 import '../../../theme/app_colors.dart';
 
@@ -91,9 +92,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   style: GoogleFonts.poppins(fontSize: 14),
                   readOnly: true,
                   onTap: () {
-                    // TODO: Navigate to Route screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Route screen coming soon')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RouteSearchScreen()),
                     );
                   },
                 ),
