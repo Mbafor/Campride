@@ -9,7 +9,7 @@ import 'dart:math';
 import '../../../config/api_config.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../theme/app_colors.dart';
-import '../shuttle_matching/shuttle_matching_screen.dart';
+import '../live_shuttles_screen.dart';
 
 class RouteSearchScreen extends StatefulWidget {
   const RouteSearchScreen({super.key});
@@ -211,11 +211,15 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
+        final matchData = jsonDecode(response.body);
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => const ShuttleMatchingScreen(),
+              builder: (_) => LiveShuttlesScreen(
+                matchedShuttleId: matchData['shuttle_id'],
+                etaMinutes: matchData['eta_minutes'] as int?,
+              ),
             ),
           );
         }

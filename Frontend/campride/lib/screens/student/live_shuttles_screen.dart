@@ -12,7 +12,10 @@ import '../../providers/authentication_provider.dart';
 import '../../theme/app_colors.dart';
 
 class LiveShuttlesScreen extends StatefulWidget {
-  const LiveShuttlesScreen({super.key});
+  final String? matchedShuttleId;
+  final int? etaMinutes;
+
+  const LiveShuttlesScreen({super.key, this.matchedShuttleId, this.etaMinutes});
 
   @override
   State<LiveShuttlesScreen> createState() => _LiveShuttlesScreenState();
@@ -35,6 +38,10 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
   // Markers on map: driver_id -> Marker
   Map<String, Marker> _markers = {};
+
+  // Matched shuttle info for floating card
+  String? _matchedShuttleName;
+  String? _matchedShuttleEta;
 
   // KNUST campus center coordinates
   static const LatLng _knustCenter = LatLng(6.7041, -1.5637);
@@ -238,11 +245,16 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
   void _updateMapMarkers() {
     final newMarkers = <String, Marker>{};
+    String? matchedShuttleName;
 
     _shuttles.forEach((driverId, shuttle) {
       final shuttleInfo = _shuttleLookup[driverId];
       final title = shuttleInfo?['name'] ?? 'Unknown Shuttle';
       final plate = shuttleInfo?['plate'] ?? 'N/A';
+      final isMatched = widget.matchedShuttleId == driverId;
+
+      // Use different hue for matched shuttles (bright green vs blue)
+      final markerHue = isMatched ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueBlue;
 
       newMarkers[driverId] = Marker(
         markerId: MarkerId(driverId),
@@ -251,17 +263,33 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           title: title,
           snippet: 'Plate: $plate',
         ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        icon: BitmapDescriptor.defaultMarkerWithHue(markerHue),
       );
+
+      // Track matched shuttle info for floating card
+      if (isMatched) {
+        matchedShuttleName = title;
+      }
     });
 
-    setState(() => _markers = newMarkers);
+    setState(() {
+      _markers = newMarkers;
+      if (widget.matchedShuttleId != null && widget.etaMinutes != null) {
+        _matchedShuttleName = matchedShuttleName;
+        final etaText = widget.etaMinutes == 1 ? '1 min away' : '${widget.etaMinutes} mins away';
+        _matchedShuttleEta = etaText;
+      }
+    });
   }
 
   void _updateMarkerPosition(String driverId, ShuttleData shuttle) {
     final shuttleInfo = _shuttleLookup[driverId];
     final title = shuttleInfo?['name'] ?? 'Unknown Shuttle';
     final plate = shuttleInfo?['plate'] ?? 'N/A';
+    final isMatched = widget.matchedShuttleId == driverId;
+
+    // Use different hue for matched vs regular shuttles
+    final markerHue = isMatched ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueBlue;
 
     final updatedMarker = Marker(
       markerId: MarkerId(driverId),
@@ -270,7 +298,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         title: title,
         snippet: 'Plate: $plate',
       ),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      icon: BitmapDescriptor.defaultMarkerWithHue(markerHue),
     );
 
     setState(() => _markers[driverId] = updatedMarker);
@@ -372,8 +400,51 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
               ),
             ),
           ),
-        // Shuttle count info
-        if (_shuttles.isNotEmpty)
+        // Matched shuttle info card (bottom when available)
+        if (_matchedShuttleName != null && _matchedShuttleEta != null)
+          Positioned(
+            bottom: 16,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _matchedShuttleName!,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _matchedShuttleEta ?? 'Loading...',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        // Shuttle count info (show when no matched shuttle)
+        else if (_shuttles.isNotEmpty)
           Positioned(
             bottom: 16,
             left: 16,
