@@ -280,6 +280,7 @@ class _GreyField extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.grey[100],
             borderRadius: BorderRadius.circular(12),

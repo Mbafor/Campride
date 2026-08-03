@@ -113,47 +113,49 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
 
   @override
   Widget build(BuildContext context) {
-    // Shared visual: outlined pill, matching the "Continue with Email" button
-    // on the Welcome screen exactly (border, radius, height, font).
-    final look = Container(
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!, width: 1.5),
-        borderRadius: BorderRadius.circular(27),
-      ),
-      child: _buildContent(),
-    );
-
     if (kIsWeb) {
-      // The real Google-rendered button must stay in the tree to receive the
-      // click (Google Identity Services requires an actual button element),
-      // but we render it invisible and stretch it over our styled look so
-      // the two auth buttons appear identical.
+      // Render Google's real button directly. An earlier version tried to
+      // disguise it as our custom pill button by rendering the real button
+      // invisibly (Opacity 0) and stretching it over a fake visual via
+      // FittedBox — but FittedBox measures the child's "natural" size before
+      // scaling, and platform-view-backed widgets like this one report zero
+      // natural size, so it never actually rendered any clickable element.
+      // Google Identity Services requires the real button element to be
+      // visibly present in the DOM for clicks to register, so we let it
+      // render (and style) itself instead of faking it.
       return SizedBox(
         width: double.infinity,
         height: 54,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            IgnorePointer(child: look),
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.0,
-                child: FittedBox(
-                  fit: BoxFit.fill,
-                  child: renderButton(
-                    configuration: GSIButtonConfiguration(
-                      theme: GSIButtonTheme.outline,
-                      size: GSIButtonSize.large,
-                      shape: GSIButtonShape.pill,
-                      text: GSIButtonText.continueWith,
-                      type: GSIButtonType.standard,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Google's button takes a fixed pixel width (the "minimumWidth"
+            // name is misleading — the JS API treats it as an exact width,
+            // capped at 400px), so it can't stretch like our Flutter
+            // buttons. Measure the space the Email button also fills and
+            // pass that through, so the two buttons line up exactly on
+            // screens up to 400px wide.
+            final width = constraints.maxWidth.isFinite
+                ? constraints.maxWidth.clamp(1, 400).toDouble()
+                : 400.0;
+            return Center(
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : renderButton(
+                      configuration: GSIButtonConfiguration(
+                        theme: GSIButtonTheme.outline,
+                        size: GSIButtonSize.large,
+                        shape: GSIButtonShape.pill,
+                        text: GSIButtonText.continueWith,
+                        type: GSIButtonType.standard,
+                        minimumWidth: width,
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         ),
       );
     } else {
