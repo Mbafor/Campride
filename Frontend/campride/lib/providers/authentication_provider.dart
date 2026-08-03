@@ -371,6 +371,37 @@ class AuthenticationProvider extends ChangeNotifier {
     }
   }
 
+  /// Upload/replace the current user's profile photo and update the
+  /// in-memory user with the resulting photo URL.
+  Future<bool> updateProfilePhoto({
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    if (_accessToken == null) return false;
+
+    try {
+      final response = await _apiService.updateProfilePhoto(
+        accessToken: _accessToken!,
+        bytes: bytes,
+        filename: filename,
+      );
+
+      if (response.success && response.data != null) {
+        _user = response.data;
+        notifyListeners();
+        return true;
+      }
+      _errorMessage = response.message ?? 'Failed to update photo';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _debugLog('Error updating profile photo: $e');
+      _errorMessage = 'Failed to update photo';
+      notifyListeners();
+      return false;
+    }
+  }
+
   void updateUserName(String newName) {
     if (_user != null) {
       _user = _user!.copyWith(name: newName);

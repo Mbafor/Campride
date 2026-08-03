@@ -73,22 +73,6 @@ class AppDrawer extends StatelessWidget {
                         },
                       ),
                       _DrawerItem(
-                        label: 'Couriers',
-                        icon: Icons.local_shipping_outlined,
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ComingSoonScreen(
-                                title: 'Couriers',
-                                icon: Icons.local_shipping_outlined,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      _DrawerItem(
                         label: 'Notifications',
                         icon: Icons.notifications,
                         onTap: () {
@@ -153,31 +137,6 @@ class AppDrawer extends StatelessWidget {
                         },
                       ),
                     ],
-                  ),
-                ),
-              ),
-            ),
-            // Driver mode
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Driver Mode is coming soon')),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1C1C1C),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: Text(
-                    'Driver Mode',
-                    style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

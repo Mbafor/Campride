@@ -1,16 +1,16 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/authentication_provider.dart';
 import '../../../theme/app_colors.dart';
+import '../../common/coming_soon_screen.dart';
 import '../profile/student_profile_screen.dart';
 import '../settings/settings_screen.dart';
 
-/// ACCOUNT tab — matches the design screenshot:
-/// name + 5.0 rating header, quick action buttons (Help / Safety / Inbox),
-/// "Safety checkup" promotion card, and menu rows
-/// (Profile, Settings, Saved places, Support).
+/// ACCOUNT tab — name + 5.0 rating header, "Safety checkup" promo card,
+/// and menu rows (Profile, Settings, Saved places, Support).
 class StudentAccountScreen extends StatelessWidget {
   const StudentAccountScreen({super.key});
 
@@ -22,40 +22,17 @@ class StudentAccountScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header: ACCOUNT ─────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-              child: Text(
-                'ACCOUNT',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.4,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
 
-            // ── Profile header: name + rating ───────────────
+            // ── Profile header: name + rating + avatar ──────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Consumer<AuthenticationProvider>(
                 builder: (context, auth, _) {
                   final name = auth.user?.name ?? 'User';
                   return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.person,
-                            size: 32, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,24 +45,40 @@ class StudentAccountScreen extends StatelessWidget {
                                 color: Colors.black,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.star,
-                                    size: 16, color: Colors.amber[700]),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '5.0',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.star, size: 14, color: Colors.amber[700]),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '5.0',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
+                      ),
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF2C2C2C),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.person, size: 32, color: Color(0xFFBDBDBD)),
                       ),
                     ],
                   );
@@ -94,67 +87,28 @@ class StudentAccountScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // ── Quick action buttons: Help / Safety / Inbox ─
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _QuickButton(
-                      icon: Icons.help_outline,
-                      label: 'Help',
-                      onTap: () => _showComingSoon(context, 'Help'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickButton(
-                      icon: Icons.health_and_safety_outlined,
-                      label: 'Safety',
-                      onTap: () => _showComingSoon(context, 'Safety'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickButton(
-                      icon: Icons.inbox_outlined,
-                      label: 'Inbox',
-                      onTap: () => _showComingSoon(context, 'Inbox'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
             // ── Safety checkup card ─────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: GestureDetector(
-                onTap: () => _showComingSoon(context, 'Safety checkup'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ComingSoonScreen(
+                      title: 'Safety checkup',
+                      icon: Icons.shield_outlined,
+                      message: 'Learn ways to make rides safer.',
+                    ),
+                  ),
+                ),
                 child: Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.grey[200]!, width: 1),
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryGreen.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.shield_outlined,
-                          color: AppColors.primaryGreen,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,8 +116,8 @@ class StudentAccountScreen extends StatelessWidget {
                             Text(
                               'Safety checkup',
                               style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
                                 color: Colors.black87,
                               ),
                             ),
@@ -178,8 +132,8 @@ class StudentAccountScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Icon(Icons.chevron_right,
-                          color: Colors.grey[400], size: 22),
+                      const SizedBox(width: 12),
+                      const _DashedProgressRing(size: 30),
                     ],
                   ),
                 ),
@@ -197,8 +151,7 @@ class StudentAccountScreen extends StatelessWidget {
                     label: 'Profile',
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const StudentProfileScreen()),
+                      MaterialPageRoute(builder: (_) => const StudentProfileScreen()),
                     ),
                   ),
                   _MenuRow(
@@ -206,19 +159,34 @@ class StudentAccountScreen extends StatelessWidget {
                     label: 'Settings',
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const SettingsScreen()),
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
                     ),
                   ),
                   _MenuRow(
-                    icon: Icons.bookmark_border,
+                    icon: Icons.location_on_outlined,
                     label: 'Saved places',
-                    onTap: () => _showComingSoon(context, 'Saved places'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ComingSoonScreen(
+                          title: 'Saved places',
+                          icon: Icons.location_on_outlined,
+                        ),
+                      ),
+                    ),
                   ),
                   _MenuRow(
-                    icon: Icons.support_outlined,
+                    icon: Icons.support_agent_outlined,
                     label: 'Support',
-                    onTap: () => _showComingSoon(context, 'Support'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ComingSoonScreen(
+                          title: 'Support',
+                          icon: Icons.support_agent_outlined,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -228,61 +196,55 @@ class StudentAccountScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$feature is coming soon',
-          style: GoogleFonts.poppins(fontSize: 13),
-        ),
-        backgroundColor: Colors.black87,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
+/// Decorative dashed progress ring for the Safety checkup card, matching
+/// the mockup's incomplete-checklist icon.
+class _DashedProgressRing extends StatelessWidget {
+  final double size;
+  const _DashedProgressRing({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(painter: _DashedRingPainter()),
     );
   }
 }
 
-class _QuickButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
+class _DashedRingPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 2;
+    final paint = Paint()
+      ..color = AppColors.textSecondaryLight
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
 
-  const _QuickButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+    const dashCount = 8;
+    const gapFraction = 0.35;
+    final sweepPerDash = (2 * pi / dashCount) * (1 - gapFraction);
+    final sweepPerGap = (2 * pi / dashCount) * gapFraction;
+
+    double angle = -pi / 2;
+    for (var i = 0; i < dashCount; i++) {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        angle,
+        sweepPerDash,
+        false,
+        paint,
+      );
+      angle += sweepPerDash + sweepPerGap;
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 74,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 22, color: Colors.black87),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _MenuRow extends StatelessWidget {
@@ -303,7 +265,7 @@ class _MenuRow extends StatelessWidget {
         InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
                 Icon(icon, size: 22, color: Colors.black87),
@@ -313,16 +275,16 @@ class _MenuRow extends StatelessWidget {
                     label,
                     style: GoogleFonts.poppins(
                       fontSize: 15,
+                      fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
                   ),
                 ),
-                Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
               ],
             ),
           ),
         ),
-        Divider(height: 1, thickness: 1, color: Colors.grey[100]),
+        Divider(height: 1, thickness: 1, color: Colors.grey[200]),
       ],
     );
   }

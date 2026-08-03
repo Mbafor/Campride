@@ -1,7 +1,24 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../models/user_model.dart';
 import '../config/api_config.dart';
+
+String _guessImageContentType(String filename) {
+  final ext = filename.split('.').last.toLowerCase();
+  switch (ext) {
+    case 'png':
+      return 'image/png';
+    case 'heic':
+      return 'image/heic';
+    case 'webp':
+      return 'image/webp';
+    case 'jpg':
+    case 'jpeg':
+    default:
+      return 'image/jpeg';
+  }
+}
 
 Map<String, dynamic> _extractErrorDetail(Map<String, dynamic> json) {
   if (json.containsKey('detail') && json['detail'] is Map) {
@@ -53,6 +70,7 @@ class AuthApiService {
           role: json['role'] ?? 'student',
           phoneNumber: json['phone_number'],
           gender: json['gender'],
+          photoUrl: json['photo_url'],
         );
         return AuthApiResponse(success: true, data: user);
       } else {
@@ -242,6 +260,7 @@ class AuthApiService {
           role: json['role'] ?? 'student',
           phoneNumber: json['phone_number'],
           gender: json['gender'],
+          photoUrl: json['photo_url'],
         );
         return AuthApiResponse(success: true, data: user);
       } else {
@@ -299,6 +318,7 @@ class AuthApiService {
           role: json['role'] ?? 'student',
           phoneNumber: json['phone_number'],
           gender: json['gender'],
+          photoUrl: json['photo_url'],
         );
         return AuthApiResponse(success: true, data: user);
       } else {
@@ -306,6 +326,55 @@ class AuthApiService {
         return AuthApiResponse(
           success: false,
           message: error['message'] ?? 'Failed to update profile',
+          errorCode: error['error_code'] ?? 'UNKNOWN',
+        );
+      }
+    } catch (e) {
+      return AuthApiResponse(
+        success: false,
+        message: 'Network error: $e',
+        errorCode: 'NETWORK_ERROR',
+      );
+    }
+  }
+
+  // Upload/replace the current user's profile photo
+  Future<AuthApiResponse<UserModel>> updateProfilePhoto({
+    required String accessToken,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${ApiConfig.baseHttpUrl}/users/me/photo'),
+      )
+        ..headers['Authorization'] = 'Bearer $accessToken'
+        ..files.add(http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+          contentType: MediaType.parse(_guessImageContentType(filename)),
+        ));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200) {
+        final user = UserModel(
+          id: json['id'] ?? '',
+          name: json['name'] ?? '',
+          email: json['email'] ?? '',
+          role: json['role'] ?? 'student',
+          photoUrl: json['photo_url'],
+        );
+        return AuthApiResponse(success: true, data: user);
+      } else {
+        final error = _extractErrorDetail(json);
+        return AuthApiResponse(
+          success: false,
+          message: error['message'] ?? 'Failed to update photo',
           errorCode: error['error_code'] ?? 'UNKNOWN',
         );
       }
