@@ -212,13 +212,49 @@ class _RouteSearchScreenState extends State<RouteSearchScreen> {
 
       if (response.statusCode == 200) {
         final matchData = jsonDecode(response.body);
+        print('[RouteSearch] ===== MATCH RESPONSE RECEIVED =====');
+        print('[RouteSearch] Response type: ${matchData.runtimeType}');
+        print('[RouteSearch] Response keys: ${matchData.keys.toList()}');
+        print('[RouteSearch] Full response: $matchData');
+
+        // Try multiple possible structures
+        dynamic shuttleId;
+        dynamic etaMinutes;
+
+        // Structure 1: direct fields
+        if (matchData.containsKey('shuttle_id')) {
+          shuttleId = matchData['shuttle_id'];
+          print('[RouteSearch] Found shuttle_id at root level: $shuttleId');
+        }
+
+        // Structure 2: nested in 'matched' array
+        if (matchData.containsKey('matched') && matchData['matched'] is List) {
+          final matched = matchData['matched'] as List;
+          if (matched.isNotEmpty) {
+            shuttleId = matched[0]['shuttle_id'];
+            etaMinutes = matched[0]['eta_minutes'];
+            print('[RouteSearch] Found shuttle_id in matched[0]: $shuttleId');
+            print('[RouteSearch] Found eta_minutes in matched[0]: $etaMinutes');
+          }
+        }
+
+        // Structure 3: check for eta_minutes at root if not found in matched
+        if (etaMinutes == null && matchData.containsKey('eta_minutes')) {
+          etaMinutes = matchData['eta_minutes'];
+          print('[RouteSearch] Found eta_minutes at root level: $etaMinutes');
+        }
+
+        print('[RouteSearch] FINAL VALUES ABOUT TO PASS:');
+        print('[RouteSearch]   - matchedShuttleId: $shuttleId');
+        print('[RouteSearch]   - etaMinutes: $etaMinutes');
+
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (_) => LiveShuttlesScreen(
-                matchedShuttleId: matchData['shuttle_id'],
-                etaMinutes: matchData['eta_minutes'] as int?,
+                matchedShuttleId: shuttleId as String?,
+                etaMinutes: etaMinutes as int?,
               ),
             ),
           );

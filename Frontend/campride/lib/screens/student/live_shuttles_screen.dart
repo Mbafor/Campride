@@ -50,6 +50,8 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   void initState() {
     super.initState();
     print('[LiveMap] ===== SCREEN INITSTATE CALLED =====');
+    print('[LiveMap] matchedShuttleId: ${widget.matchedShuttleId}');
+    print('[LiveMap] etaMinutes: ${widget.etaMinutes}');
     print('[LiveMap] Screen is mounting, about to connect to WebSocket');
     _loadShuttleLookup();
     _connectToLiveMap();
@@ -206,6 +208,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           _errorMessage = null;
         });
         _updateMapMarkers();
+        _animateCameraToShuttles();
       }
     } else if (type == 'driver_location_update') {
       // Real-time location update for a specific driver
@@ -302,6 +305,77 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
     );
 
     setState(() => _markers[driverId] = updatedMarker);
+
+    // If this is the matched shuttle, animate camera to follow it
+    if (isMatched) {
+      _animateCameraToShuttles();
+    }
+  }
+
+  Future<void> _animateCameraToShuttles() async {
+    if (_mapController == null) return;
+
+    // If there's a matched shuttle, center on it
+    if (widget.matchedShuttleId != null) {
+      final matchedShuttle = _shuttles[widget.matchedShuttleId];
+      if (matchedShuttle != null) {
+        final position = CameraPosition(
+          target: LatLng(matchedShuttle.latitude, matchedShuttle.longitude),
+          zoom: 17,
+        );
+        _mapController!.animateCamera(CameraUpdate.newCameraPosition(position));
+        print('[LiveMap] Animated camera to matched shuttle at (${matchedShuttle.latitude}, ${matchedShuttle.longitude})');
+        return;
+      }
+    }
+
+    // Otherwise, if there are shuttles, fit all in view
+    if (_shuttles.isNotEmpty) {
+      final positions = _shuttles.values.map((s) => LatLng(s.latitude, s.longitude)).toList();
+      if (positions.length == 1) {
+        // Single shuttle: zoom in on it
+        final position = CameraPosition(
+          target: positions.first,
+          zoom: 16,
+        );
+        _mapController!.animateCamera(CameraUpdate.newCameraPosition(position));
+      } else {
+        // Multiple shuttles: fit bounds
+        final bounds = _calculateBounds(positions);
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngBounds(bounds, 100),
+        );
+        print('[LiveMap] Animated camera to fit ${positions.length} shuttles');
+      }
+      return;
+    }
+
+    // Fallback: show KNUST campus if no shuttles
+    final defaultPosition = CameraPosition(
+      target: _knustCenter,
+      zoom: 15,
+    );
+    _mapController!.animateCamera(CameraUpdate.newCameraPosition(defaultPosition));
+    print('[LiveMap] No shuttles found, showing default KNUST campus');
+  }
+
+  LatLngBounds _calculateBounds(List<LatLng> positions) {
+    double minLat = positions.first.latitude;
+    double maxLat = positions.first.latitude;
+    double minLng = positions.first.longitude;
+    double maxLng = positions.first.longitude;
+
+    for (final pos in positions) {
+      minLat = minLat > pos.latitude ? pos.latitude : minLat;
+      maxLat = maxLat < pos.latitude ? pos.latitude : maxLat;
+      minLng = minLng > pos.longitude ? pos.longitude : minLng;
+      maxLng = maxLng < pos.longitude ? pos.longitude : maxLng;
+    }
+
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
   }
 
   @override
