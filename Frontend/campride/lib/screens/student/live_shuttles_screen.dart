@@ -41,7 +41,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   // Markers on map: driver_id -> Marker
   Map<String, Marker> _markers = {};
 
-// Matched shuttle info for floating card
+  // Matched shuttle info for floating card
   String? _matchedShuttleName;
   String? _matchedShuttleEta;
 
@@ -53,6 +53,11 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   // Custom user-location blip marker
   Marker? _userLocationMarker;
 
+  // Cached bus icon markers
+  BitmapDescriptor? _busIconGreen;
+  BitmapDescriptor? _busIconBlue;
+  bool _iconsInitialized = false;
+
   // KNUST campus center coordinates
   static const LatLng _knustCenter = LatLng(6.7041, -1.5637);
 
@@ -63,6 +68,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
     print('[LiveMap] matchedShuttleId: ${widget.matchedShuttleId}');
     print('[LiveMap] etaMinutes: ${widget.etaMinutes}');
     print('[LiveMap] Screen is mounting, about to connect to WebSocket');
+    _initializeBusIcons();
     _loadShuttleLookup();
     _connectToLiveMap();
     _getUserLocation();
@@ -107,7 +113,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         return;
       }
 
-// Get current position
+      // Get current position
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 10),
@@ -155,7 +161,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
     }
   }
 
-Future<BitmapDescriptor> _createUserLocationIcon() async {
+  Future<BitmapDescriptor> _createUserLocationIcon() async {
     const size = 60.0;
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -256,6 +262,64 @@ Future<BitmapDescriptor> _createUserLocationIcon() async {
     _channel?.sink.close();
     _mapController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeBusIcons() async {
+    if (_iconsInitialized) return;
+
+    try {
+      _busIconGreen = await _createBusIcon(AppColors.primaryGreen);
+      _busIconBlue = await _createBusIcon(Colors.blue);
+      if (mounted) {
+        setState(() => _iconsInitialized = true);
+      }
+      print('[LiveMap] Bus icons initialized');
+    } catch (e) {
+      print('[LiveMap] Error initializing bus icons: $e');
+    }
+  }
+
+  Future<BitmapDescriptor> _createBusIcon(Color color) async {
+    final size = 96.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, size, size));
+
+    // Draw shadow
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.3)
+      ..maskFilter = const MaskFilter.blur(ui.BlurStyle.normal, 2);
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 2, shadowPaint);
+
+    // Draw circle background
+    final bgPaint = Paint()..color = color;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 2, bgPaint);
+
+    // Draw bus icon using text/paths (simple representation)
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '🚌',
+        style: const TextStyle(fontSize: 56),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size - textPainter.width) / 2,
+        (size - textPainter.height) / 2,
+      ),
+    );
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+
+    if (bytes == null) {
+      throw 'Could not convert bus icon to bytes';
+    }
+
+    return BitmapDescriptor.bytes(bytes.buffer.asUint8List());
   }
 
   Future<void> _connectToLiveMap() async {
@@ -407,8 +471,14 @@ Future<BitmapDescriptor> _createUserLocationIcon() async {
       final plate = shuttleInfo?['plate'] ?? 'N/A';
       final isMatched = widget.matchedShuttleId == driverId;
 
-      // Use different hue for matched shuttles (bright green vs blue)
-      final markerHue = isMatched ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueBlue;
+      // Use bus icon if available, otherwise fall back to hue
+      BitmapDescriptor markerIcon;
+      if (_iconsInitialized) {
+        markerIcon = isMatched ? _busIconGreen! : _busIconBlue!;
+      } else {
+        final markerHue = isMatched ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueBlue;
+        markerIcon = BitmapDescriptor.defaultMarkerWithHue(markerHue);
+      }
 
       newMarkers[driverId] = Marker(
         markerId: MarkerId(driverId),
@@ -417,7 +487,7 @@ Future<BitmapDescriptor> _createUserLocationIcon() async {
           title: title,
           snippet: 'Plate: $plate',
         ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(markerHue),
+        icon: markerIcon,
       );
 
       // Track matched shuttle info for floating card
@@ -442,8 +512,14 @@ Future<BitmapDescriptor> _createUserLocationIcon() async {
     final plate = shuttleInfo?['plate'] ?? 'N/A';
     final isMatched = widget.matchedShuttleId == driverId;
 
-    // Use different hue for matched vs regular shuttles
-    final markerHue = isMatched ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueBlue;
+    // Use bus icon if available, otherwise fall back to hue
+    BitmapDescriptor markerIcon;
+    if (_iconsInitialized) {
+      markerIcon = isMatched ? _busIconGreen! : _busIconBlue!;
+    } else {
+      final markerHue = isMatched ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueBlue;
+      markerIcon = BitmapDescriptor.defaultMarkerWithHue(markerHue);
+    }
 
     final updatedMarker = Marker(
       markerId: MarkerId(driverId),
@@ -452,7 +528,7 @@ Future<BitmapDescriptor> _createUserLocationIcon() async {
         title: title,
         snippet: 'Plate: $plate',
       ),
-      icon: BitmapDescriptor.defaultMarkerWithHue(markerHue),
+      icon: markerIcon,
     );
 
     setState(() => _markers[driverId] = updatedMarker);
@@ -584,7 +660,7 @@ Future<BitmapDescriptor> _createUserLocationIcon() async {
 
     return Stack(
       children: [
-// Google Map
+        // Google Map
         GoogleMap(
           onMapCreated: (GoogleMapController controller) {
             _mapController = controller;
@@ -760,4 +836,3 @@ class ShuttleData {
     }
   }
 }
-
