@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/authentication_provider.dart';
 import 'update_name_screen.dart';
+import 'update_gender_screen.dart';
+import 'update_phone_screen.dart';
 import 'update_email_screen.dart';
 
 /// Profile screen reached from the Account tab → Profile.
@@ -79,6 +81,28 @@ class StudentProfileScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                               builder: (_) => const UpdateNameScreen()),
+                        ),
+                      ),
+                      _InfoRow(
+                        label: 'Gender',
+                        value: user?.gender?.isNotEmpty == true
+                            ? user!.gender!
+                            : 'Not set',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const UpdateGenderScreen()),
+                        ),
+                      ),
+                      _InfoRow(
+                        label: 'Phone number',
+                        value: user?.phoneNumber?.isNotEmpty == true
+                            ? user!.phoneNumber!
+                            : 'Not set',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const UpdatePhoneScreen()),
                         ),
                       ),
                       _InfoRow(

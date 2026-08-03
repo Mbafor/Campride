@@ -21,6 +21,8 @@ class FCMTokenRequest(BaseModel):
 
 class UpdateUserRequest(BaseModel):
     name: str | None = None
+    gender: str | None = None
+    phone_number: str | None = None
     email: str | None = None
 
 
@@ -52,9 +54,13 @@ def update_current_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Update current user's profile fields (name, email)."""
+    """Update current user's profile fields (name, gender, phone number, email)."""
     if request.name is not None:
         current_user.name = request.name
+    if request.gender is not None:
+        current_user.gender = request.gender
+    if request.phone_number is not None:
+        current_user.phone_number = request.phone_number
     if request.email is not None:
         # Don't allow taking an email that's already used by another account
         existing = db.query(User).filter(User.email == request.email, User.id != current_user.id).first()
