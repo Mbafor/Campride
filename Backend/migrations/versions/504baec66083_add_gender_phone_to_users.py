@@ -1,4 +1,4 @@
-"""Add gender and phone_number columns to users table
+"""Add phone_number column to users table
 
 Revision ID: 504baec66083
 Revises: 502f5c66082
@@ -17,10 +17,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('users', sa.Column('gender', sa.String(), nullable=True))
     op.add_column('users', sa.Column('phone_number', sa.String(), nullable=True))
 
 
 def downgrade() -> None:
     op.drop_column('users', 'phone_number')
-    op.drop_column('users', 'gender')

@@ -21,7 +21,6 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     hashed_password = Column(String, nullable=True)
     role = Column(SQLEnum(UserRole), nullable=False)
-    gender = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
