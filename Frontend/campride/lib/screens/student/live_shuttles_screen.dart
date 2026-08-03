@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -17,13 +18,26 @@ class LiveShuttlesScreen extends StatefulWidget {
   final String? matchedShuttleId;
   final int? etaMinutes;
 
-  const LiveShuttlesScreen({super.key, this.matchedShuttleId, this.etaMinutes});
+  /// When true, renders just the map body (no Scaffold/AppBar) for use as
+  /// a tab inside another Scaffold, e.g. StudentDashboard's Home tab.
+  final bool embedded;
+
+  const LiveShuttlesScreen({
+    super.key,
+    this.matchedShuttleId,
+    this.etaMinutes,
+    this.embedded = false,
+  });
 
   @override
   State<LiveShuttlesScreen> createState() => _LiveShuttlesScreenState();
 }
 
 class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
+  void _debugLog(String message) {
+    if (kDebugMode) print(message);
+  }
+
   WebSocketChannel? _channel;
   Map<String, ShuttleData> _shuttles = {};
   bool _isConnected = false;
@@ -64,10 +78,10 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   @override
   void initState() {
     super.initState();
-    print('[LiveMap] ===== SCREEN INITSTATE CALLED =====');
-    print('[LiveMap] matchedShuttleId: ${widget.matchedShuttleId}');
-    print('[LiveMap] etaMinutes: ${widget.etaMinutes}');
-    print('[LiveMap] Screen is mounting, about to connect to WebSocket');
+    _debugLog('[LiveMap] ===== SCREEN INITSTATE CALLED =====');
+    _debugLog('[LiveMap] matchedShuttleId: ${widget.matchedShuttleId}');
+    _debugLog('[LiveMap] etaMinutes: ${widget.etaMinutes}');
+    _debugLog('[LiveMap] Screen is mounting, about to connect to WebSocket');
     _initializeBusIcons();
     _loadShuttleLookup();
     _connectToLiveMap();
@@ -86,7 +100,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('[LiveMap] Location services are disabled');
+        _debugLog('[LiveMap] Location services are disabled');
         if (mounted) {
           setState(() {
             _isGettingLocation = false;
@@ -103,7 +117,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        print('[LiveMap] Location permission denied');
+        _debugLog('[LiveMap] Location permission denied');
         if (mounted) {
           setState(() {
             _isGettingLocation = false;
@@ -119,7 +133,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         timeLimit: const Duration(seconds: 10),
       );
 
-      print('[LiveMap] Got user location: ${position.latitude}, ${position.longitude}');
+      _debugLog('[LiveMap] Got user location: ${position.latitude}, ${position.longitude}');
       if (mounted) {
         setState(() {
           _userLocation = LatLng(position.latitude, position.longitude);
@@ -130,7 +144,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         _buildUserLocationMarker();
       }
     } catch (e) {
-      print('[LiveMap] Error getting user location: $e');
+      _debugLog('[LiveMap] Error getting user location: $e');
       if (mounted) {
         setState(() {
           _isGettingLocation = false;
@@ -157,7 +171,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         );
       });
     } catch (e) {
-      print('[LiveMap] Error building user location marker: $e');
+      _debugLog('[LiveMap] Error building user location marker: $e');
     }
   }
 
@@ -194,7 +208,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           CameraPosition(target: _userLocation!, zoom: 17),
         ),
       );
-      print('[LiveMap] Recentered to user location');
+      _debugLog('[LiveMap] Recentered to user location');
     } else {
       // No location yet, try to fetch it
       await _getUserLocation();
@@ -217,12 +231,12 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   Future<void> _loadShuttleLookup() async {
     final auth = context.read<AuthenticationProvider>();
     if (auth.accessToken == null) {
-      print('[LiveMap] No auth token for shuttle lookup');
+      _debugLog('[LiveMap] No auth token for shuttle lookup');
       return;
     }
 
     try {
-      print('[LiveMap] Fetching shuttles for driver lookup...');
+      _debugLog('[LiveMap] Fetching shuttles for driver lookup...');
       final response = await http.get(
         Uri.parse('${ApiConfig.baseHttpUrl}/shuttles'),
         headers: {'Authorization': 'Bearer ${auth.accessToken}'},
@@ -239,7 +253,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
           if (driverId != null && driverId.isNotEmpty) {
             lookup[driverId] = {'name': name, 'plate': plate};
-            print('[LiveMap] Mapped driver $driverId -> $name ($plate)');
+            _debugLog('[LiveMap] Mapped driver $driverId -> $name ($plate)');
           }
         }
 
@@ -248,12 +262,12 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
             _shuttleLookup = lookup;
           });
         }
-        print('[LiveMap] Loaded ${lookup.length} shuttle mappings');
+        _debugLog('[LiveMap] Loaded ${lookup.length} shuttle mappings');
       } else {
-        print('[LiveMap] Failed to fetch shuttles: ${response.statusCode}');
+        _debugLog('[LiveMap] Failed to fetch shuttles: ${response.statusCode}');
       }
     } catch (e) {
-      print('[LiveMap] Error loading shuttle lookup: $e');
+      _debugLog('[LiveMap] Error loading shuttle lookup: $e');
     }
   }
 
@@ -273,9 +287,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       if (mounted) {
         setState(() => _iconsInitialized = true);
       }
-      print('[LiveMap] Bus icons initialized');
+      _debugLog('[LiveMap] Bus icons initialized');
     } catch (e) {
-      print('[LiveMap] Error initializing bus icons: $e');
+      _debugLog('[LiveMap] Error initializing bus icons: $e');
     }
   }
 
@@ -339,20 +353,20 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         (message) {
           try {
             // LOG: Raw message as received from WebSocket
-            print('[LiveMap] RAW MESSAGE RECEIVED: $message');
+            _debugLog('[LiveMap] RAW MESSAGE RECEIVED: $message');
 
             final data = jsonDecode(message);
-            print('[LiveMap] DECODED JSON: $data');
-            print('[LiveMap] Message type: ${data['type']}');
+            _debugLog('[LiveMap] DECODED JSON: $data');
+            _debugLog('[LiveMap] Message type: ${data['type']}');
 
             _handleLiveMapMessage(data);
           } catch (e) {
-            print('[LiveMap] ERROR decoding message: $e');
-            print('[LiveMap] Failed message was: $message');
+            _debugLog('[LiveMap] ERROR decoding message: $e');
+            _debugLog('[LiveMap] Failed message was: $message');
           }
         },
         onError: (error) {
-          print('[LiveMap] WebSocket error: $error');
+          _debugLog('[LiveMap] WebSocket error: $error');
           if (mounted) {
             setState(() {
               _isConnected = false;
@@ -367,7 +381,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           });
         },
         onDone: () {
-          print('[LiveMap] WebSocket closed');
+          _debugLog('[LiveMap] WebSocket closed');
           if (mounted) {
             setState(() => _isConnected = false);
           }
@@ -384,7 +398,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         setState(() => _isConnected = true);
       }
     } catch (e) {
-      print('[LiveMap] Connection error: $e');
+      _debugLog('[LiveMap] Connection error: $e');
       if (mounted) {
         setState(() => _errorMessage = 'Failed to connect: $e');
       }
@@ -393,30 +407,30 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
   void _handleLiveMapMessage(Map<String, dynamic> data) {
     final type = data['type'] as String?;
-    print('[LiveMap] Handling message type: $type');
-    print('[LiveMap] Full data keys: ${data.keys.toList()}');
+    _debugLog('[LiveMap] Handling message type: $type');
+    _debugLog('[LiveMap] Full data keys: ${data.keys.toList()}');
 
     if (type == 'initial_snapshot') {
       // Initial snapshot of all active shuttles
-      print('[LiveMap] Processing initial_snapshot');
+      _debugLog('[LiveMap] Processing initial_snapshot');
       final snapshotData = data['data'] as Map<String, dynamic>? ?? {};
-      print('[LiveMap] Number of drivers in snapshot: ${snapshotData.length}');
+      _debugLog('[LiveMap] Number of drivers in snapshot: ${snapshotData.length}');
 
       final newShuttles = <String, ShuttleData>{};
 
       snapshotData.forEach((driverId, driverData) {
-        print('[LiveMap] Processing driver: $driverId -> $driverData');
+        _debugLog('[LiveMap] Processing driver: $driverId -> $driverData');
         if (driverId.isNotEmpty && driverData is Map<String, dynamic>) {
           // Add driver_id to the data object for ShuttleData.fromJson
           final driverWithId = {...driverData, 'driver_id': driverId};
           newShuttles[driverId] = ShuttleData.fromJson(driverWithId);
-          print('[LiveMap] Added shuttle for driver: $driverId');
+          _debugLog('[LiveMap] Added shuttle for driver: $driverId');
         } else {
-          print('[LiveMap] WARNING: Invalid driver data for $driverId: $driverData');
+          _debugLog('[LiveMap] WARNING: Invalid driver data for $driverId: $driverData');
         }
       });
 
-      print('[LiveMap] Total shuttles loaded: ${newShuttles.length}');
+      _debugLog('[LiveMap] Total shuttles loaded: ${newShuttles.length}');
       if (mounted) {
         setState(() {
           _shuttles = newShuttles;
@@ -427,11 +441,11 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       }
     } else if (type == 'driver_location_update') {
       // Real-time location update for a specific driver
-      print('[LiveMap] Processing driver_location_update');
-      print('[LiveMap] Update data: $data');
+      _debugLog('[LiveMap] Processing driver_location_update');
+      _debugLog('[LiveMap] Update data: $data');
       final updateData = data['data'] as Map<String, dynamic>?;
       final driverId = updateData?['driver_id'] as String?;
-      print('[LiveMap] Driver ID from update: $driverId');
+      _debugLog('[LiveMap] Driver ID from update: $driverId');
 
       if (driverId != null && updateData != null) {
         final updatedData = ShuttleData.fromJson(updateData);
@@ -439,7 +453,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         if (mounted) {
           setState(() {
             _shuttles[driverId] = updatedData;
-            print('[LiveMap] Updated shuttle for driver: $driverId');
+            _debugLog('[LiveMap] Updated shuttle for driver: $driverId');
             // Trigger pulse animation on this shuttle
             _pulsingShuttles.add(driverId);
           });
@@ -453,11 +467,11 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           }
         });
       } else {
-        print('[LiveMap] WARNING: driver_id is null in update');
+        _debugLog('[LiveMap] WARNING: driver_id is null in update');
       }
     } else {
-      print('[LiveMap] WARNING: Unknown message type: $type');
-      print('[LiveMap] Message data: $data');
+      _debugLog('[LiveMap] WARNING: Unknown message type: $type');
+      _debugLog('[LiveMap] Message data: $data');
     }
   }
 
@@ -551,7 +565,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           zoom: 17,
         );
         _mapController!.animateCamera(CameraUpdate.newCameraPosition(position));
-        print('[LiveMap] Animated camera to matched shuttle at (${matchedShuttle.latitude}, ${matchedShuttle.longitude})');
+        _debugLog('[LiveMap] Animated camera to matched shuttle at (${matchedShuttle.latitude}, ${matchedShuttle.longitude})');
         return;
       }
     }
@@ -572,7 +586,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         _mapController!.animateCamera(
           CameraUpdate.newLatLngBounds(bounds, 100),
         );
-        print('[LiveMap] Animated camera to fit ${positions.length} shuttles');
+        _debugLog('[LiveMap] Animated camera to fit ${positions.length} shuttles');
       }
       return;
     }
@@ -583,7 +597,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       zoom: 15,
     );
     _mapController!.animateCamera(CameraUpdate.newCameraPosition(defaultPosition));
-    print('[LiveMap] No shuttles found, showing default KNUST campus');
+    _debugLog('[LiveMap] No shuttles found, showing default KNUST campus');
   }
 
   LatLngBounds _calculateBounds(List<LatLng> positions) {
@@ -607,6 +621,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return _buildBody();
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(

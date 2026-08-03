@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../config/api_config.dart';
@@ -8,6 +9,10 @@ class TelemetryService {
   WebSocketChannel? _channel;
   Timer? _locationUpdateTimer;
   bool _isConnected = false;
+
+  void _debugLog(String message) {
+    if (kDebugMode) print(message);
+  }
 
   // Callbacks for UI updates
   Function(String)? onError;
@@ -56,23 +61,23 @@ class TelemetryService {
 
       // Connect to WebSocket
       final wsUrl = Uri.parse('${ApiConfig.baseWsUrl}/ws/driver/telemetry?token=$accessToken');
-      print('[Telemetry] Connecting to: $wsUrl');
+      _debugLog('[Telemetry] Connecting to: $wsUrl');
       _channel = WebSocketChannel.connect(wsUrl);
 
       // Listen for connection messages
       _channel!.stream.listen(
         (message) {
           final data = jsonDecode(message);
-          print('[Telemetry] Received: ${data['status']}');
+          _debugLog('[Telemetry] Received: ${data['status']}');
         },
         onError: (error) {
-          print('[Telemetry] WebSocket error: $error');
+          _debugLog('[Telemetry] WebSocket error: $error');
           onError?.call('Connection error: $error');
           _isConnected = false;
           onDisconnected?.call();
         },
         onDone: () {
-          print('[Telemetry] WebSocket closed');
+          _debugLog('[Telemetry] WebSocket closed');
           _isConnected = false;
           onDisconnected?.call();
         },
@@ -120,9 +125,9 @@ class TelemetryService {
 
       _channel!.sink.add(jsonEncode(locationData));
 
-      print('[Telemetry] Sent location: ${position.latitude}, ${position.longitude}');
+      _debugLog('[Telemetry] Sent location: ${position.latitude}, ${position.longitude}');
     } catch (e) {
-      print('[Telemetry] Error sending location: $e');
+      _debugLog('[Telemetry] Error sending location: $e');
       onError?.call('Failed to get location: $e');
     }
   }

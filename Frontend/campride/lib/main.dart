@@ -4,7 +4,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'config/firebase_config.dart';
 import 'providers/authentication_provider.dart';
 import 'providers/theme_provider.dart';
-import 'providers/user_role_provider.dart';
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -29,7 +28,6 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthenticationProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => UserRoleProvider()),
       ],
       child: const CamprideApp(),
     ),

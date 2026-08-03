@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -27,6 +28,10 @@ class AuthenticationProvider extends ChangeNotifier {
   bool get isAuthenticated => _state == AuthState.authenticated;
   String? get accessToken => _accessToken;
 
+  void _debugLog(String message) {
+    if (kDebugMode) print(message);
+  }
+
   // Request FCM notification permission and get device token
   Future<String?> _requestNotificationPermission() async {
     try {
@@ -43,16 +48,16 @@ class AuthenticationProvider extends ChangeNotifier {
       );
 
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        print('[FCM] Notification permission denied');
+        _debugLog('[FCM] Notification permission denied');
         return null;
       }
 
       // Get device token
       final token = await messaging.getToken();
-      print('[FCM] Device token obtained: $token');
+      _debugLog('[FCM] Device token obtained: $token');
       return token;
     } catch (e) {
-      print('[FCM] Error requesting notification permission: $e');
+      _debugLog('[FCM] Error requesting notification permission: $e');
       return null;
     }
   }
@@ -61,7 +66,7 @@ class AuthenticationProvider extends ChangeNotifier {
   Future<void> _registerDeviceToken(String token) async {
     try {
       if (_accessToken == null) {
-        print('[FCM] No access token available for device token registration');
+        _debugLog('[FCM] No access token available for device token registration');
         return;
       }
 
@@ -75,12 +80,12 @@ class AuthenticationProvider extends ChangeNotifier {
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        print('[FCM] Device token registered successfully');
+        _debugLog('[FCM] Device token registered successfully');
       } else {
-        print('[FCM] Failed to register device token: ${response.statusCode}');
+        _debugLog('[FCM] Failed to register device token: ${response.statusCode}');
       }
     } catch (e) {
-      print('[FCM] Error registering device token: $e');
+      _debugLog('[FCM] Error registering device token: $e');
     }
   }
 
@@ -359,7 +364,7 @@ class AuthenticationProvider extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error updating profile: $e');
+      _debugLog('Error updating profile: $e');
       return false;
     }
   }

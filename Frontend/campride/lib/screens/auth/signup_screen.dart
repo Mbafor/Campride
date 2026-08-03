@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:google_sign_in_web/web_only.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/authentication_provider.dart';
-import '../../providers/user_role_provider.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_colors.dart';
 import 'otp_screen.dart';
@@ -30,6 +30,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _googleLoading = false;
   String? _emailError;
   String? _passwordError;
+  StreamSubscription<GoogleSignInAccount?>? _googleSignInSub;
 
   String _getDashboardRoute(String userRole) {
     switch (userRole) {
@@ -51,10 +52,9 @@ class _SignupScreenState extends State<SignupScreen> {
     super.initState();
     // Listen to Google Sign-In stream (works on both web and mobile)
     // This fires when renderButton() or signIn() completes
-    GoogleSignIn().onCurrentUserChanged.listen((account) {
+    _googleSignInSub = GoogleSignIn().onCurrentUserChanged.listen((account) {
       if (account != null && mounted) {
-        print('[DEBUG] User signed in: ${account.email}');
-        developer.log('[DEBUG] User signed in: ${account.email}', name: 'GoogleSignIn');
+        developer.log('User signed in: ${account.email}', name: 'GoogleSignIn');
         _handleGoogleSignInSuccess(account);
       }
     });
@@ -62,6 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    _googleSignInSub?.cancel();
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
@@ -131,14 +132,10 @@ class _SignupScreenState extends State<SignupScreen> {
         throw Exception('Failed to get ID token from Google');
       }
 
-      print('[DEBUG] ID token received (first 10 chars): ${idToken.substring(0, 10)}');
-      print('[DEBUG] Token type: ${idToken.substring(0, 4)}');
-      developer.log('[DEBUG] ID token starts with: ${idToken.substring(0, 4)}', name: 'GoogleSignIn');
+      developer.log('ID token received', name: 'GoogleSignIn');
 
       // Send ID token to backend
       final auth = context.read<AuthenticationProvider>();
-      final role = context.read<UserRoleProvider>();
-      role.setRole(widget.role);
 
       final ok = await auth.googleSignIn(idToken: idToken);
 
@@ -147,7 +144,6 @@ class _SignupScreenState extends State<SignupScreen> {
         if (ok) {
           final userRole = auth.user?.role ?? 'student';
           final dashboardRoute = _getDashboardRoute(userRole);
-          print('[DEBUG] Navigation to $dashboardRoute');
           context.go(dashboardRoute);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -161,7 +157,7 @@ class _SignupScreenState extends State<SignupScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _googleLoading = false);
-        print('[DEBUG] Error in Google sign-in: $e');
+        developer.log('Error in Google sign-in: $e', name: 'GoogleSignIn');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
