@@ -144,7 +144,18 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
 
     final auth = context.read<AuthenticationProvider>();
     if (auth.accessToken == null) {
-      setState(() => _errorMessage = 'Authentication failed');
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Authentication failed';
+      });
+      return;
+    }
+
+    if (_allStops.length < 2) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Not enough stops available to match a shuttle';
+      });
       return;
     }
 
@@ -196,7 +207,10 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
 
     final auth = context.read<AuthenticationProvider>();
     if (auth.accessToken == null) {
-      setState(() => _errorMessage = 'Authentication failed');
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Authentication failed';
+      });
       return;
     }
 

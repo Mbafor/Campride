@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
+import '../../screens/common/coming_soon_screen.dart';
 import '../../screens/student/rides/rides_screen.dart';
 import '../../screens/student/alerts/alerts_screen.dart';
-import '../../screens/student/account/student_account_screen.dart';
+import '../../screens/student/settings/settings_screen.dart';
 import '../../theme/app_colors.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -60,33 +61,124 @@ class AppDrawer extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    _DrawerItem(
-                      label: 'Request History',
-                      icon: Icons.history,
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const RidesScreen()));
-                      },
-                    ),
-                    _DrawerItem(
-                      label: 'Notifications',
-                      icon: Icons.notifications,
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsScreen()));
-                      },
-                    ),
-                    _DrawerItem(
-                      label: 'Settings',
-                      icon: Icons.settings,
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const StudentAccountScreen()));
-                      },
-                    ),
-                  ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _DrawerItem(
+                        label: 'Request History',
+                        icon: Icons.history,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const RidesScreen()));
+                        },
+                      ),
+                      _DrawerItem(
+                        label: 'Couriers',
+                        icon: Icons.local_shipping_outlined,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ComingSoonScreen(
+                                title: 'Couriers',
+                                icon: Icons.local_shipping_outlined,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      _DrawerItem(
+                        label: 'Notifications',
+                        icon: Icons.notifications,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsScreen()));
+                        },
+                      ),
+                      _DrawerItem(
+                        label: 'Safety',
+                        icon: Icons.shield_outlined,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ComingSoonScreen(
+                                title: 'Safety',
+                                icon: Icons.shield_outlined,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      _DrawerItem(
+                        label: 'Settings',
+                        icon: Icons.settings,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                        },
+                      ),
+                      _DrawerItem(
+                        label: 'Help',
+                        icon: Icons.help_outline,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ComingSoonScreen(
+                                title: 'Help',
+                                icon: Icons.help_outline,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      _DrawerItem(
+                        label: 'Support',
+                        icon: Icons.support_agent_outlined,
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ComingSoonScreen(
+                                title: 'Support',
+                                icon: Icons.support_agent_outlined,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Driver mode
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Driver Mode is coming soon')),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1C1C1C),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(
+                    'Driver Mode',
+                    style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
             ),

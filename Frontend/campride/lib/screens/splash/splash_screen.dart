@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_constants.dart';
+import '../../providers/authentication_provider.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/text_styles.dart';
@@ -32,9 +34,26 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Future.delayed(AppConstants.splashDuration, () {
-      if (mounted) context.go(RouteNames.welcome);
-    });
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    final auth = context.read<AuthenticationProvider>();
+
+    // Run the minimum splash duration and the token check in parallel so
+    // a fast/slow auth check doesn't shorten/lengthen the splash beyond it.
+    await Future.wait([
+      auth.initializeAuth(),
+      Future.delayed(AppConstants.splashDuration),
+    ]);
+    if (!mounted) return;
+
+    if (auth.isAuthenticated) {
+      final role = auth.user?.role ?? 'student';
+      context.go(RouteNames.dashboardForRole(role));
+    } else {
+      context.go(RouteNames.welcome);
+    }
   }
 
   @override

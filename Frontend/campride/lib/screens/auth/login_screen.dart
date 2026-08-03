@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
-import '../../providers/user_role_provider.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_colors.dart';
 import 'otp_screen.dart';
@@ -48,8 +47,6 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     final auth = context.read<AuthenticationProvider>();
-    final role = context.read<UserRoleProvider>();
-    role.setRole(widget.role);
 
     final ok = await auth.login(email: email, password: password);
 

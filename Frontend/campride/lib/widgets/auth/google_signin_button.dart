@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_sign_in_web/web_only.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
-import '../../providers/user_role_provider.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_colors.dart';
 
@@ -25,16 +25,23 @@ class GoogleSignInButton extends StatefulWidget {
 
 class _GoogleSignInButtonState extends State<GoogleSignInButton> {
   bool _isLoading = false;
+  StreamSubscription<GoogleSignInAccount?>? _googleSignInSub;
 
   @override
   void initState() {
     super.initState();
-    GoogleSignIn().onCurrentUserChanged.listen((account) {
+    _googleSignInSub = GoogleSignIn().onCurrentUserChanged.listen((account) {
       if (account != null && mounted) {
-        developer.log('[DEBUG] User signed in: ${account.email}', name: 'GoogleSignIn');
+        developer.log('User signed in: ${account.email}', name: 'GoogleSignIn');
         _handleGoogleSignInSuccess(account);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _googleSignInSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _handleGoogleSignInSuccess(GoogleSignInAccount account) async {
@@ -48,11 +55,9 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
         throw Exception('Failed to get ID token from Google');
       }
 
-      developer.log('[DEBUG] ID token starts with: ${idToken.substring(0, 4)}', name: 'GoogleSignIn');
+      developer.log('ID token received', name: 'GoogleSignIn');
 
       final auth = context.read<AuthenticationProvider>();
-      final role = context.read<UserRoleProvider>();
-      role.setRole(widget.role);
 
       final ok = await auth.googleSignIn(idToken: idToken);
 

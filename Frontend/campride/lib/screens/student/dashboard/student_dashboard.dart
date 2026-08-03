@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../live_shuttles_screen.dart';
 import '../alerts/alerts_screen.dart';
 import '../account/student_account_screen.dart';
-import '../route_search/route_search_screen.dart';
+import '../where_to/where_to_screen.dart';
 import '../../../widgets/common/app_drawer.dart';
 import '../../../theme/app_colors.dart';
 
@@ -27,7 +27,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           IndexedStack(
             index: _currentIndex,
             children: const [
-              LiveShuttlesScreen(), // Home tab (index 0)
+              LiveShuttlesScreen(embedded: true), // Home tab (index 0)
               AlertsScreen(),       // Alerts tab (index 1)
               StudentAccountScreen(), // Account tab (index 2)
             ],
@@ -94,29 +94,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const RouteSearchScreen()),
+                      MaterialPageRoute(builder: (_) => const WhereToScreen()),
                     );
                   },
                 ),
-              ),
-            ),
-          // Recenter button — visible on Home tab
-          if (_currentIndex == 0)
-            Positioned(
-              bottom: 80,
-              right: 16,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.primaryGreen,
-                elevation: 4,
-                onPressed: () {
-                  // TODO: Implement recenter to user location
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Recenter to my location')),
-                  );
-                },
-                child: const Icon(Icons.my_location, size: 20),
               ),
             ),
         ],
