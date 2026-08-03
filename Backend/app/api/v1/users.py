@@ -1,5 +1,7 @@
 """User account management endpoints."""
-from fastapi import APIRouter, Depends, HTTPException
+import base64
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -9,6 +11,8 @@ from app.schemas.user import UserResponse
 from app.api.deps import get_db, get_current_user
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
+
+MAX_PHOTO_BYTES = 2 * 1024 * 1024  # 2MB
 
 
 class FCMTokenRequest(BaseModel):
@@ -70,4 +74,36 @@ def get_current_user_info(
     current_user: User = Depends(get_current_user),
 ):
     """Get current user information."""
+    return current_user
+
+
+@router.post("/me/photo", response_model=UserResponse)
+async def update_profile_photo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload/replace the current user's profile photo.
+
+    Stored as a base64 data URL directly on the user row rather than on
+    local disk, since the API host's filesystem is not guaranteed to
+    persist across deploys.
+    """
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "INVALID_FILE_TYPE", "message": "File must be an image"},
+        )
+
+    contents = await file.read()
+    if len(contents) > MAX_PHOTO_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail={"error_code": "FILE_TOO_LARGE", "message": "Image must be 2MB or smaller"},
+        )
+
+    encoded = base64.b64encode(contents).decode("ascii")
+    current_user.photo_url = f"data:{file.content_type};base64,{encoded}"
+    db.commit()
+    db.refresh(current_user)
     return current_user
