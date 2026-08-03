@@ -32,7 +32,6 @@ class UserResponse(BaseModel):
     name: str
     email: str
     role: str
-    phone_number: str | None = None
     is_active: bool
     created_at: datetime
     fcm_token: str | None = None

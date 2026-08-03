@@ -51,7 +51,6 @@ class AuthApiService {
           name: json['name'] ?? '',
           email: json['email'] ?? '',
           role: json['role'] ?? 'student',
-          phoneNumber: json['phone_number'],
         );
         return AuthApiResponse(success: true, data: user);
       } else {
@@ -239,7 +238,6 @@ class AuthApiService {
           name: json['name'] ?? '',
           email: json['email'] ?? '',
           role: json['role'] ?? 'student',
-          phoneNumber: json['phone_number'],
         );
         return AuthApiResponse(success: true, data: user);
       } else {
@@ -259,17 +257,15 @@ class AuthApiService {
     }
   }
 
-  // Update the current user's profile (name, phone, email)
+  // Update the current user's profile (name, email)
   Future<AuthApiResponse<UserModel>> updateProfile({
     required String accessToken,
     String? name,
-    String? phoneNumber,
     String? email,
   }) async {
     try {
       final body = <String, dynamic>{};
       if (name != null) body['name'] = name;
-      if (phoneNumber != null) body['phone_number'] = phoneNumber;
       if (email != null) body['email'] = email;
 
       if (body.isEmpty) {
@@ -293,7 +289,6 @@ class AuthApiService {
           name: json['name'] ?? '',
           email: json['email'] ?? '',
           role: json['role'] ?? 'student',
-          phoneNumber: json['phone_number'],
         );
         return AuthApiResponse(success: true, data: user);
       } else {

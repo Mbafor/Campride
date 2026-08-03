@@ -340,11 +340,10 @@ class AuthenticationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Persist profile changes (name/phone/email) to the backend
+  /// Persist profile changes (name/email) to the backend
   /// and update the in-memory user.
   Future<bool> updateProfile({
     String? name,
-    String? phoneNumber,
     String? email,
   }) async {
     if (_accessToken == null) return false;
@@ -353,7 +352,6 @@ class AuthenticationProvider extends ChangeNotifier {
       final response = await _apiService.updateProfile(
         accessToken: _accessToken!,
         name: name,
-        phoneNumber: phoneNumber,
         email: email,
       );
 

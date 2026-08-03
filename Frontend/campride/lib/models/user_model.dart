@@ -5,7 +5,6 @@ class UserModel {
   final String? photoUrl;
   final String role;
   final String? studentId;
-  final String? phoneNumber;
 
   const UserModel({
     required this.id,
@@ -14,7 +13,6 @@ class UserModel {
     this.photoUrl,
     required this.role,
     this.studentId,
-    this.phoneNumber,
   });
 
   /// First name(s) = full name minus the last word.
@@ -36,7 +34,6 @@ class UserModel {
         email: 'kwame.mensah@st.knust.edu.gh',
         role: 'student',
         studentId: '0020250001',
-        phoneNumber: '+233 24 000 0001',
       );
 
   factory UserModel.mockDriver() => const UserModel(
@@ -44,7 +41,6 @@ class UserModel {
         name: 'Kofi Asante',
         email: 'kofi.asante@knust.edu.gh',
         role: 'driver',
-        phoneNumber: '+233 20 000 0002',
         studentId: null,
       );
 
@@ -55,7 +51,6 @@ class UserModel {
     String? photoUrl,
     String? role,
     String? studentId,
-    String? phoneNumber,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -64,7 +59,6 @@ class UserModel {
       photoUrl: photoUrl ?? this.photoUrl,
       role: role ?? this.role,
       studentId: studentId ?? this.studentId,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
     );
   }
 }

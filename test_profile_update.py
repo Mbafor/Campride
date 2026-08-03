@@ -75,31 +75,26 @@ def main():
     if not print_result("2 get initial profile", status, text):
         failures.append("GET /users/me")
 
-    # 3-5) Update each field separately, matching how the mobile app saves edits.
+    # 3-4) Update each field separately, matching how the mobile app saves edits.
     # Values are safe to run repeatedly against the dedicated test account.
-    status, text = call("PUT", "/users/me", token=token, body={"phone_number": "+233240000001"})
-    if not print_result("3 update phone", status, text):
-        failures.append("PUT phone_number")
-
     status, text = call("PUT", "/users/me", token=token, body={"name": "Test Student"})
-    if not print_result("4 update name", status, text):
+    if not print_result("3 update name", status, text):
         failures.append("PUT name")
 
     # Keeping the existing email avoids changing the test account's login identity.
     status, text = call("PUT", "/users/me", token=token, body={"email": TEST_EMAIL})
-    if not print_result("5 retain email", status, text):
+    if not print_result("4 retain email", status, text):
         failures.append("PUT email")
 
-    # 6) Confirm all expected values persisted.
+    # 5) Confirm all expected values persisted.
     status, text = call("GET", "/users/me", token=token)
     profile = response_json(text)
     expected = {
         "name": "Test Student",
         "email": TEST_EMAIL,
-        "phone_number": "+233240000001",
     }
     persisted = status == 200 and all(profile.get(key) == value for key, value in expected.items())
-    print_result("6 verify persisted profile", status, text)
+    print_result("5 verify persisted profile", status, text)
     if not persisted:
         failures.append("profile persistence")
 
