@@ -3,8 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:geolocator/geolocator.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:http/http.dart' as http;
 
 import '../../config/api_config.dart';
@@ -39,9 +41,17 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
   // Markers on map: driver_id -> Marker
   Map<String, Marker> _markers = {};
 
-  // Matched shuttle info for floating card
+// Matched shuttle info for floating card
   String? _matchedShuttleName;
   String? _matchedShuttleEta;
+
+  // User's current location (for the blue blip on the map)
+  LatLng? _userLocation;
+  bool _isGettingLocation = false;
+  String? _locationError;
+
+  // Custom user-location blip marker
+  Marker? _userLocationMarker;
 
   // KNUST campus center coordinates
   static const LatLng _knustCenter = LatLng(6.7041, -1.5637);
@@ -55,6 +65,147 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
     print('[LiveMap] Screen is mounting, about to connect to WebSocket');
     _loadShuttleLookup();
     _connectToLiveMap();
+    _getUserLocation();
+  }
+
+  // ── User location (blip) ──────────────────────────────────────────────────
+  Future<void> _getUserLocation() async {
+    if (_isGettingLocation) return;
+    setState(() {
+      _isGettingLocation = true;
+      _locationError = null;
+    });
+
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print('[LiveMap] Location services are disabled');
+        if (mounted) {
+          setState(() {
+            _isGettingLocation = false;
+            _locationError = 'Location services are disabled';
+          });
+        }
+        return;
+      }
+
+      // Check and request location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        print('[LiveMap] Location permission denied');
+        if (mounted) {
+          setState(() {
+            _isGettingLocation = false;
+            _locationError = 'Location permission denied';
+          });
+        }
+        return;
+      }
+
+// Get current position
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      print('[LiveMap] Got user location: ${position.latitude}, ${position.longitude}');
+      if (mounted) {
+        setState(() {
+          _userLocation = LatLng(position.latitude, position.longitude);
+          _isGettingLocation = false;
+          _locationError = null;
+          _userLocationMarker = null;
+        });
+        _buildUserLocationMarker();
+      }
+    } catch (e) {
+      print('[LiveMap] Error getting user location: $e');
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+          _locationError = 'Could not determine your location';
+        });
+      }
+    }
+  }
+
+  Future<void> _buildUserLocationMarker() async {
+    final location = _userLocation;
+    if (location == null) return;
+
+    try {
+      final icon = await _createUserLocationIcon();
+      if (!mounted || _userLocation == null) return;
+      setState(() {
+        _userLocationMarker = Marker(
+          markerId: const MarkerId('user_location'),
+          position: location,
+          icon: icon,
+          infoWindow: const InfoWindow(title: 'You are here'),
+          zIndex: 100,
+        );
+      });
+    } catch (e) {
+      print('[LiveMap] Error building user location marker: $e');
+    }
+  }
+
+Future<BitmapDescriptor> _createUserLocationIcon() async {
+    const size = 60.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final center = Offset(size / 2, size / 2);
+
+    // Outer translucent glow
+    final glowPaint = Paint()..color = const Color(0x282196F3);
+    canvas.drawCircle(center, size / 2 - 4, glowPaint);
+
+    // White ring
+    final ringPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5;
+    canvas.drawCircle(center, size / 2 - 14, ringPaint);
+
+    // Solid blue dot
+    final dotPaint = Paint()..color = const Color(0xFF2196F3);
+    canvas.drawCircle(center, size / 2 - 14, dotPaint);
+
+    final image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+  }
+
+  Future<void> _recenterToUserLocation() async {
+    if (_userLocation != null && _mapController != null) {
+      await _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: _userLocation!, zoom: 17),
+        ),
+      );
+      print('[LiveMap] Recentered to user location');
+    } else {
+      // No location yet, try to fetch it
+      await _getUserLocation();
+      if (_userLocation != null && _mapController != null) {
+        await _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: _userLocation!, zoom: 17),
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not determine your location. Check permissions.'),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadShuttleLookup() async {
@@ -433,7 +584,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
     return Stack(
       children: [
-        // Google Map
+// Google Map
         GoogleMap(
           onMapCreated: (GoogleMapController controller) {
             _mapController = controller;
@@ -442,10 +593,24 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
             target: _knustCenter,
             zoom: 15,
           ),
-          markers: Set<Marker>.of(_markers.values),
+          markers: Set<Marker>.of([..._markers.values, if (_userLocationMarker != null) _userLocationMarker!]),
           myLocationButtonEnabled: false,
           zoomControlsEnabled: true,
           mapType: MapType.normal,
+        ),
+        // My Location button (recenter to user)
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            mini: true,
+            heroTag: 'recenter_location',
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF2196F3),
+            elevation: 4,
+            onPressed: _recenterToUserLocation,
+            child: const Icon(Icons.my_location, size: 22),
+          ),
         ),
         // Connection warning banner
         if (!_isConnected)

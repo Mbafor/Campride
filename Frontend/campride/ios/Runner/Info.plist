@@ -70,5 +70,9 @@
 	<true/>
 	<key>Google Maps API Key</key>
 	<string>AIzaSyBHCR8sBQ8UkfgeZnMxsOvH0mm10n-beok</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>CampRide uses your location to show your position on the live shuttle map and help you track nearby shuttles.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>CampRide uses your location to show your position on the live shuttle map and help you track nearby shuttles.</string>
 </dict>
 </plist>
