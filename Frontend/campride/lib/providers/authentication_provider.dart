@@ -335,6 +335,37 @@ class AuthenticationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Persist profile changes (name/gender/phone/email) to the backend
+  /// and update the in-memory user.
+  Future<bool> updateProfile({
+    String? name,
+    String? gender,
+    String? phoneNumber,
+    String? email,
+  }) async {
+    if (_accessToken == null) return false;
+
+    try {
+      final response = await _apiService.updateProfile(
+        accessToken: _accessToken!,
+        name: name,
+        gender: gender,
+        phoneNumber: phoneNumber,
+        email: email,
+      );
+
+      if (response.success && response.data != null) {
+        _user = response.data;
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Error updating profile: $e');
+      return false;
+    }
+  }
+
   void updateUserName(String newName) {
     if (_user != null) {
       _user = _user!.copyWith(name: newName);

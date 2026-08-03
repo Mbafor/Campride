@@ -51,6 +51,8 @@ class AuthApiService {
           name: json['name'] ?? '',
           email: json['email'] ?? '',
           role: json['role'] ?? 'student',
+          phoneNumber: json['phone_number'],
+          gender: json['gender'],
         );
         return AuthApiResponse(success: true, data: user);
       } else {
@@ -238,6 +240,8 @@ class AuthApiService {
           name: json['name'] ?? '',
           email: json['email'] ?? '',
           role: json['role'] ?? 'student',
+          phoneNumber: json['phone_number'],
+          gender: json['gender'],
         );
         return AuthApiResponse(success: true, data: user);
       } else {
@@ -245,6 +249,63 @@ class AuthApiService {
         return AuthApiResponse(
           success: false,
           message: error['message'] ?? 'Failed to get user info',
+          errorCode: error['error_code'] ?? 'UNKNOWN',
+        );
+      }
+    } catch (e) {
+      return AuthApiResponse(
+        success: false,
+        message: 'Network error: $e',
+        errorCode: 'NETWORK_ERROR',
+      );
+    }
+  }
+
+  // Update the current user's profile (name, gender, phone, email)
+  Future<AuthApiResponse<UserModel>> updateProfile({
+    required String accessToken,
+    String? name,
+    String? gender,
+    String? phoneNumber,
+    String? email,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (gender != null) body['gender'] = gender;
+      if (phoneNumber != null) body['phone_number'] = phoneNumber;
+      if (email != null) body['email'] = email;
+
+      if (body.isEmpty) {
+        return AuthApiResponse(success: false, message: 'Nothing to update');
+      }
+
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseHttpUrl}/users/me'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200) {
+        final user = UserModel(
+          id: json['id'] ?? '',
+          name: json['name'] ?? '',
+          email: json['email'] ?? '',
+          role: json['role'] ?? 'student',
+          phoneNumber: json['phone_number'],
+          gender: json['gender'],
+        );
+        return AuthApiResponse(success: true, data: user);
+      } else {
+        final error = _extractErrorDetail(json);
+        return AuthApiResponse(
+          success: false,
+          message: error['message'] ?? 'Failed to update profile',
           errorCode: error['error_code'] ?? 'UNKNOWN',
         );
       }
