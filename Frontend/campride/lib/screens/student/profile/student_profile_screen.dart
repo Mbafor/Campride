@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'edit_profile_screen.dart';
+import 'package:provider/provider.dart';
 
+import '../../../providers/authentication_provider.dart';
+import 'update_name_screen.dart';
+import 'update_gender_screen.dart';
+import 'update_phone_screen.dart';
+import 'update_email_screen.dart';
+
+/// Profile screen reached from the Account tab → Profile.
+/// Each row opens the corresponding edit screen from the design.
 class StudentProfileScreen extends StatelessWidget {
   const StudentProfileScreen({super.key});
 
@@ -13,16 +21,15 @@ class StudentProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Back button
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.arrow_back, size: 24, color: Colors.black),
+                child:
+                    const Icon(Icons.arrow_back, size: 24, color: Colors.black),
               ),
             ),
             const SizedBox(height: 20),
-            // Title
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -35,7 +42,6 @@ class StudentProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            // Avatar
             Center(
               child: Container(
                 width: 84,
@@ -44,11 +50,11 @@ class StudentProfileScreen extends StatelessWidget {
                   color: Colors.black,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.person, size: 52, color: Colors.white),
+                child:
+                    const Icon(Icons.person, size: 52, color: Colors.white),
               ),
             ),
             const SizedBox(height: 16),
-            // Personal info label
             Center(
               child: Text(
                 'Personal info',
@@ -61,37 +67,56 @@ class StudentProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Divider(height: 1, thickness: 1, color: Colors.grey[200]),
-            // Info list
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _InfoRow(
-                    label: 'Name',
-                    value: 'Edwin Kobina Armah',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
-                  ),
-                  _InfoRow(
-                    label: 'Gender',
-                    value: 'Man',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
-                  ),
-                  _InfoRow(
-                    label: 'Phone number',
-                    value: '+233545847949',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
-                  ),
-                  _InfoRow(
-                    label: 'Email',
-                    value: 'edwinjohnarmah@gmail.com',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
-                  ),
-                  _InfoRow(
-                    label: 'Language',
-                    value: 'Update device language',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
-                  ),
-                ],
+              child: Consumer<AuthenticationProvider>(
+                builder: (context, auth, _) {
+                  final user = auth.user;
+                  return ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _InfoRow(
+                        label: 'Name',
+                        value: user?.name ?? '—',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const UpdateNameScreen()),
+                        ),
+                      ),
+                      _InfoRow(
+                        label: 'Gender',
+                        value: user?.gender?.isNotEmpty == true
+                            ? user!.gender!
+                            : 'Not set',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const UpdateGenderScreen()),
+                        ),
+                      ),
+                      _InfoRow(
+                        label: 'Phone number',
+                        value: user?.phoneNumber?.isNotEmpty == true
+                            ? user!.phoneNumber!
+                            : 'Not set',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const UpdatePhoneScreen()),
+                        ),
+                      ),
+                      _InfoRow(
+                        label: 'Email',
+                        value: user?.email ?? '—',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const UpdateEmailScreen()),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],

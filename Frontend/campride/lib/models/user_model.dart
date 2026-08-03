@@ -6,6 +6,7 @@ class UserModel {
   final String role;
   final String? studentId;
   final String? phoneNumber;
+  final String? gender;
 
   const UserModel({
     required this.id,
@@ -15,7 +16,21 @@ class UserModel {
     required this.role,
     this.studentId,
     this.phoneNumber,
+    this.gender,
   });
+
+  /// First name(s) = full name minus the last word.
+  String get firstName {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.length <= 1) return name.trim();
+    return parts.sublist(0, parts.length - 1).join(' ');
+  }
+
+  /// Last name = the last word of the full name.
+  String get lastName {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    return parts.last;
+  }
 
   factory UserModel.mockStudent() => const UserModel(
         id: 'student_001',
@@ -43,6 +58,7 @@ class UserModel {
     String? role,
     String? studentId,
     String? phoneNumber,
+    String? gender,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -52,6 +68,7 @@ class UserModel {
       role: role ?? this.role,
       studentId: studentId ?? this.studentId,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      gender: gender ?? this.gender,
     );
   }
 }
