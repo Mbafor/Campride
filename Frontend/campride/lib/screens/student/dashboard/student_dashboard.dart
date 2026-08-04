@@ -67,70 +67,94 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 ),
               ),
             ),
-          // Floating search bar — visible on Home tab
+          // Floating search card — visible on Home tab
           if (_currentIndex == 0)
             Positioned(
-              bottom: 80,
-              left: 16,
-              right: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: context.divider,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                // Translucent "frosted" panel spanning from the search bar
+                // down to the bottom navigation, like ride-hailing apps.
+                decoration: BoxDecoration(
+                  color: context.cardBg.withValues(alpha: 0.92),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: context.cardBg,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, -2),
                     ),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Where to?',
-                        hintStyle: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: context.textSecondary,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: context.textSecondary,
-                          size: 20,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14,
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: context.divider,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    // Rectangular search input matching the pull-up sheet width
+                    Container(
+                      decoration: BoxDecoration(
+                        color: context.fieldFill,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: context.fieldBorder,
+                          width: 1.5,
                         ),
                       ),
-                      style: GoogleFonts.poppins(fontSize: 14),
-                      readOnly: true,
-                      onTap: () async {
-                        final stop = await showStopSearchSheet(context);
-                        if (stop != null && context.mounted) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  RouteConfirmScreen(initialDropoff: stop),
-                            ),
-                          );
-                        }
-                      },
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Where to?',
+                          hintStyle: GoogleFonts.poppins(
+                            fontSize: 15,
+                            color: context.textSecondary,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: context.textSecondary,
+                            size: 20,
+                          ),
+                          suffixIcon: Icon(
+                            Icons.directions_bus_outlined,
+                            color: context.textSecondary,
+                            size: 20,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                          ),
+                        ),
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          color: context.textPrimary,
+                        ),
+                        readOnly: true,
+                        onTap: () async {
+                          final stop = await showStopSearchSheet(context);
+                          if (stop != null && context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    RouteConfirmScreen(initialDropoff: stop),
+                              ),
+                            );
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
         ],
