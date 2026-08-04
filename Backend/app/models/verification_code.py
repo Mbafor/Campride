@@ -13,3 +13,4 @@ class VerificationCode(Base):
     code = Column(String(6), nullable=False)
     expires_at = Column(DateTime, default=lambda: datetime.utcnow() + timedelta(minutes=10))
     created_at = Column(DateTime, default=datetime.utcnow)
+    purpose = Column(String, default="email_verification", nullable=False)

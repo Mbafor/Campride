@@ -46,3 +46,21 @@ Best regards,
 CampRide Team"""
 
     return send_email(to_email, subject, body)
+
+
+def send_password_reset_email(to_email: str, code: str) -> bool:
+    subject = "CampRide Password Reset Request"
+    body = f"""Hello,
+
+You have requested to reset your CampRide password. Your password reset code is:
+
+{code}
+
+This code will expire in 10 minutes.
+
+If you did not request a password reset, please ignore this email or contact us immediately.
+
+Best regards,
+CampRide Team"""
+
+    return send_email(to_email, subject, body)
