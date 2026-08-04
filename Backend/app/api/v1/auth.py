@@ -50,12 +50,6 @@ class ForgotPasswordRequest(BaseModel):
     email: str
 
 
-class ResetPasswordRequest(BaseModel):
-    email: str
-    code: str
-    new_password: str
-
-
 def generate_verification_code() -> str:
     return ''.join(random.choices(string.digits, k=6))
 
@@ -439,18 +433,27 @@ def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db
     }
 
 
-@router.post("/reset-password")
-def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+class VerifyResetCodeRequest(BaseModel):
+    email: str
+    code: str
+
+
+class VerifyResetCodeResponse(BaseModel):
+    reset_token: str
+
+
+@router.post("/verify-reset-code", response_model=VerifyResetCodeResponse)
+def verify_reset_code(request: VerifyResetCodeRequest, db: Session = Depends(get_db)):
     """
-    Reset password using email, verification code, and new password.
-    Validates the code exists, hasn't expired, has correct purpose, and deletes it after use.
+    Verify password reset code and return a short-lived reset token.
+    The reset token is the verification code ID, which can only be used once.
     """
     user = db.query(User).filter(User.email == request.email).first()
 
     if not user:
         raise HTTPException(
-            status_code=404,
-            detail={"error_code": "AUTH_005", "message": "User not found"}
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
         )
 
     # Find the most recent unexpired code with purpose='password_reset'
@@ -473,6 +476,62 @@ def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db))
         raise HTTPException(
             status_code=400,
             detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    # Code is valid, return the verification ID as the reset token
+    # This token can only be used once and expires with the code
+    print(f"[AUTH] Password reset code verified for {user.email}")
+    return {"reset_token": str(verification.id)}
+
+
+class ResetPasswordWithTokenRequest(BaseModel):
+    reset_token: str
+    new_password: str
+
+
+@router.post("/reset-password")
+def reset_password(request: ResetPasswordWithTokenRequest, db: Session = Depends(get_db)):
+    """
+    Reset password using a reset token (returned from /verify-reset-code).
+    The reset token is the verification code ID, which is deleted after use.
+    """
+    # The reset_token is the verification_code.id
+    try:
+        verification_id = uuid.UUID(request.reset_token)
+    except (ValueError, AttributeError, TypeError):
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    # Find the verification record
+    verification = db.query(VerificationCode).filter(
+        VerificationCode.id == verification_id,
+        VerificationCode.purpose == "password_reset"
+    ).first()
+
+    if not verification:
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    # Check if code has expired
+    if verification.expires_at < datetime.utcnow():
+        # Delete the expired code
+        db.delete(verification)
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    # Get the user
+    user = db.query(User).filter(User.id == verification.user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail={"error_code": "AUTH_005", "message": "User not found"}
         )
 
     # Update the password
