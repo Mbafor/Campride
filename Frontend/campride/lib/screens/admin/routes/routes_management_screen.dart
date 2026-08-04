@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../../providers/authentication_provider.dart';
-import '../../../config/api_config.dart';
+import '../../../services/shuttle_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/common/empty_state_widget.dart';
+import 'route_form_screen.dart';
 
 class RoutesManagementScreen extends StatefulWidget {
   const RoutesManagementScreen({super.key});
@@ -15,13 +15,26 @@ class RoutesManagementScreen extends StatefulWidget {
 }
 
 class _RoutesManagementScreenState extends State<RoutesManagementScreen> {
-  List<Map<String, dynamic>> _routes = [];
+  final _shuttleService = ShuttleService();
+  final _searchController = TextEditingController();
+
+  List<DriverRoute> _routes = [];
   bool _loading = true;
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
     _loadRoutes();
+    _searchController.addListener(() {
+      setState(() => _query = _searchController.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRoutes() async {
@@ -31,281 +44,162 @@ class _RoutesManagementScreenState extends State<RoutesManagementScreen> {
       return;
     }
 
-    try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseHttpUrl}/admin/routes'),
-        headers: {'Authorization': 'Bearer ${auth.accessToken}'},
-      );
+    final result = await _shuttleService.listRoutes(accessToken: auth.accessToken!);
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List;
-        if (mounted) {
-          setState(() {
-            _routes = data.cast<Map<String, dynamic>>();
-            _loading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() => _loading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error loading routes: ${response.statusCode}')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
+    if (mounted) {
+      setState(() {
+        _routes = result.data ?? [];
+        _loading = false;
+      });
+      if (!result.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(result.message ?? 'Failed to load routes'), backgroundColor: AppColors.error),
         );
       }
     }
   }
 
-  void _showCreateRouteDialog() {
-    final nameController = TextEditingController();
-    final startNameController = TextEditingController();
-    final endNameController = TextEditingController();
-    final startLatController = TextEditingController();
-    final startLngController = TextEditingController();
-    final endLatController = TextEditingController();
-    final endLngController = TextEditingController();
-    bool isSubmitting = false;
+  List<DriverRoute> get _filteredRoutes {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return _routes;
+    return _routes.where((r) {
+      return r.name.toLowerCase().contains(q) ||
+          r.startName.toLowerCase().contains(q) ||
+          r.endName.toLowerCase().contains(q);
+    }).toList();
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text('Create Route', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Route Name',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    isDense: true,
-                  ),
-                  enabled: !isSubmitting,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: startNameController,
-                  decoration: InputDecoration(
-                    labelText: 'Start Location Name',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    isDense: true,
-                  ),
-                  enabled: !isSubmitting,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: startLatController,
-                  decoration: InputDecoration(
-                    labelText: 'Start Latitude',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    isDense: true,
-                  ),
-                  keyboardType: TextInputType.number,
-                  enabled: !isSubmitting,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: startLngController,
-                  decoration: InputDecoration(
-                    labelText: 'Start Longitude',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    isDense: true,
-                  ),
-                  keyboardType: TextInputType.number,
-                  enabled: !isSubmitting,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: endNameController,
-                  decoration: InputDecoration(
-                    labelText: 'End Location Name',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    isDense: true,
-                  ),
-                  enabled: !isSubmitting,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: endLatController,
-                  decoration: InputDecoration(
-                    labelText: 'End Latitude',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    isDense: true,
-                  ),
-                  keyboardType: TextInputType.number,
-                  enabled: !isSubmitting,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: endLngController,
-                  decoration: InputDecoration(
-                    labelText: 'End Longitude',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    isDense: true,
-                  ),
-                  keyboardType: TextInputType.number,
-                  enabled: !isSubmitting,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isSubmitting ? null : () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: isSubmitting
-                  ? null
-                  : () async {
-                      setDialogState(() => isSubmitting = true);
-                      final auth = context.read<AuthenticationProvider>();
-                      try {
-                        final response = await http.post(
-                          Uri.parse('${ApiConfig.baseHttpUrl}/admin/routes'),
-                          headers: {
-                            'Authorization': 'Bearer ${auth.accessToken}',
-                            'Content-Type': 'application/json',
-                          },
-                          body: jsonEncode({
-                            'name': nameController.text,
-                            'start_name': startNameController.text,
-                            'start_lat': double.parse(startLatController.text),
-                            'start_lng': double.parse(startLngController.text),
-                            'end_name': endNameController.text,
-                            'end_lat': double.parse(endLatController.text),
-                            'end_lng': double.parse(endLngController.text),
-                          }),
-                        );
-
-                        if (context.mounted) {
-                          if (response.statusCode == 200 || response.statusCode == 201) {
-                            Navigator.pop(context);
-                            _loadRoutes();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Route created: ${nameController.text}')),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error: ${response.statusCode}'),
-                                backgroundColor: AppColors.error,
-                              ),
-                            );
-                          }
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
-                          );
-                        }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-              child: isSubmitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
-                    )
-                  : const Text('Create', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
+  Future<void> _openCreateRoute() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const RouteFormScreen()),
     );
+    if (created == true) _loadRoutes();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.scaffoldBg,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+        backgroundColor: context.scaffoldBg,
+        elevation: 0,
+        iconTheme: IconThemeData(color: context.textPrimary),
+        title: Text(
+          'Routes Management',
+          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: context.textPrimary),
         ),
-        title: Text('Routes Management', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: GestureDetector(
+                onTap: _openCreateRoute,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.add, size: 18, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text('Add', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      body: _buildBody(),
+      body: SafeArea(
+        top: false,
+        child: _loading
+            ? Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+                ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.fieldFill,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: context.fieldBorder),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        style: GoogleFonts.poppins(fontSize: 14, color: context.textPrimary),
+                        decoration: InputDecoration(
+                          hintText: 'Search routes...',
+                          hintStyle: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
+                          prefixIcon: Icon(Icons.search, color: context.textSecondary, size: 20),
+                          suffixIcon: _query.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: Icon(Icons.close, size: 18, color: context.textSecondary),
+                                  onPressed: () => _searchController.clear(),
+                                ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(child: _buildBody()),
+                ],
+              ),
+      ),
     );
   }
 
   Widget _buildBody() {
-    if (_loading) {
-      return Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
-        ),
-      );
-    }
-
     if (_routes.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.route_outlined, size: 48, color: context.textSecondary),
-            const SizedBox(height: 16),
-            Text(
-              'No Routes Yet',
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Create a route to get started',
-              style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _showCreateRouteDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Route'),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-            ),
-          ],
+      return EmptyStateWidget(
+        icon: Icons.route_outlined,
+        title: 'No routes yet',
+        subtitle: 'Create a route to get started.',
+        action: ElevatedButton.icon(
+          onPressed: _openCreateRoute,
+          icon: const Icon(Icons.add),
+          label: const Text('Add Route'),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen, foregroundColor: Colors.white),
         ),
       );
     }
 
-    return Stack(
-      children: [
-        ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: _routes.length,
-          separatorBuilder: (context, _) => const SizedBox(height: 10),
-          itemBuilder: (context, index) => _RouteCard(
-            route: _routes[index],
-            onRefresh: _loadRoutes,
-          ),
-        ),
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton(
-            onPressed: _showCreateRouteDialog,
-            backgroundColor: AppColors.primaryGreen,
-            child: const Icon(Icons.add),
-            tooltip: 'Add Route',
-          ),
-        ),
-      ],
+    final filtered = _filteredRoutes;
+    if (filtered.isEmpty) {
+      return const EmptyStateWidget(
+        icon: Icons.search_off,
+        title: 'No matching routes',
+        subtitle: 'Try a different search term.',
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      itemCount: filtered.length,
+      separatorBuilder: (context, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) => _RouteCard(
+        route: filtered[index],
+        onRefresh: _loadRoutes,
+      ),
     );
   }
 }
 
-class _RouteCard extends StatelessWidget {
-  final Map<String, dynamic> route;
+class _RouteCard extends StatefulWidget {
+  final DriverRoute route;
   final VoidCallback onRefresh;
 
   const _RouteCard({
@@ -313,74 +207,155 @@ class _RouteCard extends StatelessWidget {
     required this.onRefresh,
   });
 
+  @override
+  State<_RouteCard> createState() => _RouteCardState();
+}
 
-  void _showStopsDialog(BuildContext context) {
+class _RouteCardState extends State<_RouteCard> {
+  final _shuttleService = ShuttleService();
+  bool _isDeleting = false;
+
+  Future<void> _openEdit() async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => RouteFormScreen(route: widget.route)),
+    );
+    if (updated == true) widget.onRefresh();
+  }
+
+  void _showStopsDialog() {
     showDialog(
       context: context,
       builder: (context) => _StopsDialog(
-        routeId: route['id'],
-        routeName: route['name'],
-        onRefresh: onRefresh,
+        routeId: widget.route.id,
+        routeName: widget.route.name,
+      ),
+    );
+  }
+
+  void _showDeleteConfirm() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Route?', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Text(
+          'This will permanently delete "${widget.route.name}" and its stops. This action cannot be undone.',
+          style: GoogleFonts.poppins(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: _isDeleting
+                ? null
+                : () async {
+                    setState(() => _isDeleting = true);
+                    final auth = context.read<AuthenticationProvider>();
+                    try {
+                      final result = await _shuttleService.deleteRoute(
+                        accessToken: auth.accessToken!,
+                        routeId: widget.route.id,
+                      );
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        if (result.success) {
+                          widget.onRefresh();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Deleted: ${widget.route.name}')),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(result.message ?? 'Failed to delete'), backgroundColor: AppColors.error),
+                          );
+                        }
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isDeleting = false);
+                    }
+                  },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: _isDeleting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
+                  )
+                : const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.divider),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              route['name'] ?? 'Unnamed Route',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            _InfoRow(
-              icon: Icons.location_on,
-              label: 'From',
-              value: route['start_name'] ?? 'Unknown',
-            ),
-            const SizedBox(height: 8),
-            _InfoRow(
-              icon: Icons.location_on_outlined,
-              label: 'To',
-              value: route['end_name'] ?? 'Unknown',
-            ),
-            const SizedBox(height: 8),
-            _InfoRow(
-              icon: Icons.calendar_today,
-              label: 'Created',
-              value: route['created_at']?.toString().split('T').first ?? 'N/A',
-            ),
-            const SizedBox(height: 16),
             Row(
               children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.route_outlined, color: AppColors.primaryGreen, size: 20),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showStopsDialog(context),
-                    icon: const Icon(Icons.stop_circle_outlined),
-                    label: const Text('Stops', style: TextStyle(fontSize: 12)),
+                  child: Text(
+                    widget.route.name,
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15, color: context.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete', style: TextStyle(fontSize: 12)),
-                  ),
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, color: context.textSecondary, size: 20),
+                  onSelected: (value) {
+                    if (value == 'edit') _openEdit();
+                    if (value == 'stops') _showStopsDialog();
+                    if (value == 'delete') _showDeleteConfirm();
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 10), Text('Edit')]),
+                    ),
+                    const PopupMenuItem(
+                      value: 'stops',
+                      child: Row(children: [Icon(Icons.stop_circle_outlined, size: 18), SizedBox(width: 10), Text('Stops')]),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      enabled: !_isDeleting,
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                          const SizedBox(width: 10),
+                          Text('Delete', style: TextStyle(color: AppColors.error)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Delete — coming in Phase 5',
-              style: GoogleFonts.poppins(fontSize: 10, color: context.textSecondary),
-              textAlign: TextAlign.center,
-            ),
+            const SizedBox(height: 12),
+            _InfoRow(icon: Icons.location_on, label: 'From', value: widget.route.startName),
+            const SizedBox(height: 8),
+            _InfoRow(icon: Icons.location_on_outlined, label: 'To', value: widget.route.endName),
           ],
         ),
       ),
@@ -391,12 +366,10 @@ class _RouteCard extends StatelessWidget {
 class _StopsDialog extends StatefulWidget {
   final String routeId;
   final String routeName;
-  final VoidCallback onRefresh;
 
   const _StopsDialog({
     required this.routeId,
     required this.routeName,
-    required this.onRefresh,
   });
 
   @override
@@ -404,7 +377,8 @@ class _StopsDialog extends StatefulWidget {
 }
 
 class _StopsDialogState extends State<_StopsDialog> {
-  List<Map<String, dynamic>> _stops = [];
+  final _shuttleService = ShuttleService();
+  List<Stop> _stops = [];
   bool _loading = true;
 
   @override
@@ -415,57 +389,46 @@ class _StopsDialogState extends State<_StopsDialog> {
 
   Future<void> _loadStops() async {
     final auth = context.read<AuthenticationProvider>();
-    try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseHttpUrl}/routes/${widget.routeId}/stops'),
-        headers: {'Authorization': 'Bearer ${auth.accessToken}'},
-      );
+    final result = await _shuttleService.getRouteStops(accessToken: auth.accessToken!, routeId: widget.routeId);
+    if (mounted) {
+      setState(() {
+        _stops = result.data ?? [];
+        _loading = false;
+      });
+    }
+  }
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List;
-        if (mounted) {
-          setState(() {
-            _stops = data.cast<Map<String, dynamic>>();
-            _loading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
+  Future<void> _addStop(String name, double lat, double lng) async {
+    final auth = context.read<AuthenticationProvider>();
+    final result = await _shuttleService.addRouteStop(
+      accessToken: auth.accessToken!,
+      routeId: widget.routeId,
+      name: name,
+      lat: lat,
+      lng: lng,
+      order: _stops.length + 1,
+    );
+    if (mounted) {
+      if (result.success) {
+        _loadStops();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Stop added: $name')));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message ?? 'Failed to add stop'), backgroundColor: AppColors.error),
+        );
       }
     }
   }
 
-  Future<void> _addStop(String name, double lat, double lng, int order) async {
+  Future<void> _deleteStop(Stop stop) async {
     final auth = context.read<AuthenticationProvider>();
-    try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseHttpUrl}/admin/routes/${widget.routeId}/stops'),
-        headers: {
-          'Authorization': 'Bearer ${auth.accessToken}',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'name': name,
-          'lat': lat,
-          'lng': lng,
-          'order': order,
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
+    final result = await _shuttleService.deleteStop(accessToken: auth.accessToken!, stopId: stop.id);
+    if (mounted) {
+      if (result.success) {
         _loadStops();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Stop added: $name')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+          SnackBar(content: Text(result.message ?? 'Failed to delete stop'), backgroundColor: AppColors.error),
         );
       }
     }
@@ -500,7 +463,7 @@ class _StopsDialogState extends State<_StopsDialog> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   isDense: true,
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -510,7 +473,7 @@ class _StopsDialogState extends State<_StopsDialog> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   isDense: true,
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
               ),
             ],
           ),
@@ -522,13 +485,12 @@ class _StopsDialogState extends State<_StopsDialog> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await _addStop(
-                nameController.text,
-                double.parse(latController.text),
-                double.parse(lngController.text),
-                _stops.length + 1,
-              );
-              if (mounted) Navigator.pop(dialogContext);
+              final lat = double.tryParse(latController.text.trim());
+              final lng = double.tryParse(lngController.text.trim());
+              final name = nameController.text.trim();
+              if (name.isEmpty || lat == null || lng == null) return;
+              Navigator.pop(dialogContext);
+              await _addStop(name, lat, lng);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
             child: const Text('Add', style: TextStyle(color: Colors.white)),
@@ -565,6 +527,7 @@ class _StopsDialogState extends State<_StopsDialog> {
                     ),
                   )
                 : ListView.separated(
+                    shrinkWrap: true,
                     itemCount: _stops.length,
                     separatorBuilder: (context, _) => const Divider(),
                     itemBuilder: (context, index) {
@@ -573,11 +536,11 @@ class _StopsDialogState extends State<_StopsDialog> {
                         leading: CircleAvatar(
                           child: Text('${index + 1}'),
                         ),
-                        title: Text(stop['name'] ?? 'Unnamed'),
-                        subtitle: Text('Lat: ${stop['lat']}, Lng: ${stop['lng']}'),
+                        title: Text(stop.name),
+                        subtitle: Text('Lat: ${stop.lat}, Lng: ${stop.lng}'),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete_outline),
-                          onPressed: null,
+                          onPressed: () => _deleteStop(stop),
                         ),
                       );
                     },
@@ -592,7 +555,7 @@ class _StopsDialogState extends State<_StopsDialog> {
           onPressed: _showAddStopDialog,
           icon: const Icon(Icons.add),
           label: const Text('Add Stop'),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
         ),
       ],
     );
@@ -623,7 +586,7 @@ class _InfoRow extends StatelessWidget {
         const Spacer(),
         Text(
           value,
-          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
+          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: context.textPrimary),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

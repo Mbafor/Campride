@@ -121,12 +121,15 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
+        backgroundColor: context.scaffoldBg,
         appBar: AppBar(
+          backgroundColor: context.scaffoldBg,
+          elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: Icon(Icons.arrow_back, color: context.textPrimary),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text('Driver Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+          title: Text('Driver Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: context.textPrimary)),
         ),
         body: Center(
           child: CircularProgressIndicator(
@@ -138,12 +141,15 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
 
     if (_driver == null) {
       return Scaffold(
+        backgroundColor: context.scaffoldBg,
         appBar: AppBar(
+          backgroundColor: context.scaffoldBg,
+          elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: Icon(Icons.arrow_back, color: context.textPrimary),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text('Driver Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+          title: Text('Driver Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: context.textPrimary)),
         ),
         body: Center(
           child: Text(
@@ -155,14 +161,17 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
     }
 
     return Scaffold(
+      backgroundColor: context.scaffoldBg,
       appBar: AppBar(
+        backgroundColor: context.scaffoldBg,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           _driver!.name,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: context.textPrimary),
         ),
       ),
       body: SingleChildScrollView(
