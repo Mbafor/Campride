@@ -174,7 +174,7 @@ class StopsRepository {
             stops.add(
               StopInfo(
                 id: 'start-$routeId',
-                name: 'Start: $startName',
+                name: startName,
                 routeName: routeName,
                 lat: (startLat as num).toDouble(),
                 lng: (startLng as num).toDouble(),
@@ -190,7 +190,7 @@ class StopsRepository {
             stops.add(
               StopInfo(
                 id: 'end-$routeId',
-                name: 'End: $endName',
+                name: endName,
                 routeName: routeName,
                 lat: (endLat as num).toDouble(),
                 lng: (endLng as num).toDouble(),
