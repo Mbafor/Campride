@@ -20,7 +20,8 @@ class FleetManagerDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthenticationProvider>(
       builder: (context, auth, _) {
-        return SingleChildScrollView(
+        return SafeArea(
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,6 +82,7 @@ class FleetManagerDashboard extends StatelessWidget {
                 },
               ),
             ],
+          ),
           ),
         );
       },

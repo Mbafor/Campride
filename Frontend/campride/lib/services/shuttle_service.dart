@@ -145,6 +145,29 @@ class DriverInfo {
   }
 }
 
+class FleetManagerInfo {
+  final String id;
+  final String name;
+  final String email;
+  final bool isActive;
+
+  FleetManagerInfo({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.isActive,
+  });
+
+  factory FleetManagerInfo.fromJson(Map<String, dynamic> json) {
+    return FleetManagerInfo(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      isActive: json['is_active'] ?? false,
+    );
+  }
+}
+
 class ShuttleService {
   // DRIVER ENDPOINTS
   /// Get the driver's currently assigned/active route
@@ -303,6 +326,98 @@ class ShuttleService {
         return ApiResponse(
           success: false,
           message: 'Failed to get driver details (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// Update a driver's profile info (name, email, gender, phone)
+  Future<ApiResponse<DriverInfo>> updateDriver({
+    required String accessToken,
+    required String driverId,
+    String? name,
+    String? email,
+    String? gender,
+    String? phoneNumber,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (email != null) body['email'] = email;
+      if (gender != null) body['gender'] = gender;
+      if (phoneNumber != null) body['phone_number'] = phoneNumber;
+
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseHttpUrl}/fleet/drivers/$driverId'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return ApiResponse(success: true, data: DriverInfo.fromJson(json));
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['detail']?['message'] ?? 'Failed to update driver';
+        return ApiResponse(success: false, message: message);
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// Activate or deactivate a driver
+  Future<ApiResponse<DriverInfo>> setDriverStatus({
+    required String accessToken,
+    required String driverId,
+    required bool isActive,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseHttpUrl}/fleet/drivers/$driverId/status'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'is_active': isActive}),
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return ApiResponse(success: true, data: DriverInfo.fromJson(json));
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Failed to update driver status (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// Delete (soft-delete) a driver
+  Future<ApiResponse<void>> deleteDriver({
+    required String accessToken,
+    required String driverId,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConfig.baseHttpUrl}/fleet/drivers/$driverId'),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+
+      if (response.statusCode == 200) {
+        return ApiResponse(success: true);
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Failed to delete driver (${response.statusCode})',
         );
       }
     } catch (e) {
@@ -802,6 +917,123 @@ class ShuttleService {
         final errorBody = jsonDecode(response.body);
         final message = errorBody['detail']?['message'] ?? 'Failed to create fleet manager';
         return ApiResponse(success: false, message: message);
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// List all fleet managers (super admin only)
+  Future<ApiResponse<List<FleetManagerInfo>>> listFleetManagers({
+    required String accessToken,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseHttpUrl}/admin/users/fleet-managers'),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as List;
+        final managers = json.map((m) => FleetManagerInfo.fromJson(m)).toList();
+        return ApiResponse(success: true, data: managers);
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Failed to list fleet managers (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// Update a fleet manager's profile info (name, email, gender, phone)
+  Future<ApiResponse<FleetManagerInfo>> updateFleetManager({
+    required String accessToken,
+    required String managerId,
+    String? name,
+    String? email,
+    String? gender,
+    String? phoneNumber,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (email != null) body['email'] = email;
+      if (gender != null) body['gender'] = gender;
+      if (phoneNumber != null) body['phone_number'] = phoneNumber;
+
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseHttpUrl}/admin/users/fleet-managers/$managerId'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return ApiResponse(success: true, data: FleetManagerInfo.fromJson(json));
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final message = errorBody['detail']?['message'] ?? 'Failed to update fleet manager';
+        return ApiResponse(success: false, message: message);
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// Activate or deactivate a fleet manager
+  Future<ApiResponse<FleetManagerInfo>> setFleetManagerStatus({
+    required String accessToken,
+    required String managerId,
+    required bool isActive,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseHttpUrl}/admin/users/fleet-managers/$managerId/status'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'is_active': isActive}),
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return ApiResponse(success: true, data: FleetManagerInfo.fromJson(json));
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Failed to update fleet manager status (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Network error: $e');
+    }
+  }
+
+  /// Delete (soft-delete) a fleet manager
+  Future<ApiResponse<void>> deleteFleetManager({
+    required String accessToken,
+    required String managerId,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConfig.baseHttpUrl}/admin/users/fleet-managers/$managerId'),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+
+      if (response.statusCode == 200) {
+        return ApiResponse(success: true);
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Failed to delete fleet manager (${response.statusCode})',
+        );
       }
     } catch (e) {
       return ApiResponse(success: false, message: 'Network error: $e');

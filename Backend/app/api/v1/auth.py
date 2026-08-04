@@ -15,6 +15,8 @@ from app.schemas.user import (
     TokenResponse,
     RefreshTokenRequest,
     UserCreateAdmin,
+    UpdateFleetManagerRequest,
+    UpdateDriverStatusRequest,
 )
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 from app.core.email import send_verification_email
@@ -41,6 +43,10 @@ class RegisterResponse(BaseModel):
 
 
 class EmailResendRequest(BaseModel):
+    email: str
+
+
+class ForgotPasswordRequest(BaseModel):
     email: str
 
 
@@ -76,6 +82,7 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
         id=uuid.uuid4(),
         user_id=new_user.id,
         code=code,
+        purpose="email_verification",
     )
     db.add(verification)
     db.commit()
@@ -109,7 +116,8 @@ def verify_email(request: EmailVerificationRequest, db: Session = Depends(get_db
 
     verification = db.query(VerificationCode).filter(
         VerificationCode.user_id == user.id,
-        VerificationCode.code == request.code
+        VerificationCode.code == request.code,
+        VerificationCode.purpose == "email_verification"
     ).first()
 
     if not verification:
@@ -140,7 +148,10 @@ def resend_verification(request: EmailResendRequest, db: Session = Depends(get_d
             detail={"error_code": "AUTH_005", "message": "User not found"}
         )
 
-    old_codes = db.query(VerificationCode).filter(VerificationCode.user_id == user.id).all()
+    old_codes = db.query(VerificationCode).filter(
+        VerificationCode.user_id == user.id,
+        VerificationCode.purpose == "email_verification"
+    ).all()
     for code in old_codes:
         db.delete(code)
 
@@ -149,6 +160,7 @@ def resend_verification(request: EmailResendRequest, db: Session = Depends(get_d
         id=uuid.uuid4(),
         user_id=user.id,
         code=code,
+        purpose="email_verification",
     )
     db.add(verification)
     db.commit()
@@ -382,6 +394,164 @@ def check_firebase_status():
         }
 
 
+@router.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Request password reset code. Returns generic success message regardless of whether email exists (security: don't leak email existence).
+    If email exists: generates 6-digit code, saves with purpose='password_reset', expires in 10 minutes, sends via email.
+    If email doesn't exist: still returns same success message (with slight delay to prevent timing attacks).
+    """
+    user = db.query(User).filter(User.email == request.email).first()
+
+    if user:
+        # Generate code and save it
+        code = generate_verification_code()
+        verification = VerificationCode(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            code=code,
+            purpose="password_reset",
+        )
+        db.add(verification)
+        db.commit()
+
+        # Send email with the code
+        from app.core.email import send_password_reset_email
+        send_password_reset_email(user.email, code)
+        print(f"[AUTH] Password reset code sent to {user.email}")
+    else:
+        # User doesn't exist, but still return the same generic message
+        # Adding a small delay to prevent timing attacks
+        import time
+        time.sleep(0.1)
+        print(f"[AUTH] Password reset requested for non-existent email: {request.email}")
+
+    # Always return the same generic success message
+    return {
+        "message": "If an account exists with this email, a password reset code has been sent. Check your inbox.",
+        "email": request.email
+    }
+
+
+class VerifyResetCodeRequest(BaseModel):
+    email: str
+    code: str
+
+
+class VerifyResetCodeResponse(BaseModel):
+    reset_token: str
+
+
+@router.post("/verify-reset-code", response_model=VerifyResetCodeResponse)
+def verify_reset_code(request: VerifyResetCodeRequest, db: Session = Depends(get_db)):
+    """
+    Verify password reset code and return a short-lived reset token.
+    The reset token is the verification code ID, which can only be used once.
+    """
+    user = db.query(User).filter(User.email == request.email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    # Find the most recent unexpired code with purpose='password_reset'
+    verification = db.query(VerificationCode).filter(
+        VerificationCode.user_id == user.id,
+        VerificationCode.code == request.code,
+        VerificationCode.purpose == "password_reset"
+    ).first()
+
+    if not verification:
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    if verification.expires_at < datetime.utcnow():
+        # Delete the expired code
+        db.delete(verification)
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    # Code is valid, return the verification ID as the reset token
+    # This token can only be used once and expires with the code
+    print(f"[AUTH] Password reset code verified for {user.email}")
+    return {"reset_token": str(verification.id)}
+
+
+class ResetPasswordWithTokenRequest(BaseModel):
+    reset_token: str
+    new_password: str
+
+
+@router.post("/reset-password")
+def reset_password(request: ResetPasswordWithTokenRequest, db: Session = Depends(get_db)):
+    """
+    Reset password using a reset token (returned from /verify-reset-code).
+    The reset token is the verification code ID, which is deleted after use.
+    """
+    # The reset_token is the verification_code.id
+    try:
+        verification_id = uuid.UUID(request.reset_token)
+    except (ValueError, AttributeError, TypeError):
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    # Find the verification record
+    verification = db.query(VerificationCode).filter(
+        VerificationCode.id == verification_id,
+        VerificationCode.purpose == "password_reset"
+    ).first()
+
+    if not verification:
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    # Check if code has expired
+    if verification.expires_at < datetime.utcnow():
+        # Delete the expired code
+        db.delete(verification)
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "AUTH_006", "message": "Invalid or expired password reset code"}
+        )
+
+    # Get the user
+    user = db.query(User).filter(User.id == verification.user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail={"error_code": "AUTH_005", "message": "User not found"}
+        )
+
+    # Update the password
+    hashed_password = hash_password(request.new_password)
+    user.hashed_password = hashed_password
+
+    # Delete the used code (can't be reused)
+    db.delete(verification)
+
+    db.commit()
+    db.refresh(user)
+
+    print(f"[AUTH] Password reset successful for {user.email}")
+
+    return {
+        "message": "Password reset successfully. You can now log in with your new password.",
+        "email": user.email
+    }
+
+
 class UserCountByRole(BaseModel):
     student: int
     driver: int
@@ -452,6 +622,80 @@ def create_fleet_manager(
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+@admin_router.get("/users/fleet-managers", response_model=list[UserResponse])
+def list_fleet_managers(
+    current_user: User = Depends(require_role(["super_admin"])),
+    db: Session = Depends(get_db)
+):
+    return db.query(User).filter(User.role == "fleet_manager").all()
+
+
+@admin_router.put("/users/fleet-managers/{user_id}", response_model=UserResponse)
+def update_fleet_manager(
+    user_id: uuid.UUID,
+    request: UpdateFleetManagerRequest,
+    current_user: User = Depends(require_role(["super_admin"])),
+    db: Session = Depends(get_db)
+):
+    manager = db.query(User).filter(User.id == user_id, User.role == "fleet_manager").first()
+    if not manager:
+        raise HTTPException(status_code=404, detail={"error_code": "ADMIN_001", "message": "Fleet manager not found"})
+
+    if request.name is not None:
+        manager.name = request.name
+    if request.email is not None:
+        existing = db.query(User).filter(User.email == request.email, User.id != manager.id).first()
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail={"error_code": "AUTH_002", "message": "Email already in use"},
+            )
+        manager.email = request.email
+    if request.gender is not None:
+        manager.gender = request.gender
+    if request.phone_number is not None:
+        manager.phone_number = request.phone_number
+
+    db.commit()
+    db.refresh(manager)
+    return manager
+
+
+@admin_router.put("/users/fleet-managers/{user_id}/status", response_model=UserResponse)
+def set_fleet_manager_status(
+    user_id: uuid.UUID,
+    request: UpdateDriverStatusRequest,
+    current_user: User = Depends(require_role(["super_admin"])),
+    db: Session = Depends(get_db)
+):
+    manager = db.query(User).filter(User.id == user_id, User.role == "fleet_manager").first()
+    if not manager:
+        raise HTTPException(status_code=404, detail={"error_code": "ADMIN_001", "message": "Fleet manager not found"})
+
+    manager.is_active = request.is_active
+    db.commit()
+    db.refresh(manager)
+    return manager
+
+
+@admin_router.delete("/users/fleet-managers/{user_id}")
+def delete_fleet_manager(
+    user_id: uuid.UUID,
+    current_user: User = Depends(require_role(["super_admin"])),
+    db: Session = Depends(get_db)
+):
+    """Soft-delete, matching the convention used for driver deletion:
+    the row is kept (FK references from trip/telemetry history) and
+    is_active is set to False, which also blocks login."""
+    manager = db.query(User).filter(User.id == user_id, User.role == "fleet_manager").first()
+    if not manager:
+        raise HTTPException(status_code=404, detail={"error_code": "ADMIN_001", "message": "Fleet manager not found"})
+
+    manager.is_active = False
+    db.commit()
+    return {"message": "Fleet manager deleted successfully"}
 
 
 @admin_router.get("/stats", response_model=AdminStatsResponse)

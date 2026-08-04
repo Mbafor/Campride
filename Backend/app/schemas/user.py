@@ -53,6 +53,24 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class UpdateDriverRequest(BaseModel):
+    name: str | None = None
+    email: EmailStr | None = None
+    gender: str | None = None
+    phone_number: str | None = None
+
+
+class UpdateDriverStatusRequest(BaseModel):
+    is_active: bool
+
+
+class UpdateFleetManagerRequest(BaseModel):
+    name: str | None = None
+    email: EmailStr | None = None
+    gender: str | None = None
+    phone_number: str | None = None
+
+
 class UserCreateAdmin(BaseModel):
     name: str
     email: EmailStr
