@@ -13,6 +13,7 @@ ThemeData darkTheme() {
     onError: Colors.white,
     surface: AppColors.surfaceDark,
     onSurface: AppColors.textPrimaryDark,
+    surfaceTint: AppColors.surfaceDark,
   );
 
   return ThemeData(
@@ -24,6 +25,7 @@ ThemeData darkTheme() {
       backgroundColor: AppColors.surfaceDark,
       foregroundColor: AppColors.textPrimaryDark,
       elevation: 0,
+      scrolledUnderElevation: 0,
       centerTitle: true,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(

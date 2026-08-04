@@ -9,6 +9,7 @@ from app.database import SessionLocal
 from app.models import User
 from app.schemas.user import UserResponse
 from app.api.deps import get_db, get_current_user
+from app.core.security import verify_password
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
@@ -24,6 +25,10 @@ class UpdateUserRequest(BaseModel):
     gender: str | None = None
     phone_number: str | None = None
     email: str | None = None
+
+
+class DeleteAccountRequest(BaseModel):
+    current_password: str | None = None
 
 
 @router.post("/fcm-token")
@@ -113,3 +118,31 @@ async def update_profile_photo(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.delete("/me")
+def delete_current_user(
+    request: DeleteAccountRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Deactivate (soft-delete) the current user's account.
+
+    The row is kept rather than removed since ride history and shuttle
+    requests reference user_id and aren't set up to cascade. Password
+    accounts must confirm their current password; Google-only accounts
+    (no password set) skip that check.
+    """
+    if current_user.hashed_password is not None:
+        if not request.current_password or not verify_password(
+            request.current_password, current_user.hashed_password
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail={"error_code": "AUTH_008", "message": "Current password is incorrect"}
+            )
+
+    current_user.is_active = False
+    db.commit()
+
+    return {"message": "Account deleted successfully"}

@@ -22,7 +22,7 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 72, color: Theme.of(context).colorScheme.primary.withOpacity(0.4)),
+            Icon(icon, size: 72, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
               title,
@@ -34,7 +34,7 @@ class EmptyStateWidget extends StatelessWidget {
               Text(
                 subtitle!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
                 textAlign: TextAlign.center,
               ),

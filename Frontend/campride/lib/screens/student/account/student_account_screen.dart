@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/authentication_provider.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/common/profile_avatar_view.dart';
 import '../../common/coming_soon_screen.dart';
+import '../../common/safety_screen.dart';
 import '../../common/support_screen.dart';
 import '../profile/student_profile_screen.dart';
 import '../settings/settings_screen.dart';
@@ -31,6 +33,7 @@ class StudentAccountScreen extends StatelessWidget {
               child: Consumer<AuthenticationProvider>(
                 builder: (context, auth, _) {
                   final name = auth.user?.name ?? 'User';
+                  final photoUrl = auth.user?.photoUrl;
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -72,14 +75,12 @@ class StudentAccountScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Container(
-                        width: 54,
-                        height: 54,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF2C2C2C),
-                          shape: BoxShape.circle,
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const StudentProfileScreen()),
                         ),
-                        child: const Icon(Icons.person, size: 32, color: Color(0xFFBDBDBD)),
+                        child: ProfileAvatarView(photoUrl: photoUrl, name: name, size: 54),
                       ),
                     ],
                   );
@@ -94,13 +95,7 @@ class StudentAccountScreen extends StatelessWidget {
               child: GestureDetector(
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ComingSoonScreen(
-                      title: 'Safety checkup',
-                      icon: Icons.shield_outlined,
-                      message: 'Learn ways to make rides safer.',
-                    ),
-                  ),
+                  MaterialPageRoute(builder: (_) => const SafetyScreen()),
                 ),
                 child: Container(
                   padding: const EdgeInsets.all(16),

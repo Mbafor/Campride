@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
+import '../../../theme/theme_extensions.dart';
 
 /// "Phone number" screen.
 /// Shows a Ghana country flag chip, phone field with clear button,
@@ -67,7 +68,7 @@ class _UpdatePhoneScreenState extends State<UpdatePhoneScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +78,7 @@ class _UpdatePhoneScreenState extends State<UpdatePhoneScreen> {
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child:
-                    const Icon(Icons.arrow_back, size: 24, color: Colors.black),
+                    Icon(Icons.arrow_back, size: 24, color: context.textPrimary),
               ),
             ),
             const SizedBox(height: 8),
@@ -92,7 +93,7 @@ class _UpdatePhoneScreenState extends State<UpdatePhoneScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.3,
-                      color: Colors.black87,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -101,7 +102,7 @@ class _UpdatePhoneScreenState extends State<UpdatePhoneScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -109,7 +110,7 @@ class _UpdatePhoneScreenState extends State<UpdatePhoneScreen> {
                     'We\'ll send a code for verification',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black54,
+                      color: context.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -127,7 +128,7 @@ class _UpdatePhoneScreenState extends State<UpdatePhoneScreen> {
                     Container(
                       height: 54,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF0F0F0),
+                        color: context.fieldFill,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -140,7 +141,7 @@ class _UpdatePhoneScreenState extends State<UpdatePhoneScreen> {
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
                               style: GoogleFonts.poppins(
-                                  fontSize: 14, color: Colors.black87),
+                                  fontSize: 14, color: context.textPrimary),
                               decoration: InputDecoration(
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
@@ -149,7 +150,7 @@ class _UpdatePhoneScreenState extends State<UpdatePhoneScreen> {
                                 contentPadding: EdgeInsets.zero,
                                 hintText: '+233',
                                 hintStyle: GoogleFonts.poppins(
-                                    fontSize: 14, color: Colors.black38),
+                                    fontSize: 14, color: context.textSecondary),
                               ),
                             ),
                           ),
@@ -164,7 +165,7 @@ class _UpdatePhoneScreenState extends State<UpdatePhoneScreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(10),
                                   child: Icon(Icons.cancel,
-                                      size: 20, color: Colors.grey[500]),
+                                      size: 20, color: context.textSecondary),
                                 ),
                               );
                             },
@@ -204,7 +205,7 @@ class _FieldLabel extends StatelessWidget {
         style: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          color: context.textPrimary,
         ),
       ),
     );
@@ -253,17 +254,17 @@ class _PillButton extends StatelessWidget {
         width: double.infinity,
         height: 54,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
+          color: context.fieldFill,
           borderRadius: BorderRadius.circular(28),
         ),
         alignment: Alignment.center,
         child: showProgress
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.black87,
+                  color: context.textPrimary,
                 ),
               )
             : Text(
@@ -271,7 +272,7 @@ class _PillButton extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: context.textPrimary,
                 ),
               ),
       ),

@@ -5,6 +5,8 @@ import '../../../providers/authentication_provider.dart';
 import '../../../services/recent_searches_service.dart';
 import '../../../services/stops_repository.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/theme_extensions.dart';
+import '../../../widgets/common/empty_state_widget.dart';
 import '../route/route_confirm_screen.dart';
 
 /// "Where to?" search screen — the entry point reached by tapping the
@@ -90,7 +92,7 @@ class _WhereToScreenState extends State<WhereToScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,10 +107,10 @@ class _WhereToScreenState extends State<WhereToScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: context.fieldFill,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.arrow_back, size: 20, color: Colors.black87),
+                      child: Icon(Icons.arrow_back, size: 20, color: context.textPrimary),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -117,18 +119,21 @@ class _WhereToScreenState extends State<WhereToScreen> {
                       height: 48,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: context.fieldFill,
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.search, color: Colors.grey[600], size: 20),
+                          Icon(Icons.search, color: context.textSecondary, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               controller: _searchCtrl,
                               autofocus: true,
-                              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                              style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.textPrimary),
                               decoration: InputDecoration(
                                 border: InputBorder.none,
                                 isDense: true,
@@ -136,7 +141,7 @@ class _WhereToScreenState extends State<WhereToScreen> {
                                 hintStyle: GoogleFonts.poppins(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
+                                  color: context.textSecondary,
                                 ),
                               ),
                             ),
@@ -144,7 +149,7 @@ class _WhereToScreenState extends State<WhereToScreen> {
                           if (_isSearching)
                             GestureDetector(
                               onTap: () => _searchCtrl.clear(),
-                              child: Icon(Icons.close, color: Colors.grey[600], size: 18),
+                              child: Icon(Icons.close, color: context.textSecondary, size: 18),
                             ),
                         ],
                       ),
@@ -176,18 +181,18 @@ class _WhereToScreenState extends State<WhereToScreen> {
         );
       }
       if (_results.isEmpty) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Text(
-            'No stops match "${_searchCtrl.text.trim()}"',
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
-          ),
+        return EmptyStateWidget(
+          icon: Icons.search_off,
+          title: 'No matching stops',
+          subtitle:
+              'We couldn\'t find a stop matching "${_searchCtrl.text.trim()}". '
+              'Try a different name or check the spelling.',
         );
       }
       return ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: _results.length,
-        separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey[100]),
+        separatorBuilder: (_, _) => Divider(height: 1, color: context.divider),
         itemBuilder: (_, i) => _StopTile(
           icon: Icons.location_on_outlined,
           name: _results[i].name,
@@ -199,12 +204,10 @@ class _WhereToScreenState extends State<WhereToScreen> {
 
     // Recents view
     if (_recents.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Text(
-          'Your recent destinations will appear here',
-          style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[500]),
-        ),
+      return const EmptyStateWidget(
+        icon: Icons.history,
+        title: 'No recent destinations',
+        subtitle: 'Search for a stop above and it will be saved here for quick access next time.',
       );
     }
 
@@ -215,7 +218,7 @@ class _WhereToScreenState extends State<WhereToScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             'Recents',
-            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.black87),
+            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: context.textPrimary),
           ),
         ),
         ..._recents.map((s) => _StopTile(
@@ -253,19 +256,19 @@ class _StopTile extends StatelessWidget {
             Container(
               width: 38,
               height: 38,
-              decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
-              child: Icon(icon, color: Colors.grey[600], size: 20),
+              decoration: BoxDecoration(color: context.fieldFill, shape: BoxShape.circle),
+              child: Icon(icon, color: context.textSecondary, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: GoogleFonts.poppins(fontSize: 15, color: Colors.black87)),
+                  Text(name, style: GoogleFonts.poppins(fontSize: 15, color: context.textPrimary)),
                   if (subtitle.isNotEmpty)
                     Text(
                       subtitle,
-                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500]),
+                      style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                     ),
                 ],
               ),

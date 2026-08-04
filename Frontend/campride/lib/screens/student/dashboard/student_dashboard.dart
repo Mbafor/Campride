@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../live_shuttles_screen.dart';
 import '../alerts/alerts_screen.dart';
+import '../rides/rides_screen.dart';
 import '../account/student_account_screen.dart';
 import '../where_to/where_to_screen.dart';
 import '../../../widgets/common/app_drawer.dart';
@@ -28,8 +29,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
             index: _currentIndex,
             children: const [
               LiveShuttlesScreen(embedded: true), // Home tab (index 0)
-              AlertsScreen(),       // Alerts tab (index 1)
-              StudentAccountScreen(), // Account tab (index 2)
+              AlertsScreen(),         // Alerts tab (index 1)
+              RidesScreen(),          // Rides tab (index 2)
+              StudentAccountScreen(), // Account tab (index 3)
             ],
           ),
           // Floating hamburger — visible on Home tab
@@ -137,18 +139,25 @@ class _BottomNav extends StatelessWidget {
                 onTap: () => onTap(0),
               ),
               _NavTab(
-                icon: Icons.calendar_today_outlined,
-                activeIcon: Icons.calendar_today,
+                icon: Icons.notifications_outlined,
+                activeIcon: Icons.notifications,
                 label: 'Alerts',
                 isActive: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
               _NavTab(
+                icon: Icons.directions_bus_outlined,
+                activeIcon: Icons.directions_bus,
+                label: 'Rides',
+                isActive: currentIndex == 2,
+                onTap: () => onTap(2),
+              ),
+              _NavTab(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
                 label: 'Account',
-                isActive: currentIndex == 2,
-                onTap: () => onTap(2),
+                isActive: currentIndex == 3,
+                onTap: () => onTap(3),
               ),
             ],
           ),

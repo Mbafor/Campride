@@ -13,6 +13,7 @@ ThemeData lightTheme() {
     onError: Colors.white,
     surface: AppColors.surfaceLight,
     onSurface: AppColors.textPrimaryLight,
+    surfaceTint: AppColors.surfaceLight,
   );
 
   return ThemeData(
@@ -24,6 +25,7 @@ ThemeData lightTheme() {
       backgroundColor: AppColors.primaryGreen,
       foregroundColor: Colors.white,
       elevation: 0,
+      scrolledUnderElevation: 0,
       centerTitle: true,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(

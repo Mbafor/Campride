@@ -100,9 +100,16 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     return Scaffold(
       backgroundColor: context.scaffoldBg,
       appBar: AppBar(
+        backgroundColor: context.scaffoldBg,
+        elevation: 0,
+        iconTheme: IconThemeData(color: context.textPrimary),
         title: Text(
           'Delete Account',
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: context.textPrimary,
+          ),
         ),
         centerTitle: false,
       ),

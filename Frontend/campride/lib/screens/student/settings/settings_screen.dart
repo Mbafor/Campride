@@ -1,115 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
-import '../../../providers/authentication_provider.dart';
 import '../../../theme/app_theme.dart';
-import '../../../config/api_config.dart';
 import '../../../widgets/common/settings_menu_row.dart';
 import '../../common/appearance_screen.dart';
+import '../../common/change_password_screen.dart';
 import '../../common/delete_account_screen.dart';
-import '../../common/logout_screen.dart';
+import '../../common/privacy_screen.dart';
+import '../../../widgets/common/logout_dialog.dart';
 
 /// Settings screen reached from the Account tab.
 /// Contains: change password, appearance, log out, delete account.
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  final _currentPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-
-  String? _passwordError;
-  bool _loadingPassword = false;
-
-  @override
-  void dispose() {
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _changePassword() async {
-    if (_currentPasswordController.text.isEmpty) {
-      setState(() => _passwordError = 'Current password required');
-      return;
-    }
-    if (_newPasswordController.text.isEmpty) {
-      setState(() => _passwordError = 'New password required');
-      return;
-    }
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      setState(() => _passwordError = 'Passwords do not match');
-      return;
-    }
-    if (_newPasswordController.text.length < 8) {
-      setState(() => _passwordError = 'Password must be at least 8 characters');
-      return;
-    }
-
-    setState(() {
-      _loadingPassword = true;
-      _passwordError = null;
-    });
-
-    try {
-      final auth = context.read<AuthenticationProvider>();
-      if (auth.accessToken == null) throw Exception('Not authenticated');
-
-      final response = await http.put(
-        Uri.parse('${ApiConfig.baseHttpUrl}/auth/change-password'),
-        headers: {
-          'Authorization': 'Bearer ${auth.accessToken}',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'current_password': _currentPasswordController.text,
-          'new_password': _newPasswordController.text,
-        }),
-      ).timeout(const Duration(seconds: 10));
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.green[600], size: 20),
-                const SizedBox(width: 12),
-                Text('Password changed successfully',
-                    style: GoogleFonts.poppins()),
-              ],
-            ),
-            backgroundColor: Colors.green[50],
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        setState(() {
-          _currentPasswordController.clear();
-          _newPasswordController.clear();
-          _confirmPasswordController.clear();
-        });
-      } else if (response.statusCode == 401) {
-        setState(() => _passwordError = 'Current password is incorrect');
-      } else {
-        setState(() => _passwordError = 'Failed to change password');
-      }
-    } catch (e) {
-      if (mounted) setState(() => _passwordError = 'Error: $e');
-    } finally {
-      if (mounted) setState(() => _loadingPassword = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,117 +43,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               const SizedBox(height: 24),
 
-              // Change Password Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Change Password',
-                      style: GoogleFonts.poppins(
-                          fontSize: 16, fontWeight: FontWeight.w600, color: context.textPrimary),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _currentPasswordController,
-                      obscureText: true,
-                      style: GoogleFonts.poppins(color: context.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Current password',
-                        filled: true,
-                        fillColor: context.fieldFill,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: context.fieldBorder),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: context.fieldBorder),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _newPasswordController,
-                      obscureText: true,
-                      style: GoogleFonts.poppins(color: context.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'New password',
-                        filled: true,
-                        fillColor: context.fieldFill,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: context.fieldBorder),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: context.fieldBorder),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _confirmPasswordController,
-                      obscureText: true,
-                      style: GoogleFonts.poppins(color: context.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Confirm new password',
-                        filled: true,
-                        fillColor: context.fieldFill,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: context.fieldBorder),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: context.fieldBorder),
-                        ),
-                      ),
-                    ),
-                    if (_passwordError != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        _passwordError!,
-                        style: GoogleFonts.poppins(
-                            fontSize: 12, color: Colors.red[600]),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _loadingPassword ? null : _changePassword,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryGreen,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: _loadingPassword
-                            ? SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColors.primaryGreen),
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(
-                                'Change Password',
-                                style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600),
-                              ),
-                      ),
-                    ),
-                  ],
+              // Change Password
+              SettingsMenuRow(
+                icon: Icons.lock_outline,
+                label: 'Change Password',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
                 ),
               ),
-              const SizedBox(height: 32),
               Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: SettingsDivider()),
-              const SizedBox(height: 24),
 
               // Appearance
               SettingsMenuRow(
@@ -265,16 +69,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: SettingsDivider()),
 
+              // Privacy
+              SettingsMenuRow(
+                icon: Icons.privacy_tip_outlined,
+                label: 'Privacy',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PrivacyScreen()),
+                ),
+              ),
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SettingsDivider()),
+
               // Logout
               SettingsMenuRow(
                 icon: Icons.logout,
                 label: 'Log out',
                 iconColor: Colors.red[600],
                 labelColor: Colors.red[600],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LogoutScreen()),
-                ),
+                onTap: () => showLogoutDialog(context),
               ),
               Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),

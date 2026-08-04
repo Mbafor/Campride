@@ -7,6 +7,7 @@ import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../config/api_config.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/common/empty_state_widget.dart';
 
 class ChangeRouteScreen extends StatefulWidget {
   const ChangeRouteScreen({super.key});
@@ -158,9 +159,19 @@ class _ChangeRouteScreenState extends State<ChangeRouteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.scaffoldBg,
       appBar: AppBar(
-        title: Text('Change Route', style: GoogleFonts.poppins()),
+        backgroundColor: context.scaffoldBg,
         elevation: 0,
+        iconTheme: IconThemeData(color: context.textPrimary),
+        title: Text(
+          'Change Route',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: context.textPrimary,
+          ),
+        ),
         centerTitle: false,
       ),
       body: Column(
@@ -175,40 +186,36 @@ class _ChangeRouteScreenState extends State<ChangeRouteScreen> {
 
                 if (snapshot.hasError) {
                   return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Failed to load routes',
-                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          snapshot.error.toString(),
-                          style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 56, color: AppColors.error),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Failed to load routes',
+                            style: GoogleFonts.poppins(
+                                fontSize: 16, fontWeight: FontWeight.w600, color: context.textPrimary),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            snapshot.error.toString(),
+                            style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
 
                 final routes = snapshot.data ?? [];
                 if (routes.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.route_outlined, size: 64, color: context.textSecondary),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No routes available',
-                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
+                  return const EmptyStateWidget(
+                    icon: Icons.route_outlined,
+                    title: 'No routes available',
+                    subtitle: 'Contact your fleet manager to get a route assigned.',
                   );
                 }
 

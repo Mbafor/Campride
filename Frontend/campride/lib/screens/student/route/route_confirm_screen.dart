@@ -8,6 +8,8 @@ import '../../../services/recent_searches_service.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../services/stops_repository.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/theme_extensions.dart';
+import '../../../widgets/common/empty_state_widget.dart';
 import '../live_shuttles_screen.dart';
 
 /// Pickup/dropoff confirmation screen, matching the "ROUTE" mockup panel.
@@ -249,7 +251,7 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,13 +263,13 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                 children: [
                   Text(
                     'Route',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
                   ),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.close, size: 24, color: Colors.black87),
+                      child: Icon(Icons.close, size: 24, color: context.textPrimary),
                     ),
                   ),
                 ],
@@ -285,7 +287,7 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                           height: 52,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
-                            color: Colors.grey[100],
+                            color: context.fieldFill,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -302,7 +304,7 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
+                                    color: context.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -314,7 +316,7 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                       const SizedBox(width: 12),
                       GestureDetector(
                         onTap: _detectPickup,
-                        child: const Icon(Icons.my_location, size: 20, color: Colors.black45),
+                        child: Icon(Icons.my_location, size: 20, color: context.textSecondary),
                       ),
                     ],
                   ),
@@ -328,28 +330,28 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                           height: 52,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.cardBg,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: _dropoffFocused ? const Color(0xFF4CAF50) : Colors.grey[300]!,
+                              color: _dropoffFocused ? const Color(0xFF4CAF50) : context.fieldBorder,
                               width: 1.5,
                             ),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.search, color: Colors.grey[500], size: 20),
+                              Icon(Icons.search, color: context.textSecondary, size: 20),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: TextField(
                                   controller: _dropoffCtrl,
                                   focusNode: _dropoffFocus,
-                                  style: GoogleFonts.poppins(fontSize: 15, color: Colors.black87),
+                                  style: GoogleFonts.poppins(fontSize: 15, color: context.textPrimary),
                                   decoration: InputDecoration(
                                     border: InputBorder.none,
                                     isDense: true,
                                     contentPadding: EdgeInsets.zero,
                                     hintText: 'Dropoff location',
-                                    hintStyle: GoogleFonts.poppins(fontSize: 15, color: Colors.grey[400]),
+                                    hintStyle: GoogleFonts.poppins(fontSize: 15, color: context.textSecondary),
                                   ),
                                   onChanged: (_) {
                                     // Typing invalidates the previously selected stop
@@ -359,7 +361,7 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Icon(Icons.location_on, color: Colors.grey[500], size: 20),
+                              Icon(Icons.location_on, color: context.textSecondary, size: 20),
                             ],
                           ),
                         ),
@@ -367,7 +369,7 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                       const SizedBox(width: 12),
                       GestureDetector(
                         onTap: _swap,
-                        child: const Icon(Icons.swap_vert, size: 24, color: Colors.black54),
+                        child: Icon(Icons.swap_vert, size: 24, color: context.textSecondary),
                       ),
                     ],
                   ),
@@ -375,7 +377,7 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Divider(height: 1, color: Colors.grey[200]),
+            Divider(height: 1, color: context.divider),
             Expanded(child: _buildSuggestions()),
             if (_isMatching)
               Padding(
@@ -389,7 +391,7 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryGreen),
                     ),
                     const SizedBox(width: 12),
-                    Text('Finding shuttles...', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
+                    Text('Finding shuttles...', style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary)),
                   ],
                 ),
               ),
@@ -413,14 +415,16 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
     }
     final suggestions = _suggestions;
     if (suggestions.isEmpty) {
-      return Center(
-        child: Text('No stops found', style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500])),
+      return const EmptyStateWidget(
+        icon: Icons.location_off_outlined,
+        title: 'No stops found',
+        subtitle: 'Try searching for a different destination or check the spelling.',
       );
     }
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       itemCount: suggestions.length,
-      separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey[100]),
+      separatorBuilder: (_, _) => Divider(height: 1, color: context.divider),
       itemBuilder: (_, i) {
         final stop = suggestions[i];
         final distanceText = _userPosition != null
@@ -458,19 +462,19 @@ class _SuggestionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
           children: [
-            Icon(Icons.access_time, color: Colors.grey[400], size: 22),
+            Icon(Icons.access_time, color: context.textSecondary, size: 22),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87)),
-                  Text(subtitle, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500])),
+                  Text(name, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary)),
+                  Text(subtitle, style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary)),
                 ],
               ),
             ),
             if (distanceText != null)
-              Text(distanceText!, style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[500])),
+              Text(distanceText!, style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary)),
           ],
         ),
       ),
