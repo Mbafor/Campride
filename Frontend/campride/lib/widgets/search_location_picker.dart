@@ -355,15 +355,12 @@ class PlacePrediction {
 
   factory PlacePrediction.fromJson(Map<String, dynamic> json) {
     final placePrediction = json['placePrediction'] as Map<String, dynamic>? ?? {};
-    final mainTextMatchedSubstrings = placePrediction['mainTextMatchedSubstrings'] as List<dynamic>? ?? [];
 
     return PlacePrediction(
       placeId: placePrediction['placeId'] ?? '',
       mainText: placePrediction['mainText']?['text'] ?? '',
       secondaryText: placePrediction['secondaryText']?['text'] ?? '',
-      description: (mainTextMatchedSubstrings.isNotEmpty
-          ? placePrediction['mainText']?['text'] ?? ''
-          : '') + (placePrediction['secondaryText']?['text'] ?? ''),
+      description: '${placePrediction['mainText']?['text'] ?? ''} ${placePrediction['secondaryText']?['text'] ?? ''}',
     );
   }
 }
