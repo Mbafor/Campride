@@ -4,8 +4,9 @@ import '../live_shuttles_screen.dart';
 import '../alerts/alerts_screen.dart';
 import '../rides/rides_screen.dart';
 import '../account/student_account_screen.dart';
-import '../where_to/where_to_screen.dart';
+import '../route/route_confirm_screen.dart';
 import '../../../widgets/common/app_drawer.dart';
+import '../../../widgets/common/stop_search_sheet.dart';
 import '../../../theme/app_theme.dart';
 
 class StudentDashboard extends StatefulWidget {
@@ -29,8 +30,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
             index: _currentIndex,
             children: const [
               LiveShuttlesScreen(embedded: true), // Home tab (index 0)
-              AlertsScreen(),         // Alerts tab (index 1)
-              RidesScreen(),          // Rides tab (index 2)
+              AlertsScreen(), // Alerts tab (index 1)
+              RidesScreen(), // Rides tab (index 2)
               StudentAccountScreen(), // Account tab (index 3)
             ],
           ),
@@ -56,7 +57,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           ),
                         ],
                       ),
-                      child: Icon(Icons.menu, size: 22, color: context.textPrimary),
+                      child: Icon(
+                        Icons.menu,
+                        size: 22,
+                        color: context.textPrimary,
+                      ),
                     ),
                   ),
                 ),
@@ -99,17 +104,29 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           fontSize: 14,
                           color: context.textSecondary,
                         ),
-                        prefixIcon: Icon(Icons.search, color: context.textSecondary, size: 20),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: context.textSecondary,
+                          size: 20,
+                        ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ),
                       ),
                       style: GoogleFonts.poppins(fontSize: 14),
                       readOnly: true,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const WhereToScreen()),
-                        );
+                      onTap: () async {
+                        final stop = await showStopSearchSheet(context);
+                        if (stop != null && context.mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  RouteConfirmScreen(initialDropoff: stop),
+                            ),
+                          );
+                        }
                       },
                     ),
                   ),
