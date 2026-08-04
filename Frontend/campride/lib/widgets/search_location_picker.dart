@@ -82,7 +82,6 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': _googleApiKey,
-          'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.placeId',
         },
         body: jsonEncode({'input': input, 'languageCode': 'en'}),
       );
@@ -441,13 +440,20 @@ class PlacePrediction {
   factory PlacePrediction.fromJson(Map<String, dynamic> json) {
     final placePrediction =
         json['placePrediction'] as Map<String, dynamic>? ?? {};
+    final structuredFormat =
+        placePrediction['structuredFormat'] as Map<String, dynamic>? ?? {};
+    final mainText = structuredFormat['mainText'] as Map<String, dynamic>?;
+    final secondaryText =
+        structuredFormat['secondaryText'] as Map<String, dynamic>?;
+
+    final mainTextStr = mainText?['text'] as String? ?? '';
+    final secondaryTextStr = secondaryText?['text'] as String? ?? '';
 
     return PlacePrediction(
       placeId: placePrediction['placeId'] ?? '',
-      mainText: placePrediction['mainText']?['text'] ?? '',
-      secondaryText: placePrediction['secondaryText']?['text'] ?? '',
-      description:
-          '${placePrediction['mainText']?['text'] ?? ''} ${placePrediction['secondaryText']?['text'] ?? ''}',
+      mainText: mainTextStr,
+      secondaryText: secondaryTextStr,
+      description: '$mainTextStr $secondaryTextStr'.trim(),
     );
   }
 }
