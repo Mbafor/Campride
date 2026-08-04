@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/user_model.dart';
 import '../services/auth_api_service.dart';
@@ -66,23 +67,29 @@ class AuthenticationProvider extends ChangeNotifier {
   Future<void> _registerDeviceToken(String token) async {
     try {
       if (_accessToken == null) {
-        _debugLog('[FCM] No access token available for device token registration');
+        _debugLog(
+          '[FCM] No access token available for device token registration',
+        );
         return;
       }
 
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseHttpUrl}/users/fcm-token'),
-        headers: {
-          'Authorization': 'Bearer $_accessToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'fcm_token': token}),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseHttpUrl}/users/fcm-token'),
+            headers: {
+              'Authorization': 'Bearer $_accessToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'fcm_token': token}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         _debugLog('[FCM] Device token registered successfully');
       } else {
-        _debugLog('[FCM] Failed to register device token: ${response.statusCode}');
+        _debugLog(
+          '[FCM] Failed to register device token: ${response.statusCode}',
+        );
       }
     } catch (e) {
       _debugLog('[FCM] Error registering device token: $e');
@@ -212,14 +219,20 @@ class AuthenticationProvider extends ChangeNotifier {
   }
 
   // Verify a password reset code; returns a short-lived reset token on success
-  Future<String?> verifyResetCode({required String email, required String code}) async {
+  Future<String?> verifyResetCode({
+    required String email,
+    required String code,
+  }) async {
     _state = AuthState.loading;
     _errorMessage = null;
     _errorCode = null;
     notifyListeners();
 
     try {
-      final response = await _apiService.verifyResetCode(email: email, code: code);
+      final response = await _apiService.verifyResetCode(
+        email: email,
+        code: code,
+      );
       _state = AuthState.unauthenticated;
       if (response.success && response.data != null) {
         notifyListeners();
@@ -238,14 +251,20 @@ class AuthenticationProvider extends ChangeNotifier {
   }
 
   // Set a new password using the reset token from verifyResetCode
-  Future<bool> resetPassword({required String resetToken, required String newPassword}) async {
+  Future<bool> resetPassword({
+    required String resetToken,
+    required String newPassword,
+  }) async {
     _state = AuthState.loading;
     _errorMessage = null;
     _errorCode = null;
     notifyListeners();
 
     try {
-      final response = await _apiService.resetPassword(resetToken: resetToken, newPassword: newPassword);
+      final response = await _apiService.resetPassword(
+        resetToken: resetToken,
+        newPassword: newPassword,
+      );
       _state = AuthState.unauthenticated;
       if (!response.success) {
         _errorMessage = response.message ?? 'Failed to reset password';
@@ -265,6 +284,7 @@ class AuthenticationProvider extends ChangeNotifier {
   Future<bool> login({
     required String email,
     required String password,
+    bool rememberMe = false,
   }) async {
     _state = AuthState.loading;
     _errorMessage = null;
@@ -272,18 +292,39 @@ class AuthenticationProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiService.login(email: email, password: password);
+      final response = await _apiService.login(
+        email: email,
+        password: password,
+      );
 
       if (response.success && response.data != null) {
         _accessToken = response.data!['access_token'];
         _refreshToken = response.data!['refresh_token'];
 
-        // Store tokens securely
-        await _secureStorage.write(key: 'access_token', value: _accessToken);
-        await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+        // Persist the "remember me" preference so the login screen can
+        // pre-check the box on future visits.
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('remember_me', rememberMe);
 
-// Fetch user info
-        final userResponse = await _apiService.getCurrentUser(accessToken: _accessToken!);
+        if (rememberMe) {
+          // Persist tokens so the user stays logged in across restarts.
+          await _secureStorage.write(key: 'access_token', value: _accessToken);
+          await _secureStorage.write(
+            key: 'refresh_token',
+            value: _refreshToken,
+          );
+        } else {
+          // Keep the session only in memory for this app run; clear any
+          // previously stored tokens so a prior "remember me" session does
+          // not auto-login on the next launch.
+          await _secureStorage.delete(key: 'access_token');
+          await _secureStorage.delete(key: 'refresh_token');
+        }
+
+        // Fetch user info
+        final userResponse = await _apiService.getCurrentUser(
+          accessToken: _accessToken!,
+        );
         if (userResponse.success && userResponse.data != null) {
           _user = userResponse.data;
           _state = AuthState.authenticated;
@@ -344,7 +385,9 @@ class AuthenticationProvider extends ChangeNotifier {
         await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
 
         // Fetch user info
-        final userResponse = await _apiService.getCurrentUser(accessToken: _accessToken!);
+        final userResponse = await _apiService.getCurrentUser(
+          accessToken: _accessToken!,
+        );
         if (userResponse.success && userResponse.data != null) {
           _user = userResponse.data;
           _state = AuthState.authenticated;
@@ -408,7 +451,9 @@ class AuthenticationProvider extends ChangeNotifier {
         _refreshToken = await _secureStorage.read(key: 'refresh_token');
 
         // Verify token is still valid
-        final userResponse = await _apiService.getCurrentUser(accessToken: token);
+        final userResponse = await _apiService.getCurrentUser(
+          accessToken: token,
+        );
         if (userResponse.success && userResponse.data != null) {
           _user = userResponse.data;
           _state = AuthState.authenticated;
