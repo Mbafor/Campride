@@ -45,7 +45,7 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
   GoogleMapController? _mapController;
   String? _error;
 
-  static const String _googleApiKey = FirebaseConfig.apiKey;
+  static const String _googleApiKey = FirebaseConfig.googleMapsApiKey;
 
   @override
   void initState() {

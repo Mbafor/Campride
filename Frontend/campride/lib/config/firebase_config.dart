@@ -11,4 +11,7 @@ class FirebaseConfig {
 
   // VAPID key for FCM web push notifications
   static const String vapidKey = 'BIJx2D9mbGP0wqqKvOCiJjBBiUvDfhEeAu-cPnCoKiqmWz3KH2np9dKyi-nCIwVZOcAxK6ljVs8XcJiTg0IaGiM';
+
+  // Dedicated Google Maps API key (Places API New, with billing and permissions)
+  static const String googleMapsApiKey = 'AIzaSyBHCR8sBQ8UkfgeZnMxsOvH0mm10n-beok';
 }
