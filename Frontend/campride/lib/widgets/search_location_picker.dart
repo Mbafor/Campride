@@ -83,10 +83,7 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': _googleApiKey,
         },
-        body: jsonEncode({
-          'input': input,
-          'languageCode': 'en',
-        }),
+        body: jsonEncode({'input': input, 'languageCode': 'en'}),
       );
 
       if (response.statusCode == 200) {
@@ -120,7 +117,8 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final displayName = data['displayName']['text'] ?? prediction.description;
+        final displayName =
+            data['displayName']['text'] ?? prediction.description;
         final location = data['location'] as Map<String, dynamic>?;
 
         if (location != null) {
@@ -178,7 +176,11 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
         iconTheme: IconThemeData(color: context.textPrimary),
         title: Text(
           widget.title,
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: context.textPrimary),
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: context.textPrimary,
+          ),
         ),
       ),
       body: Column(
@@ -197,13 +199,25 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: _onSearchChanged,
-                    style: GoogleFonts.poppins(fontSize: 14, color: context.textPrimary),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: context.textPrimary,
+                    ),
                     decoration: InputDecoration(
                       hintText: widget.hint,
-                      hintStyle: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
+                      hintStyle: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: context.textSecondary,
+                      ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      prefixIcon: Icon(Icons.location_on_outlined, color: context.textSecondary),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.location_on_outlined,
+                        color: context.textSecondary,
+                      ),
                       suffixIcon: _isLoadingPredictions
                           ? Padding(
                               padding: const EdgeInsets.all(12),
@@ -212,7 +226,9 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primaryGreen,
+                                  ),
                                 ),
                               ),
                             )
@@ -222,7 +238,13 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 8),
-                  Text(_error!, style: GoogleFonts.poppins(fontSize: 12, color: AppColors.error)),
+                  Text(
+                    _error!,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppColors.error,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -234,24 +256,54 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
                 itemBuilder: (context, index) {
                   final prediction = _predictions[index];
                   return ListTile(
-                    leading: Icon(Icons.location_on_outlined, size: 18, color: context.textSecondary),
-                    title: Text(prediction.mainText, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
-                    subtitle: Text(prediction.secondaryText, style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary)),
+                    leading: Icon(
+                      Icons.location_on_outlined,
+                      size: 18,
+                      color: context.textSecondary,
+                    ),
+                    title: Text(
+                      prediction.mainText,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      prediction.secondaryText,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: context.textSecondary,
+                      ),
+                    ),
                     onTap: () => _selectPrediction(prediction),
                   );
                 },
               ),
             )
-          else if (_selectedLocation == null && _predictions.isEmpty && _searchController.text.isNotEmpty)
+          else if (_selectedLocation == null &&
+              _predictions.isEmpty &&
+              _searchController.text.isNotEmpty)
             Expanded(
               child: Center(
-                child: Text('No results found', style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary)),
+                child: Text(
+                  'No results found',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: context.textSecondary,
+                  ),
+                ),
               ),
             )
           else if (_selectedLocation == null && _searchController.text.isEmpty)
             Expanded(
               child: Center(
-                child: Text('Search for a location', style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary)),
+                child: Text(
+                  'Search for a location',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: context.textSecondary,
+                  ),
+                ),
               ),
             ),
           if (_selectedLocation != null)
@@ -261,15 +313,23 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
                   Expanded(
                     child: GoogleMap(
                       initialCameraPosition: CameraPosition(
-                        target: LatLng(_selectedLocation!.latitude, _selectedLocation!.longitude),
+                        target: LatLng(
+                          _selectedLocation!.latitude,
+                          _selectedLocation!.longitude,
+                        ),
                         zoom: 16,
                       ),
                       onMapCreated: (controller) => _mapController = controller,
                       markers: {
                         Marker(
                           markerId: const MarkerId('selected_location'),
-                          position: LatLng(_selectedLocation!.latitude, _selectedLocation!.longitude),
-                          infoWindow: InfoWindow(title: _selectedLocation!.name),
+                          position: LatLng(
+                            _selectedLocation!.latitude,
+                            _selectedLocation!.longitude,
+                          ),
+                          infoWindow: InfoWindow(
+                            title: _selectedLocation!.name,
+                          ),
                         ),
                       },
                     ),
@@ -278,7 +338,9 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: context.fieldFill,
-                      border: Border(top: BorderSide(color: context.fieldBorder)),
+                      border: Border(
+                        top: BorderSide(color: context.fieldBorder),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,19 +348,29 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
                       children: [
                         Text(
                           'Selected Location',
-                          style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: context.textSecondary,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           _selectedLocation!.name,
-                          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: context.textPrimary),
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: context.textPrimary,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Lat: ${_selectedLocation!.latitude.toStringAsFixed(6)}, Lng: ${_selectedLocation!.longitude.toStringAsFixed(6)}',
-                          style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: context.textSecondary,
+                          ),
                         ),
                       ],
                     ),
@@ -320,17 +392,27 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
                     backgroundColor: AppColors.primaryGreen,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: _isLoadingDetails
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
                         )
                       : Text(
                           'Confirm Location',
-                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                 ),
               ),
@@ -354,13 +436,15 @@ class PlacePrediction {
   });
 
   factory PlacePrediction.fromJson(Map<String, dynamic> json) {
-    final placePrediction = json['placePrediction'] as Map<String, dynamic>? ?? {};
+    final placePrediction =
+        json['placePrediction'] as Map<String, dynamic>? ?? {};
 
     return PlacePrediction(
       placeId: placePrediction['placeId'] ?? '',
       mainText: placePrediction['mainText']?['text'] ?? '',
       secondaryText: placePrediction['secondaryText']?['text'] ?? '',
-      description: '${placePrediction['mainText']?['text'] ?? ''} ${placePrediction['secondaryText']?['text'] ?? ''}',
+      description:
+          '${placePrediction['mainText']?['text'] ?? ''} ${placePrediction['secondaryText']?['text'] ?? ''}',
     );
   }
 }
