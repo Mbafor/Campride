@@ -82,6 +82,7 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': _googleApiKey,
+          'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.placeId',
         },
         body: jsonEncode({'input': input, 'languageCode': 'en'}),
       );
@@ -110,9 +111,11 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
 
     try {
       final response = await http.get(
-        Uri.parse(
-          'https://places.googleapis.com/v1/${prediction.placeId}?fields=displayName,location&key=$_googleApiKey',
-        ),
+        Uri.parse('https://places.googleapis.com/v1/${prediction.placeId}'),
+        headers: {
+          'X-Goog-Api-Key': _googleApiKey,
+          'X-Goog-FieldMask': 'displayName,location',
+        },
       );
 
       if (response.statusCode == 200) {
