@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/auth/google_signin_button.dart';
-import '../../widgets/common/app_logo.dart';
 
 const _kOnboardingImages = [
   'assets/images/welcome.png',
@@ -37,21 +36,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         child: Column(
           children: [
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'CAMPRIDE',
-                  style: GoogleFonts.poppins(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryGreenLight,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const AppLogo(size: 30, color: AppColors.primaryGreenLight),
-              ],
+            Text(
+              'CAMPRIDE',
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryGreenLight,
+                letterSpacing: 0.5,
+              ),
             ),
             const SizedBox(height: 32),
             Expanded(

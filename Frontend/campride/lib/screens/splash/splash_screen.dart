@@ -81,41 +81,9 @@ class _CamprideLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          'CAMPRIDE',
-          style: AppTextStyles.splashBrand(),
-        ),
-        const SizedBox(width: 6),
-        Stack(
-          alignment: Alignment.topRight,
-          children: [
-            const Icon(
-              Icons.directions_bus,
-              size: 36,
-              color: AppColors.splashIcon,
-            ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.splashBackground,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.wifi,
-                  size: 14,
-                  color: AppColors.splashIcon,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+    return Text(
+      'CAMPRIDE',
+      style: AppTextStyles.splashBrand(),
     );
   }
 }
