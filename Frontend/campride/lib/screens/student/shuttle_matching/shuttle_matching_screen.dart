@@ -7,6 +7,7 @@ import '../../../config/api_config.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/theme_extensions.dart';
 
 class ShuttleMatchingScreen extends StatefulWidget {
   const ShuttleMatchingScreen({super.key});
@@ -243,7 +244,7 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -301,7 +302,7 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryGreen,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      disabledBackgroundColor: Colors.grey[300],
+                      disabledBackgroundColor: context.fieldFill,
                     ),
                     child: _isLoading
                         ? const SizedBox(
@@ -377,7 +378,7 @@ class _ShuttleMatchingScreenState extends State<ShuttleMatchingScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[600],
+                        color: context.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -436,7 +437,7 @@ class _StopDropdown extends StatelessWidget {
     if (isLoading) {
       return Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: context.fieldBorder),
           borderRadius: BorderRadius.circular(8),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -485,10 +486,10 @@ class _ShuttleCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isNearby ? Colors.grey[300]! : AppColors.primaryGreen,
+          color: isNearby ? context.fieldBorder : AppColors.primaryGreen,
           width: isNearby ? 1 : 2,
         ),
       ),
@@ -527,19 +528,19 @@ class _ShuttleCard extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.schedule, size: 14, color: Colors.grey[600]),
+              Icon(Icons.schedule, size: 14, color: context.textSecondary),
               const SizedBox(width: 4),
               Text(
                 eta == 'N/A' ? 'ETA: $eta' : 'ETA: ${eta}min',
-                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
               ),
               const SizedBox(width: 12),
-              Icon(Icons.route, size: 14, color: Colors.grey[600]),
+              Icon(Icons.route, size: 14, color: context.textSecondary),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   route,
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                  style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),

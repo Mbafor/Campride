@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
+import '../../../theme/theme_extensions.dart';
 
 /// "Update your name" screen.
 /// First name + last name fields. "Update" persists the combined name.
@@ -65,11 +66,13 @@ class _UpdateNameScreenState extends State<UpdateNameScreen> {
             const Icon(Icons.check_circle, color: Colors.green, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(message, style: GoogleFonts.poppins(fontSize: 13)),
+              child: Text(message,
+                  style: GoogleFonts.poppins(
+                      fontSize: 13, color: context.textPrimary)),
             ),
           ],
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.cardBg,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
       ),
@@ -79,7 +82,7 @@ class _UpdateNameScreenState extends State<UpdateNameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +92,7 @@ class _UpdateNameScreenState extends State<UpdateNameScreen> {
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child:
-                    const Icon(Icons.arrow_back, size: 24, color: Colors.black),
+                    Icon(Icons.arrow_back, size: 24, color: context.textPrimary),
               ),
             ),
             const SizedBox(height: 8),
@@ -104,7 +107,7 @@ class _UpdateNameScreenState extends State<UpdateNameScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.3,
-                      color: Colors.black87,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -113,7 +116,7 @@ class _UpdateNameScreenState extends State<UpdateNameScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -121,7 +124,7 @@ class _UpdateNameScreenState extends State<UpdateNameScreen> {
                     'This is the name you would like other people to use when referring to you.',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black54,
+                      color: context.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -172,7 +175,7 @@ class _FieldLabel extends StatelessWidget {
         style: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          color: context.textPrimary,
         ),
       ),
     );
@@ -190,14 +193,14 @@ class _Field extends StatelessWidget {
     return TextField(
       controller: controller,
       textCapitalization: TextCapitalization.words,
-      style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
+      style: GoogleFonts.poppins(fontSize: 14, color: context.textPrimary),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.black38),
+        hintStyle: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         filled: true,
-        fillColor: const Color(0xFFF0F0F0),
+        fillColor: context.fieldFill,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -208,7 +211,7 @@ class _Field extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black26, width: 1.5),
+          borderSide: BorderSide(color: context.fieldBorder, width: 1.5),
         ),
       ),
     );
@@ -234,17 +237,17 @@ class _PillButton extends StatelessWidget {
         width: double.infinity,
         height: 54,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
+          color: context.fieldFill,
           borderRadius: BorderRadius.circular(28),
         ),
         alignment: Alignment.center,
         child: showProgress
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.black87,
+                  color: context.textPrimary,
                 ),
               )
             : Text(
@@ -252,7 +255,7 @@ class _PillButton extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: context.textPrimary,
                 ),
               ),
       ),

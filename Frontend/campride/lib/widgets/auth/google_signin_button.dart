@@ -103,8 +103,8 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
               Text(
                 'Continue with Google',
                 style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                     color: context.textPrimary),
               ),
             ],
@@ -150,7 +150,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
                             ? GSIButtonTheme.filledBlack
                             : GSIButtonTheme.outline,
                         size: GSIButtonSize.large,
-                        shape: GSIButtonShape.pill,
+                        shape: GSIButtonShape.rectangular,
                         text: GSIButtonText.continueWith,
                         type: GSIButtonType.standard,
                         minimumWidth: width,
@@ -173,7 +173,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: context.fieldBorder, width: 1.5),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(27)),
+                borderRadius: BorderRadius.circular(14)),
           ),
           child: _buildContent(context),
         ),

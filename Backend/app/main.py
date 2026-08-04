@@ -13,6 +13,7 @@ from app.api.v1.live_map import router as live_map_router, live_map_subscription
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.shuttle_requests import router as shuttle_requests_router
 from app.api.v1.students import router as students_router
+from app.api.v1.support import router as support_router
 from app.core.redis_client import cleanup_stale_drivers
 from app.core.notifications import _initialize_firebase
 from app.database import SessionLocal
@@ -92,6 +93,9 @@ app.include_router(shuttle_requests_router)
 
 # Student routers
 app.include_router(students_router)
+
+# Support routers
+app.include_router(support_router)
 
 
 @app.get("/health")

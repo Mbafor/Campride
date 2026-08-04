@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/common/empty_state_widget.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -138,14 +139,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           ),
                         )
                       : _notifications.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No notifications yet',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  color: context.textSecondary,
-                                ),
-                              ),
+                          ? const EmptyStateWidget(
+                              icon: Icons.notifications_none_outlined,
+                              title: 'No notifications yet',
+                              subtitle:
+                                  "You'll see updates about your rides, shuttles, and account here as they come in.",
                             )
                           : ListView.builder(
                               padding: const EdgeInsets.symmetric(horizontal: 16),

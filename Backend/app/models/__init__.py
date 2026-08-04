@@ -10,6 +10,7 @@ from app.models.shuttle_request import ShuttleRequest, ShuttleRequestStatus
 from app.models.verification_code import VerificationCode
 from app.models.driver_current_route import DriverCurrentRoute
 from app.models.firebase_log import FirebaseLog
+from app.models.support_ticket import SupportTicket, SupportTicketType, SupportTicketStatus
 
 __all__ = [
     "User",
@@ -28,4 +29,7 @@ __all__ = [
     "VerificationCode",
     "DriverCurrentRoute",
     "FirebaseLog",
+    "SupportTicket",
+    "SupportTicketType",
+    "SupportTicketStatus",
 ]

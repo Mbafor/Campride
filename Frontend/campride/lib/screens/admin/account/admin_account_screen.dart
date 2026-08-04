@@ -6,9 +6,10 @@ import 'dart:convert';
 import '../../../providers/authentication_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../config/api_config.dart';
+import '../../../widgets/common/logout_dialog.dart';
+import '../../../widgets/common/profile_avatar_view.dart';
 import '../../common/appearance_screen.dart';
 import '../../common/delete_account_screen.dart';
-import '../../common/logout_screen.dart';
 import '../../common/support_screen.dart';
 
 class AdminAccountScreen extends StatefulWidget {
@@ -292,7 +293,7 @@ class _AdminAccountScreenState extends State<AdminAccountScreen> {
                   label: 'Log out',
                   iconColor: Colors.red[600],
                   labelColor: Colors.red[600],
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LogoutScreen())),
+                  onTap: () => showLogoutDialog(context),
                 ),
               ),
               Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
@@ -322,27 +323,27 @@ class _AccountHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Consumer<AuthenticationProvider>(
-              builder: (context, auth, _) {
-                final userName = auth.user?.name ?? 'User';
-                final userEmail = auth.user?.email ?? 'N/A';
-                return Column(
+      child: Consumer<AuthenticationProvider>(
+        builder: (context, auth, _) {
+          final userName = auth.user?.name ?? 'User';
+          final userEmail = auth.user?.email ?? 'N/A';
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(userName, style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: context.textPrimary)),
                     const SizedBox(height: 4),
                     Text(userEmail, style: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary)),
                   ],
-                );
-              },
-            ),
-          ),
-          Container(width: 54, height: 54, decoration: BoxDecoration(color: context.fieldFill, shape: BoxShape.circle), child: Icon(Icons.person, size: 32, color: context.textSecondary)),
-        ],
+                ),
+              ),
+              ProfileAvatarView(photoUrl: auth.user?.photoUrl, name: auth.user?.name, size: 54),
+            ],
+          );
+        },
       ),
     );
   }

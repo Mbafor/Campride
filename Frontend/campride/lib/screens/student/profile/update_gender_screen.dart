@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
+import '../../../theme/theme_extensions.dart';
 
 /// "Choose your gender" screen.
 /// Woman / Man radio options + Remove Information / Submit buttons.
@@ -73,7 +74,7 @@ class _UpdateGenderScreenState extends State<UpdateGenderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +84,7 @@ class _UpdateGenderScreenState extends State<UpdateGenderScreen> {
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child:
-                    const Icon(Icons.arrow_back, size: 24, color: Colors.black),
+                    Icon(Icons.arrow_back, size: 24, color: context.textPrimary),
               ),
             ),
             const SizedBox(height: 8),
@@ -98,7 +99,7 @@ class _UpdateGenderScreenState extends State<UpdateGenderScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.3,
-                      color: Colors.black87,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -107,7 +108,7 @@ class _UpdateGenderScreenState extends State<UpdateGenderScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -115,7 +116,7 @@ class _UpdateGenderScreenState extends State<UpdateGenderScreen> {
                     'Select the option that best represents your gender.',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black54,
+                      color: context.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -134,7 +135,7 @@ class _UpdateGenderScreenState extends State<UpdateGenderScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -142,7 +143,7 @@ class _UpdateGenderScreenState extends State<UpdateGenderScreen> {
                       'Your gender information may be used for safety features, personalization of ads and marketing, and ad measurement. We won\'t show your gender to anyone unless you are opted in to relevant features. You can manage this information in Account Settings.',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: context.textSecondary,
                         height: 1.6,
                       ),
                     ),
@@ -152,13 +153,13 @@ class _UpdateGenderScreenState extends State<UpdateGenderScreen> {
                       selected: _selected == 'Woman',
                       onTap: () => setState(() => _selected = 'Woman'),
                     ),
-                    const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+                    Divider(height: 1, thickness: 1, color: context.divider),
                     _GenderOption(
                       label: 'Man',
                       selected: _selected == 'Man',
                       onTap: () => setState(() => _selected = 'Man'),
                     ),
-                    const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+                    Divider(height: 1, thickness: 1, color: context.divider),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -211,7 +212,7 @@ class _GenderOption extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: GoogleFonts.poppins(fontSize: 15, color: Colors.black87),
+                style: GoogleFonts.poppins(fontSize: 15, color: context.textPrimary),
               ),
             ),
             Container(
@@ -220,7 +221,7 @@ class _GenderOption extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: selected ? Colors.black87 : Colors.grey[400]!,
+                  color: selected ? context.textPrimary : context.textSecondary,
                   width: 2,
                 ),
               ),
@@ -229,8 +230,8 @@ class _GenderOption extends StatelessWidget {
                       child: Container(
                         width: 12,
                         height: 12,
-                        decoration: const BoxDecoration(
-                          color: Colors.black87,
+                        decoration: BoxDecoration(
+                          color: context.textPrimary,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -263,17 +264,17 @@ class _PillButton extends StatelessWidget {
         width: double.infinity,
         height: 54,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
+          color: context.fieldFill,
           borderRadius: BorderRadius.circular(28),
         ),
         alignment: Alignment.center,
         child: showProgress
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.black87,
+                  color: context.textPrimary,
                 ),
               )
             : Text(
@@ -281,7 +282,7 @@ class _PillButton extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: context.textPrimary,
                 ),
               ),
       ),

@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
-import '../../screens/common/coming_soon_screen.dart';
+import '../../screens/common/safety_screen.dart';
 import '../../screens/common/support_screen.dart';
 import '../../screens/student/rides/rides_screen.dart';
 import '../../screens/student/alerts/alerts_screen.dart';
+import '../../screens/student/profile/student_profile_screen.dart';
 import '../../screens/student/settings/settings_screen.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/theme_extensions.dart';
+import 'profile_avatar_view.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -15,7 +18,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: const Color(0xFFF2F2F2),
+      backgroundColor: context.scaffoldBg,
       width: MediaQuery.of(context).size.width * 0.82,
       child: SafeArea(
         child: Column(
@@ -24,37 +27,35 @@ class AppDrawer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
               child: InkWell(
-                onTap: () {},
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StudentProfileScreen()),
+                  );
+                },
                 borderRadius: BorderRadius.circular(12),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2C2C2C),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.person, size: 30, color: Color(0xFFBDBDBD)),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Consumer<AuthenticationProvider>(
-                        builder: (context, auth, _) {
-                          final userName = auth.user?.name ?? 'Guest';
-                          return Text(
+                child: Consumer<AuthenticationProvider>(
+                  builder: (context, auth, _) {
+                    final userName = auth.user?.name ?? 'Guest';
+                    return Row(
+                      children: [
+                        ProfileAvatarView(photoUrl: auth.user?.photoUrl, name: auth.user?.name, size: 52),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
                             'Hi $userName',
                             style: GoogleFonts.poppins(
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                              color: context.textPrimary,
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right, color: Color(0xFF757575), size: 26),
-                  ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right, color: context.textSecondary, size: 26),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -66,16 +67,16 @@ class AppDrawer extends StatelessWidget {
                   child: Column(
                     children: [
                       _DrawerItem(
-                        label: 'Request History',
-                        icon: Icons.history,
+                        label: 'Rides',
+                        icon: Icons.directions_bus_outlined,
                         onTap: () {
                           Navigator.pop(context);
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const RidesScreen()));
                         },
                       ),
                       _DrawerItem(
-                        label: 'Notifications',
-                        icon: Icons.notifications,
+                        label: 'Alerts',
+                        icon: Icons.notifications_outlined,
                         onTap: () {
                           Navigator.pop(context);
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsScreen()));
@@ -88,12 +89,7 @@ class AppDrawer extends StatelessWidget {
                           Navigator.pop(context);
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const ComingSoonScreen(
-                                title: 'Safety',
-                                icon: Icons.shield_outlined,
-                              ),
-                            ),
+                            MaterialPageRoute(builder: (_) => const SafetyScreen()),
                           );
                         },
                       ),
@@ -103,22 +99,6 @@ class AppDrawer extends StatelessWidget {
                         onTap: () {
                           Navigator.pop(context);
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-                        },
-                      ),
-                      _DrawerItem(
-                        label: 'Help',
-                        icon: Icons.help_outline,
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ComingSoonScreen(
-                                title: 'Help',
-                                icon: Icons.help_outline,
-                              ),
-                            ),
-                          );
                         },
                       ),
                       _DrawerItem(
@@ -160,7 +140,7 @@ class _DrawerItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
@@ -178,7 +158,7 @@ class _DrawerItem extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w400,
-                    color: Colors.black87,
+                    color: context.textPrimary,
                   ),
                 ),
               ),

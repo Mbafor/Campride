@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/authentication_provider.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/theme_extensions.dart';
 import 'login_screen.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -107,7 +108,7 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -123,11 +124,11 @@ class _OtpScreenState extends State<OtpScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: context.fieldFill,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.arrow_back,
-                      size: 20, color: Colors.black87),
+                  child: Icon(Icons.arrow_back,
+                      size: 20, color: context.textPrimary),
                 ),
               ),
               const SizedBox(height: 36),
@@ -138,7 +139,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -147,7 +148,7 @@ class _OtpScreenState extends State<OtpScreen> {
               RichText(
                 text: TextSpan(
                   style: GoogleFonts.poppins(
-                      fontSize: 14, color: Colors.grey[600]),
+                      fontSize: 14, color: context.textSecondary),
                   children: [
                     const TextSpan(text: 'Enter the 6-digit code sent to\n'),
                     TextSpan(
@@ -155,7 +156,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: context.textPrimary,
                       ),
                     ),
                   ],
@@ -218,7 +219,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   child: RichText(
                     text: TextSpan(
                       style: GoogleFonts.poppins(
-                          fontSize: 13, color: Colors.grey[600]),
+                          fontSize: 13, color: context.textSecondary),
                       children: [
                         const TextSpan(text: "Didn't receive a code? "),
                         TextSpan(
@@ -271,12 +272,12 @@ class _OtpBox extends StatelessWidget {
         style: GoogleFonts.poppins(
           fontSize: 22,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: context.textPrimary,
         ),
         decoration: InputDecoration(
           counterText: '',
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: context.fieldFill,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,

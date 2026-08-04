@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,23 +5,12 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/authentication_provider.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/theme_extensions.dart';
+import '../../../widgets/common/profile_avatar_view.dart';
 import 'update_name_screen.dart';
 import 'update_gender_screen.dart';
 import 'update_phone_screen.dart';
 import 'update_email_screen.dart';
-
-/// Decodes a `data:<mime>;base64,<data>` URL into raw bytes.
-/// Returns null if [dataUrl] is null or not a valid data URL.
-Uint8List? _decodeDataUrl(String? dataUrl) {
-  if (dataUrl == null) return null;
-  final commaIndex = dataUrl.indexOf(',');
-  if (!dataUrl.startsWith('data:') || commaIndex == -1) return null;
-  try {
-    return base64Decode(dataUrl.substring(commaIndex + 1));
-  } catch (_) {
-    return null;
-  }
-}
 
 /// Profile screen reached from the Account tab → Profile.
 /// Each row opens the corresponding edit screen from the design.
@@ -34,7 +20,7 @@ class StudentProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,7 +30,7 @@ class StudentProfileScreen extends StatelessWidget {
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child:
-                    const Icon(Icons.arrow_back, size: 24, color: Colors.black),
+                    Icon(Icons.arrow_back, size: 24, color: context.textPrimary),
               ),
             ),
             const SizedBox(height: 20),
@@ -55,7 +41,7 @@ class StudentProfileScreen extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: context.textPrimary,
                 ),
               ),
             ),
@@ -68,12 +54,12 @@ class StudentProfileScreen extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                  color: context.textPrimary,
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            Divider(height: 1, thickness: 1, color: Colors.grey[200]),
+            Divider(height: 1, thickness: 1, color: context.divider),
             Expanded(
               child: Consumer<AuthenticationProvider>(
                 builder: (context, auth, _) {
@@ -188,7 +174,7 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: context.divider,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -218,36 +204,29 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    final photoUrl = context.watch<AuthenticationProvider>().user?.photoUrl;
-    final photoBytes = _decodeDataUrl(photoUrl);
+    final user = context.watch<AuthenticationProvider>().user;
 
     return GestureDetector(
       onTap: _isUploading ? null : _showPickerSheet,
       child: Stack(
         children: [
-          Container(
-            width: 84,
-            height: 84,
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              shape: BoxShape.circle,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: _isUploading
-                ? const Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
+          ProfileAvatarView(photoUrl: user?.photoUrl, name: user?.name, size: 84),
+          if (_isUploading)
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
+                child: const Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
-                  )
-                : photoBytes != null
-                    ? Image.memory(photoBytes, fit: BoxFit.cover, width: 84, height: 84)
-                    : const Icon(Icons.person, size: 52, color: Colors.white),
-          ),
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             right: 0,
             bottom: 0,
@@ -294,7 +273,7 @@ class _InfoRow extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: context.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -302,18 +281,18 @@ class _InfoRow extends StatelessWidget {
                         value,
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: Colors.black54,
+                          color: context.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
+                Icon(Icons.chevron_right, color: context.textSecondary, size: 22),
               ],
             ),
           ),
         ),
-        Divider(height: 1, thickness: 1, color: Colors.grey[200]),
+        Divider(height: 1, thickness: 1, color: context.divider),
       ],
     );
   }

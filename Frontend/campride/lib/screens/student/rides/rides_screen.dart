@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/common/empty_state_widget.dart';
+import '../where_to/where_to_screen.dart';
 
 class RidesScreen extends StatefulWidget {
   const RidesScreen({super.key});
@@ -18,6 +21,9 @@ class _RidesScreenState extends State<RidesScreen> {
   List<Map<String, dynamic>> _rides = [];
   bool _isLoading = true;
   String? _errorMessage;
+
+  /// 0 = Past (completed rides), 1 = Ongoing (boarded, not yet alighted).
+  int _tab = 0;
 
   @override
   void initState() {
@@ -64,6 +70,32 @@ class _RidesScreenState extends State<RidesScreen> {
     }
   }
 
+  DateTime? _rideDate(Map<String, dynamic> ride) {
+    final raw = ride['boarded_at'] ?? ride['created_at'];
+    if (raw == null) return null;
+    return DateTime.tryParse(raw)?.toLocal();
+  }
+
+  void _showInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('About Rides', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        content: Text(
+          'Past shows rides you\'ve completed. Ongoing shows a ride you\'ve '
+          'boarded but haven\'t reached your stop on yet.',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('Got it', style: GoogleFonts.poppins(color: AppColors.primaryGreen)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,60 +103,151 @@ class _RidesScreenState extends State<RidesScreen> {
       appBar: AppBar(
         backgroundColor: context.scaffoldBg,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: context.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: context.textPrimary),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Text(
-          'Your Rides',
+          'Rides',
           style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
             color: context.textPrimary,
           ),
         ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.info_outline, color: context.textSecondary),
+            onPressed: _showInfoDialog,
+          ),
+        ],
       ),
       body: SafeArea(
+        top: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : _errorMessage != null
-                      ? Center(
-                          child: Text(
-                            _errorMessage!,
-                            style: GoogleFonts.poppins(color: Colors.red),
-                          ),
-                        )
-                      : _rides.isEmpty
-                          ? Center(
-                              child: Text(
-                                'No rides yet',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  color: context.textSecondary,
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: _rides.length,
-                              itemBuilder: (context, index) {
-                                final ride = _rides[index];
-                                return _RideCard(
-                                  routeName: ride['route_name'] ?? 'Unknown',
-                                  shuttleName: ride['shuttle_name'] ?? 'Unknown',
-                                  shuttlePlate: ride['shuttle_plate'] ?? '',
-                                  boardedAt: ride['boarded_at'] ?? '',
-                                  alightedAt: ride['alighted_at'],
-                                  durationSeconds: ride['duration_seconds'] ?? 0,
-                                );
-                              },
-                            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+              child: Row(
+                children: [
+                  _RideTab(label: 'Past', isActive: _tab == 0, onTap: () => setState(() => _tab = 0)),
+                  const SizedBox(width: 24),
+                  _RideTab(label: 'Ongoing', isActive: _tab == 1, onTap: () => setState(() => _tab = 1)),
+                ],
+              ),
+            ),
+            Divider(height: 1, thickness: 1, color: context.divider),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text(
+            _errorMessage!,
+            style: GoogleFonts.poppins(color: AppColors.error),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    final filtered = _rides.where((r) {
+      final alighted = r['alighted_at'];
+      return _tab == 0 ? alighted != null : alighted == null;
+    }).toList();
+
+    if (filtered.isEmpty) {
+      return _tab == 0
+          ? const EmptyStateWidget(
+              icon: Icons.history,
+              title: 'No past rides yet',
+              subtitle: 'Rides you complete will show up here.',
+            )
+          : const EmptyStateWidget(
+              icon: Icons.directions_bus_outlined,
+              title: 'No ongoing ride',
+              subtitle: 'When you board a shuttle, it will appear here until you reach your stop.',
+            );
+    }
+
+    // Group into month sections, preserving the backend's most-recent-first order.
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final ride in filtered) {
+      final date = _rideDate(ride);
+      final key = date != null ? DateFormat('MMMM yyyy').format(date) : 'Unknown';
+      groups.putIfAbsent(key, () => []).add(ride);
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      children: [
+        for (final entry in groups.entries) ...[
+          Text(
+            entry.key,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: context.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (var i = 0; i < entry.value.length; i++) ...[
+            _RideRow(ride: entry.value[i], rideDate: _rideDate(entry.value[i])),
+            if (i != entry.value.length - 1) Divider(height: 1, color: context.divider),
+          ],
+          const SizedBox(height: 20),
+        ],
+      ],
+    );
+  }
+}
+
+class _RideTab extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _RideTab({required this.label, required this.isActive, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                color: isActive ? context.textPrimary : context.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: 34,
+              height: 3,
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.primaryGreen : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ],
         ),
@@ -133,154 +256,103 @@ class _RidesScreenState extends State<RidesScreen> {
   }
 }
 
-class _RideCard extends StatelessWidget {
-  final String routeName;
-  final String shuttleName;
-  final String shuttlePlate;
-  final String boardedAt;
-  final String? alightedAt;
-  final int durationSeconds;
+class _RideRow extends StatelessWidget {
+  final Map<String, dynamic> ride;
+  final DateTime? rideDate;
 
-  const _RideCard({
-    required this.routeName,
-    required this.shuttleName,
-    required this.shuttlePlate,
-    required this.boardedAt,
-    this.alightedAt,
-    required this.durationSeconds,
-  });
+  const _RideRow({required this.ride, required this.rideDate});
 
-  String _formatDateTime(String dateTimeString) {
-    try {
-      final dt = DateTime.parse(dateTimeString);
-      return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return dateTimeString;
-    }
+  String _formatWhen(DateTime? date) {
+    if (date == null) return '';
+    final now = DateTime.now();
+    final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+    final time = DateFormat('h:mm a').format(date).toLowerCase();
+    final day = isToday ? 'Today' : DateFormat('d MMM').format(date);
+    return '$day · $time';
   }
 
   String _formatDuration(int seconds) {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
-    if (minutes == 0) {
-      return '${secs}s';
-    } else if (secs == 0) {
-      return '${minutes}m';
-    }
+    if (minutes == 0) return '${secs}s';
+    if (secs == 0) return '${minutes}m';
     return '${minutes}m ${secs}s';
   }
 
   @override
   Widget build(BuildContext context) {
-    final boardedTime = _formatDateTime(boardedAt);
-    final alightedTime = alightedAt != null ? _formatDateTime(alightedAt!) : 'In Progress';
-    final duration = _formatDuration(durationSeconds);
+    final routeName = ride['route_name'] ?? 'Unknown route';
+    final shuttleName = ride['shuttle_name'] ?? 'Unknown shuttle';
+    final shuttlePlate = ride['shuttle_plate'] ?? '';
+    final durationSeconds = ride['duration_seconds'] as int?;
+    final isOngoing = ride['alighted_at'] == null;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.divider),
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: context.fieldFill,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.directions_bus_outlined, size: 22, color: context.textSecondary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      routeName,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$shuttleName ($shuttlePlate)',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: context.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                duration,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: context.textSecondary,
-                ),
-              ),
-            ],
+          Container(
+            width: 38,
+            height: 38,
+            margin: const EdgeInsets.only(top: 20),
+            decoration: BoxDecoration(color: context.fieldFill, shape: BoxShape.circle),
+            child: Icon(Icons.directions_bus_outlined, size: 20, color: context.textSecondary),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Boarded',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: context.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      boardedTime,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                  ],
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _formatWhen(rideDate),
+                  style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary),
                 ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Alighted',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: context.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      alightedTime,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: alightedAt == null ? Colors.orange : context.textPrimary,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  routeName,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  isOngoing
+                      ? 'In progress'
+                      : durationSeconds != null
+                          ? '$shuttleName • ${_formatDuration(durationSeconds)}'
+                          : shuttleName,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isOngoing ? Colors.orange : AppColors.primaryGreen,
+                  ),
+                ),
+                if (shuttlePlate.isNotEmpty && !isOngoing) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    shuttlePlate,
+                    style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WhereToScreen()),
+            ),
+            child: Container(
+              margin: const EdgeInsets.only(top: 20),
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(color: context.fieldFill, shape: BoxShape.circle),
+              child: const Icon(Icons.refresh, size: 20, color: AppColors.primaryGreen),
+            ),
           ),
         ],
       ),

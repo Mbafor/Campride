@@ -176,6 +176,12 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             detail={"error_code": "AUTH_007", "message": "Please verify your email before logging in"}
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail={"error_code": "AUTH_009", "message": "This account has been deleted"}
+        )
+
     access_token = create_access_token({"sub": str(user.id), "role": user.role})
     refresh_token = create_refresh_token({"sub": str(user.id), "role": user.role})
 
@@ -202,6 +208,12 @@ def refresh(request: RefreshTokenRequest, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=401,
             detail={"error_code": "AUTH_005", "message": "User not found"}
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=401,
+            detail={"error_code": "AUTH_009", "message": "This account has been deleted"}
         )
 
     new_access_token = create_access_token({"sub": str(user.id), "role": user.role})
@@ -289,6 +301,7 @@ def google_sign_in(request: GoogleSignInRequest, db: Session = Depends(get_db)):
     # Extract verified claims from the ID token
     email = payload.get("email")
     name = payload.get("name")
+    picture = payload.get("picture")
 
     if not email:
         raise HTTPException(
@@ -298,6 +311,15 @@ def google_sign_in(request: GoogleSignInRequest, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.email == email).first()
     if user:
+        if not user.is_active:
+            raise HTTPException(
+                status_code=403,
+                detail={"error_code": "AUTH_009", "message": "This account has been deleted"}
+            )
+        # Backfill the Google avatar for accounts that don't have a photo yet.
+        if not user.photo_url and picture:
+            user.photo_url = picture
+            db.commit()
         access_token = create_access_token({"sub": str(user.id), "role": user.role})
         refresh_token = create_refresh_token({"sub": str(user.id), "role": user.role})
     else:
@@ -310,6 +332,7 @@ def google_sign_in(request: GoogleSignInRequest, db: Session = Depends(get_db)):
                 role="student",
                 is_active=True,
                 is_verified=True,
+                photo_url=picture,
             )
             db.add(new_user)
             db.commit()

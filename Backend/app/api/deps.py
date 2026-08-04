@@ -43,6 +43,12 @@ def get_current_user(authorization: Optional[str] = Header(None), db=Depends(get
             detail={"error_code": "AUTH_005", "message": "User not found"}
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=401,
+            detail={"error_code": "AUTH_009", "message": "This account has been deleted"}
+        )
+
     return user
 
 

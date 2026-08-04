@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
+import '../../../theme/theme_extensions.dart';
 
 /// "Email address" screen.
 /// Email field with clear button and an "Update" button that persists
@@ -76,7 +77,7 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +87,7 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child:
-                    const Icon(Icons.arrow_back, size: 24, color: Colors.black),
+                    Icon(Icons.arrow_back, size: 24, color: context.textPrimary),
               ),
             ),
             const SizedBox(height: 8),
@@ -101,7 +102,7 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.3,
-                      color: Colors.black87,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -110,7 +111,7 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -118,7 +119,7 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
                     'You\'ll use this email to receive messages, sign in, and recover your account.',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black54,
+                      color: context.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -140,7 +141,7 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           style: GoogleFonts.poppins(
-                              fontSize: 14, color: Colors.black87),
+                              fontSize: 14, color: context.textPrimary),
                           onChanged: (_) {
                             if (_errorMessage != null) {
                               setState(() => _errorMessage = null);
@@ -149,7 +150,7 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
                           decoration: InputDecoration(
                             hintText: 'Email',
                             hintStyle: GoogleFonts.poppins(
-                                fontSize: 14, color: Colors.black38),
+                                fontSize: 14, color: context.textSecondary),
                             suffixIcon: value.text.isEmpty
                                 ? null
                                 : GestureDetector(
@@ -157,13 +158,13 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
                                     child: Padding(
                                       padding: const EdgeInsets.all(10),
                                       child: Icon(Icons.cancel,
-                                          size: 20, color: Colors.grey[500]),
+                                          size: 20, color: context.textSecondary),
                                     ),
                                   ),
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 14),
                             filled: true,
-                            fillColor: const Color(0xFFF0F0F0),
+                            fillColor: context.fieldFill,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -174,8 +175,8 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: Colors.black26, width: 1.5),
+                              borderSide: BorderSide(
+                                  color: context.fieldBorder, width: 1.5),
                             ),
                             errorText: _errorMessage,
                             errorStyle: GoogleFonts.poppins(
@@ -216,7 +217,7 @@ class _FieldLabel extends StatelessWidget {
         style: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          color: context.textPrimary,
         ),
       ),
     );
@@ -242,17 +243,17 @@ class _PillButton extends StatelessWidget {
         width: double.infinity,
         height: 54,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
+          color: context.fieldFill,
           borderRadius: BorderRadius.circular(28),
         ),
         alignment: Alignment.center,
         child: showProgress
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.black87,
+                  color: context.textPrimary,
                 ),
               )
             : Text(
@@ -260,7 +261,7 @@ class _PillButton extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: context.textPrimary,
                 ),
               ),
       ),
