@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 import 'fleet_manager_dashboard.dart';
 import '../drivers/drivers_list_screen.dart';
 import '../shuttles/shuttles_list_screen.dart';
@@ -16,53 +16,37 @@ class FleetDashboard extends StatefulWidget {
 class _FleetDashboardState extends State<FleetDashboard> {
   int _currentIndex = 0;
 
+  void _goToTab(int index) => setState(() => _currentIndex = index);
+
   late final List<Widget> _screens = [
     FleetManagerDashboard(
-      onDriversTap: () => setState(() => _currentIndex = 1),
-      onShuttlesTap: () => setState(() => _currentIndex = 2),
+      onDriversTap: () => _goToTab(1),
+      onShuttlesTap: () => _goToTab(2),
     ),
-    DriversListScreen(),
-    ShuttlesListScreen(),
+    const DriversListScreen(),
+    const ShuttlesListScreen(),
     const FleetManagerAccountScreen(),
   ];
 
   static const List<_NavItem> _navItems = [
     _NavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'Dashboard'),
     _NavItem(icon: Icons.people_outline, activeIcon: Icons.people, label: 'Drivers'),
-    _NavItem(icon: Icons.airport_shuttle, activeIcon: Icons.directions_bus, label: 'Shuttles'),
+    _NavItem(icon: Icons.airport_shuttle_outlined, activeIcon: Icons.airport_shuttle, label: 'Shuttles'),
     _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Account'),
   ];
-
-  String get _appBarTitle {
-    switch (_currentIndex) {
-      case 0: return 'Fleet Manager';
-      case 1: return 'Drivers';
-      case 2: return 'Shuttles';
-      case 3: return 'Account';
-      default: return 'Fleet Manager';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _appBarTitle,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
+      backgroundColor: context.scaffoldBg,
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: KeyedSubtree(
-          key: ValueKey(_currentIndex),
-          child: _screens[_currentIndex],
-        ),
-      ),
-      bottomNavigationBar: _AnimatedBottomNav(
+      bottomNavigationBar: _BottomNav(
         currentIndex: _currentIndex,
         items: _navItems,
-        onTap: (i) => setState(() => _currentIndex = i),
+        onTap: _goToTab,
       ),
     );
   }
@@ -75,12 +59,12 @@ class _NavItem {
   const _NavItem({required this.icon, required this.activeIcon, required this.label});
 }
 
-class _AnimatedBottomNav extends StatelessWidget {
+class _BottomNav extends StatelessWidget {
   final int currentIndex;
   final List<_NavItem> items;
   final ValueChanged<int> onTap;
 
-  const _AnimatedBottomNav({
+  const _BottomNav({
     required this.currentIndex,
     required this.items,
     required this.onTap,
@@ -90,44 +74,32 @@ class _AnimatedBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
+        color: context.cardBg,
+        border: Border(top: BorderSide(color: context.divider, width: 1)),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        top: false,
+        child: SizedBox(
+          height: 62,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: items.asMap().entries.map((e) {
               final isActive = e.key == currentIndex;
-              return GestureDetector(
-                onTap: () => onTap(e.key),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isActive ? AppColors.primaryGreen.withOpacity(0.1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              final color = isActive ? AppColors.primaryGreen : context.textSecondary;
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(e.key),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        isActive ? e.value.activeIcon : e.value.icon,
-                        color: isActive
-                            ? Theme.of(context).bottomNavigationBarTheme.selectedItemColor
-                            : Theme.of(context).bottomNavigationBarTheme.unselectedItemColor,
-                        size: 24,
-                      ),
+                      Icon(isActive ? e.value.activeIcon : e.value.icon, size: 24, color: color),
                       const SizedBox(height: 4),
                       Text(
                         e.value.label,
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                          color: isActive
-                              ? Theme.of(context).bottomNavigationBarTheme.selectedItemColor
-                              : Theme.of(context).bottomNavigationBarTheme.unselectedItemColor,
+                          color: color,
                         ),
                       ),
                     ],

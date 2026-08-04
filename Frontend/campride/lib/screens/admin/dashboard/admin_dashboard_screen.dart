@@ -21,11 +21,13 @@ class AdminDashboardScreen extends StatelessWidget {
     return Consumer<AuthenticationProvider>(
       builder: (context, auth, _) {
         return Scaffold(
+          backgroundColor: context.scaffoldBg,
           body: CustomScrollView(
             slivers: [
-              // Premium header with gradient
               SliverAppBar(
-                expandedHeight: 220,
+                backgroundColor: context.scaffoldBg,
+                elevation: 0,
+                expandedHeight: 150,
                 floating: false,
                 pinned: true,
                 actions: [
@@ -39,11 +41,11 @@ class AdminDashboardScreen extends StatelessWidget {
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: context.fieldFill,
                             shape: BoxShape.circle,
                           ),
                           padding: const EdgeInsets.all(8),
-                          child: Icon(Icons.person_outline, color: Colors.white, size: 24),
+                          child: Icon(Icons.person_outline, color: context.textPrimary, size: 24),
                         ),
                       ),
                     ),
@@ -51,13 +53,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.primaryGreenDark, AppColors.primaryGreen],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
+                    color: context.scaffoldBg,
                     child: Padding(
                       padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 24),
                       child: Column(
@@ -74,17 +70,17 @@ class AdminDashboardScreen extends StatelessWidget {
                                     Text(
                                       'Welcome, ${auth.user?.name ?? "Admin"}',
                                       style: GoogleFonts.poppins(
-                                        fontSize: 26,
+                                        fontSize: 24,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: context.textPrimary,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'System administration and oversight',
                                       style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        color: Colors.white70,
+                                        fontSize: 13,
+                                        color: context.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -93,20 +89,20 @@ class AdminDashboardScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: AppColors.primaryGreen.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                                  border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.security, size: 16, color: Colors.white),
+                                    Icon(Icons.security, size: 16, color: AppColors.primaryGreen),
                                     const SizedBox(width: 6),
                                     Text(
                                       'Super Admin',
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.white,
+                                        color: AppColors.primaryGreen,
                                       ),
                                     ),
                                   ],
@@ -132,7 +128,7 @@ class AdminDashboardScreen extends StatelessWidget {
                     // Quick Navigation
                     Text(
                       'Management',
-                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: context.textPrimary),
                     ),
                     const SizedBox(height: 12),
                     _NavigationCard(

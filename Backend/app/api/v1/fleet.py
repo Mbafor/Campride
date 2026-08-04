@@ -7,10 +7,38 @@ from datetime import date
 from app.database import SessionLocal
 from app.models import User, Shuttle, DriverCurrentRoute, RideHistory, Trip, Route
 from app.schemas.shuttle import ShuttleResponse
+from app.schemas.user import UpdateDriverRequest, UpdateDriverStatusRequest
 from app.api.deps import get_db, get_current_user, require_role
 from app.core.redis_client import get_all_live_locations
 
 router = APIRouter(prefix="/api/v1/fleet", tags=["fleet"])
+
+
+def _serialize_driver(driver: User, db: Session) -> dict:
+    """Shared shape for a single driver's details, including their current
+    shuttle/route assignment. Used by the get/update/status endpoints so
+    they all return an identical payload."""
+    shuttle = db.query(Shuttle).filter(Shuttle.driver_id == driver.id).first()
+    route_assignment = db.query(DriverCurrentRoute).filter(DriverCurrentRoute.driver_id == driver.id).first()
+
+    return {
+        "id": driver.id,
+        "name": driver.name,
+        "email": driver.email,
+        "is_active": driver.is_active,
+        "created_at": driver.created_at,
+        "assigned_shuttle": {
+            "id": shuttle.id,
+            "name": shuttle.name,
+            "plate_number": shuttle.plate_number,
+            "capacity": shuttle.capacity,
+            "status": shuttle.status,
+        } if shuttle else None,
+        "assigned_route": {
+            "id": route_assignment.route.id,
+            "name": route_assignment.route.name,
+        } if route_assignment and route_assignment.route else None,
+    }
 
 
 @router.get("/drivers", response_model=list[dict])
@@ -57,27 +85,90 @@ def get_driver_details(
     if not driver:
         raise HTTPException(status_code=404, detail={"error_code": "FLEET_001", "message": "Driver not found"})
 
-    shuttle = db.query(Shuttle).filter(Shuttle.driver_id == driver.id).first()
-    route_assignment = db.query(DriverCurrentRoute).filter(DriverCurrentRoute.driver_id == driver.id).first()
+    return _serialize_driver(driver, db)
 
-    return {
-        "id": driver.id,
-        "name": driver.name,
-        "email": driver.email,
-        "is_active": driver.is_active,
-        "created_at": driver.created_at,
-        "assigned_shuttle": {
-            "id": shuttle.id,
-            "name": shuttle.name,
-            "plate_number": shuttle.plate_number,
-            "capacity": shuttle.capacity,
-            "status": shuttle.status,
-        } if shuttle else None,
-        "assigned_route": {
-            "id": route_assignment.route.id,
-            "name": route_assignment.route.name,
-        } if route_assignment and route_assignment.route else None,
-    }
+
+@router.put("/drivers/{driver_id}", response_model=dict)
+def update_driver(
+    driver_id: UUID,
+    request: UpdateDriverRequest,
+    current_user: User = Depends(require_role(["fleet_manager", "super_admin"])),
+    db: Session = Depends(get_db),
+):
+    """Update a driver's profile info (name, email, gender, phone number)."""
+    driver = db.query(User).filter(User.id == driver_id, User.role == "driver").first()
+    if not driver:
+        raise HTTPException(status_code=404, detail={"error_code": "FLEET_001", "message": "Driver not found"})
+
+    if request.name is not None:
+        driver.name = request.name
+    if request.email is not None:
+        existing = db.query(User).filter(User.email == request.email, User.id != driver.id).first()
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail={"error_code": "AUTH_002", "message": "Email already in use"},
+            )
+        driver.email = request.email
+    if request.gender is not None:
+        driver.gender = request.gender
+    if request.phone_number is not None:
+        driver.phone_number = request.phone_number
+
+    db.commit()
+    db.refresh(driver)
+    return _serialize_driver(driver, db)
+
+
+@router.put("/drivers/{driver_id}/status", response_model=dict)
+def set_driver_status(
+    driver_id: UUID,
+    request: UpdateDriverStatusRequest,
+    current_user: User = Depends(require_role(["fleet_manager", "super_admin"])),
+    db: Session = Depends(get_db),
+):
+    """Activate or deactivate a driver. Deactivating also clears their
+    current shuttle assignment so the shuttle can be reassigned to someone
+    who can actually operate it."""
+    driver = db.query(User).filter(User.id == driver_id, User.role == "driver").first()
+    if not driver:
+        raise HTTPException(status_code=404, detail={"error_code": "FLEET_001", "message": "Driver not found"})
+
+    driver.is_active = request.is_active
+
+    if not request.is_active:
+        shuttle = db.query(Shuttle).filter(Shuttle.driver_id == driver.id).first()
+        if shuttle:
+            shuttle.driver_id = None
+
+    db.commit()
+    db.refresh(driver)
+    return _serialize_driver(driver, db)
+
+
+@router.delete("/drivers/{driver_id}")
+def delete_driver(
+    driver_id: UUID,
+    current_user: User = Depends(require_role(["fleet_manager", "super_admin"])),
+    db: Session = Depends(get_db),
+):
+    """Soft-delete a driver, matching the self-service account deletion
+    convention used elsewhere: the row is kept (trip/telemetry history
+    references it) and is_active is set to False, which also blocks login.
+    Also clears their shuttle assignment."""
+    driver = db.query(User).filter(User.id == driver_id, User.role == "driver").first()
+    if not driver:
+        raise HTTPException(status_code=404, detail={"error_code": "FLEET_001", "message": "Driver not found"})
+
+    driver.is_active = False
+
+    shuttle = db.query(Shuttle).filter(Shuttle.driver_id == driver.id).first()
+    if shuttle:
+        shuttle.driver_id = None
+
+    db.commit()
+
+    return {"message": "Driver deleted successfully"}
 
 
 @router.get("/shuttles", response_model=list[dict])

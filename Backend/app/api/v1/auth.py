@@ -15,6 +15,8 @@ from app.schemas.user import (
     TokenResponse,
     RefreshTokenRequest,
     UserCreateAdmin,
+    UpdateFleetManagerRequest,
+    UpdateDriverStatusRequest,
 )
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 from app.core.email import send_verification_email
@@ -452,6 +454,80 @@ def create_fleet_manager(
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+@admin_router.get("/users/fleet-managers", response_model=list[UserResponse])
+def list_fleet_managers(
+    current_user: User = Depends(require_role(["super_admin"])),
+    db: Session = Depends(get_db)
+):
+    return db.query(User).filter(User.role == "fleet_manager").all()
+
+
+@admin_router.put("/users/fleet-managers/{user_id}", response_model=UserResponse)
+def update_fleet_manager(
+    user_id: uuid.UUID,
+    request: UpdateFleetManagerRequest,
+    current_user: User = Depends(require_role(["super_admin"])),
+    db: Session = Depends(get_db)
+):
+    manager = db.query(User).filter(User.id == user_id, User.role == "fleet_manager").first()
+    if not manager:
+        raise HTTPException(status_code=404, detail={"error_code": "ADMIN_001", "message": "Fleet manager not found"})
+
+    if request.name is not None:
+        manager.name = request.name
+    if request.email is not None:
+        existing = db.query(User).filter(User.email == request.email, User.id != manager.id).first()
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail={"error_code": "AUTH_002", "message": "Email already in use"},
+            )
+        manager.email = request.email
+    if request.gender is not None:
+        manager.gender = request.gender
+    if request.phone_number is not None:
+        manager.phone_number = request.phone_number
+
+    db.commit()
+    db.refresh(manager)
+    return manager
+
+
+@admin_router.put("/users/fleet-managers/{user_id}/status", response_model=UserResponse)
+def set_fleet_manager_status(
+    user_id: uuid.UUID,
+    request: UpdateDriverStatusRequest,
+    current_user: User = Depends(require_role(["super_admin"])),
+    db: Session = Depends(get_db)
+):
+    manager = db.query(User).filter(User.id == user_id, User.role == "fleet_manager").first()
+    if not manager:
+        raise HTTPException(status_code=404, detail={"error_code": "ADMIN_001", "message": "Fleet manager not found"})
+
+    manager.is_active = request.is_active
+    db.commit()
+    db.refresh(manager)
+    return manager
+
+
+@admin_router.delete("/users/fleet-managers/{user_id}")
+def delete_fleet_manager(
+    user_id: uuid.UUID,
+    current_user: User = Depends(require_role(["super_admin"])),
+    db: Session = Depends(get_db)
+):
+    """Soft-delete, matching the convention used for driver deletion:
+    the row is kept (FK references from trip/telemetry history) and
+    is_active is set to False, which also blocks login."""
+    manager = db.query(User).filter(User.id == user_id, User.role == "fleet_manager").first()
+    if not manager:
+        raise HTTPException(status_code=404, detail={"error_code": "ADMIN_001", "message": "Fleet manager not found"})
+
+    manager.is_active = False
+    db.commit()
+    return {"message": "Fleet manager deleted successfully"}
 
 
 @admin_router.get("/stats", response_model=AdminStatsResponse)
