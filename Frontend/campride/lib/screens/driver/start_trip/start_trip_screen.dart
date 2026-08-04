@@ -210,7 +210,7 @@ class _StartTripScreenState extends State<StartTripScreen>
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -414,7 +414,7 @@ class _HomeHeader extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

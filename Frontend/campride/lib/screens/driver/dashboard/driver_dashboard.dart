@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/app_theme.dart';
+import '../map/driver_map_screen.dart';
 import '../profile/driver_profile_screen.dart';
 import '../start_trip/start_trip_screen.dart';
 import '../trip_history/trip_history_screen.dart';
@@ -22,9 +23,10 @@ class _DriverDashboardState extends State<DriverDashboard> {
       body: IndexedStack(
         index: _currentIndex,
         children: const [
-          StartTripScreen(),    // Home tab (index 0)
-          TripHistoryScreen(),  // Trip History tab (index 1)
-          DriverProfileScreen(), // Account tab (index 2)
+          StartTripScreen(),     // Home tab (index 0)
+          DriverMapScreen(),     // Map tab (index 1)
+          TripHistoryScreen(),   // Trip History tab (index 2)
+          DriverProfileScreen(), // Account tab (index 3)
         ],
       ),
       bottomNavigationBar: _BottomNav(
@@ -62,18 +64,25 @@ class _BottomNav extends StatelessWidget {
                 onTap: () => onTap(0),
               ),
               _NavTab(
+                icon: Icons.map_outlined,
+                activeIcon: Icons.map,
+                label: 'Map',
+                isActive: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              _NavTab(
                 icon: Icons.history_outlined,
                 activeIcon: Icons.history,
                 label: 'Trip History',
-                isActive: currentIndex == 1,
-                onTap: () => onTap(1),
+                isActive: currentIndex == 2,
+                onTap: () => onTap(2),
               ),
               _NavTab(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
                 label: 'Account',
-                isActive: currentIndex == 2,
-                onTap: () => onTap(2),
+                isActive: currentIndex == 3,
+                onTap: () => onTap(3),
               ),
             ],
           ),
