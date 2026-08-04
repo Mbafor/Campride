@@ -110,7 +110,7 @@ class _SearchLocationPickerState extends State<SearchLocationPicker> {
 
     try {
       final response = await http.get(
-        Uri.parse('https://places.googleapis.com/v1/${prediction.placeId}'),
+        Uri.parse('https://places.googleapis.com/v1/places/${prediction.placeId}'),
         headers: {
           'X-Goog-Api-Key': _googleApiKey,
           'X-Goog-FieldMask': 'displayName,location',
