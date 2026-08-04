@@ -110,11 +110,18 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
       setState(() => _userPosition = position);
 
       if (_allStops.isNotEmpty) {
-        final nearest = _allStops.reduce((a, b) =>
-            _distanceKm(position.latitude, position.longitude, a.lat, a.lng) <
-                    _distanceKm(position.latitude, position.longitude, b.lat, b.lng)
-                ? a
-                : b);
+        final nearest = _allStops.reduce(
+          (a, b) =>
+              _distanceKm(position.latitude, position.longitude, a.lat, a.lng) <
+                  _distanceKm(
+                    position.latitude,
+                    position.longitude,
+                    b.lat,
+                    b.lng,
+                  )
+              ? a
+              : b,
+        );
         if (mounted) {
           setState(() {
             _pickupStop = nearest;
@@ -138,7 +145,8 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
     const r = 6371.0;
     final dLat = _toRad(lat2 - lat1);
     final dLon = _toRad(lon2 - lon1);
-    final a = sin(dLat / 2) * sin(dLat / 2) +
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
         cos(_toRad(lat1)) * cos(_toRad(lat2)) * sin(dLon / 2) * sin(dLon / 2);
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return r * c;
@@ -150,7 +158,9 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
     final query = _dropoffCtrl.text.trim().toLowerCase();
     final candidates = _allStops.where((s) => s.id != _pickupStop?.id);
     if (query.isEmpty) return candidates.toList();
-    return candidates.where((s) => s.name.toLowerCase().contains(query)).toList();
+    return candidates
+        .where((s) => s.name.toLowerCase().contains(query))
+        .toList();
   }
 
   void _swap() {
@@ -239,13 +249,18 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => LiveShuttlesScreen(matchedShuttleId: driverId, etaMinutes: etaMinutes),
+        builder: (_) => LiveShuttlesScreen(
+          matchedShuttleId: driverId,
+          etaMinutes: etaMinutes,
+        ),
       ),
     );
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -263,13 +278,21 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                 children: [
                   Text(
                     'Route',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary),
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
                   ),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Icon(Icons.close, size: 24, color: context.textPrimary),
+                      child: Icon(
+                        Icons.close,
+                        size: 24,
+                        color: context.textPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -295,7 +318,10 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                               Container(
                                 width: 20,
                                 height: 20,
-                                decoration: const BoxDecoration(color: Color(0xFF3D3DCC), shape: BoxShape.circle),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF3D3DCC),
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -316,7 +342,11 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                       const SizedBox(width: 12),
                       GestureDetector(
                         onTap: _detectPickup,
-                        child: Icon(Icons.my_location, size: 20, color: context.textSecondary),
+                        child: Icon(
+                          Icons.my_location,
+                          size: 20,
+                          color: context.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -333,25 +363,37 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                             color: context.cardBg,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: _dropoffFocused ? const Color(0xFF4CAF50) : context.fieldBorder,
+                              color: _dropoffFocused
+                                  ? const Color(0xFF4CAF50)
+                                  : context.fieldBorder,
                               width: 1.5,
                             ),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.search, color: context.textSecondary, size: 20),
+                              Icon(
+                                Icons.search,
+                                color: context.textSecondary,
+                                size: 20,
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: TextField(
                                   controller: _dropoffCtrl,
                                   focusNode: _dropoffFocus,
-                                  style: GoogleFonts.poppins(fontSize: 15, color: context.textPrimary),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 15,
+                                    color: context.textPrimary,
+                                  ),
                                   decoration: InputDecoration(
                                     border: InputBorder.none,
                                     isDense: true,
                                     contentPadding: EdgeInsets.zero,
                                     hintText: 'Dropoff location',
-                                    hintStyle: GoogleFonts.poppins(fontSize: 15, color: context.textSecondary),
+                                    hintStyle: GoogleFonts.poppins(
+                                      fontSize: 15,
+                                      color: context.textSecondary,
+                                    ),
                                   ),
                                   onChanged: (_) {
                                     // Typing invalidates the previously selected stop
@@ -361,7 +403,11 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Icon(Icons.location_on, color: context.textSecondary, size: 20),
+                              Icon(
+                                Icons.location_on,
+                                color: context.textSecondary,
+                                size: 20,
+                              ),
                             ],
                           ),
                         ),
@@ -369,7 +415,11 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                       const SizedBox(width: 12),
                       GestureDetector(
                         onTap: _swap,
-                        child: Icon(Icons.swap_vert, size: 24, color: context.textSecondary),
+                        child: Icon(
+                          Icons.swap_vert,
+                          size: 24,
+                          color: context.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -388,10 +438,19 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
                     SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryGreen),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primaryGreen,
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    Text('Finding shuttles...', style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary)),
+                    Text(
+                      'Finding shuttles...',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: context.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -403,13 +462,18 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
 
   Widget _buildSuggestions() {
     if (_isLoadingStops) {
-      return Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
+      return Center(
+        child: CircularProgressIndicator(color: AppColors.primaryGreen),
+      );
     }
     if (_errorMessage != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Text(_errorMessage!, style: GoogleFonts.poppins(color: AppColors.error, fontSize: 13)),
+          child: Text(
+            _errorMessage!,
+            style: GoogleFonts.poppins(color: AppColors.error, fontSize: 13),
+          ),
         ),
       );
     }
@@ -418,7 +482,8 @@ class _RouteConfirmScreenState extends State<RouteConfirmScreen> {
       return const EmptyStateWidget(
         icon: Icons.location_off_outlined,
         title: 'No stops found',
-        subtitle: 'Try searching for a different destination or check the spelling.',
+        subtitle:
+            'Try searching for a different destination or check the spelling.',
       );
     }
     return ListView.separated(
@@ -468,13 +533,32 @@ class _SuggestionTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary)),
-                  Text(subtitle, style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary)),
+                  Text(
+                    name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: context.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
             if (distanceText != null)
-              Text(distanceText!, style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary)),
+              Text(
+                distanceText!,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: context.textSecondary,
+                ),
+              ),
           ],
         ),
       ),

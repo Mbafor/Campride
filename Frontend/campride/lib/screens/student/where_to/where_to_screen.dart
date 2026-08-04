@@ -74,16 +74,16 @@ class _WhereToScreenState extends State<WhereToScreen> {
     setState(() {
       _results = q.isEmpty
           ? []
-          : _allStops
-              .where((s) => s.name.toLowerCase().contains(q))
-              .toList();
+          : _allStops.where((s) => s.name.toLowerCase().contains(q)).toList();
     });
   }
 
   void _selectStop(StopInfo stop) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => RouteConfirmScreen(initialDropoff: stop)),
+      MaterialPageRoute(
+        builder: (_) => RouteConfirmScreen(initialDropoff: stop),
+      ),
     );
   }
 
@@ -110,7 +110,11 @@ class _WhereToScreenState extends State<WhereToScreen> {
                         color: context.fieldFill,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.arrow_back, size: 20, color: context.textPrimary),
+                      child: Icon(
+                        Icons.arrow_back,
+                        size: 20,
+                        color: context.textPrimary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -124,16 +128,21 @@ class _WhereToScreenState extends State<WhereToScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.search, color: context.textSecondary, size: 20),
+                          Icon(
+                            Icons.search,
+                            color: context.textSecondary,
+                            size: 20,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               controller: _searchCtrl,
                               autofocus: true,
                               style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.textPrimary),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: context.textPrimary,
+                              ),
                               decoration: InputDecoration(
                                 border: InputBorder.none,
                                 isDense: true,
@@ -149,7 +158,11 @@ class _WhereToScreenState extends State<WhereToScreen> {
                           if (_isSearching)
                             GestureDetector(
                               onTap: () => _searchCtrl.clear(),
-                              child: Icon(Icons.close, color: context.textSecondary, size: 18),
+                              child: Icon(
+                                Icons.close,
+                                color: context.textSecondary,
+                                size: 18,
+                              ),
                             ),
                         ],
                       ),
@@ -169,7 +182,9 @@ class _WhereToScreenState extends State<WhereToScreen> {
   Widget _buildContent() {
     if (_isSearching) {
       if (_isLoadingStops) {
-        return Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
+        return Center(
+          child: CircularProgressIndicator(color: AppColors.primaryGreen),
+        );
       }
       if (_errorMessage != null) {
         return Padding(
@@ -207,7 +222,8 @@ class _WhereToScreenState extends State<WhereToScreen> {
       return const EmptyStateWidget(
         icon: Icons.history,
         title: 'No recent destinations',
-        subtitle: 'Search for a stop above and it will be saved here for quick access next time.',
+        subtitle:
+            'Search for a stop above and it will be saved here for quick access next time.',
       );
     }
 
@@ -218,15 +234,21 @@ class _WhereToScreenState extends State<WhereToScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
             'Recents',
-            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: context.textPrimary),
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: context.textPrimary,
+            ),
           ),
         ),
-        ..._recents.map((s) => _StopTile(
-              icon: Icons.access_time,
-              name: s.name,
-              subtitle: s.routeName,
-              onTap: () => _selectStop(s),
-            )),
+        ..._recents.map(
+          (s) => _StopTile(
+            icon: Icons.access_time,
+            name: s.name,
+            subtitle: s.routeName,
+            onTap: () => _selectStop(s),
+          ),
+        ),
       ],
     );
   }
@@ -256,7 +278,10 @@ class _StopTile extends StatelessWidget {
             Container(
               width: 38,
               height: 38,
-              decoration: BoxDecoration(color: context.fieldFill, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: context.fieldFill,
+                shape: BoxShape.circle,
+              ),
               child: Icon(icon, color: context.textSecondary, size: 20),
             ),
             const SizedBox(width: 14),
@@ -264,11 +289,20 @@ class _StopTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: GoogleFonts.poppins(fontSize: 15, color: context.textPrimary)),
+                  Text(
+                    name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      color: context.textPrimary,
+                    ),
+                  ),
                   if (subtitle.isNotEmpty)
                     Text(
                       subtitle,
-                      style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: context.textSecondary,
+                      ),
                     ),
                 ],
               ),
