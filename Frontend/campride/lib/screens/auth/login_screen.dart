@@ -101,178 +101,196 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.scaffoldBg,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () => context.go(RouteNames.welcome),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: context.fieldFill,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.arrow_back,
-                      size: 20,
-                      color: context.textPrimary,
-                    ),
-                  ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.2,
+              child: Image.asset(
+                'assets/images/auth_background.jpg',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 32,
                 ),
-                const SizedBox(height: 28),
-                Text(
-                  'Welcome 👋',
-                  style: GoogleFonts.poppins(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Sign in to your account',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    color: context.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                _LabeledField(
-                  label: 'Email',
-                  child: _GreyField(
-                    controller: _emailCtrl,
-                    hint: 'Enter your email',
-                    keyboardType: TextInputType.emailAddress,
-                    errorText: _emailError,
-                    textInputAction: TextInputAction.next,
-                    onSubmitted: (_) => _passwordFocus.requestFocus(),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _LabeledField(
-                  label: 'Password',
-                  child: _GreyField(
-                    controller: _passwordCtrl,
-                    hint: 'Enter your password',
-                    obscureText: _obscurePassword,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) {
-                      if (_isLoading) return;
-                      FocusScope.of(context).unfocus();
-                      _handleContinue();
-                    },
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: context.textSecondary,
-                        size: 20,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GestureDetector(
-                      onTap: () => setState(() => _rememberMe = !_rememberMe),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: Checkbox(
-                              value: _rememberMe,
-                              onChanged: (v) =>
-                                  setState(() => _rememberMe = v ?? false),
-                              activeColor: AppColors.primaryGreenDark,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
+                      onTap: () => context.go(RouteNames.welcome),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: context.fieldFill,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.arrow_back,
+                          size: 20,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Text(
+                      'Welcome 👋',
+                      style: GoogleFonts.poppins(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Sign in to your account',
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    _LabeledField(
+                      label: 'Email',
+                      child: _GreyField(
+                        controller: _emailCtrl,
+                        hint: 'Enter your email',
+                        keyboardType: TextInputType.emailAddress,
+                        errorText: _emailError,
+                        textInputAction: TextInputAction.next,
+                        onSubmitted: (_) => _passwordFocus.requestFocus(),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _LabeledField(
+                      label: 'Password',
+                      child: _GreyField(
+                        controller: _passwordCtrl,
+                        hint: 'Enter your password',
+                        obscureText: _obscurePassword,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) {
+                          if (_isLoading) return;
+                          FocusScope.of(context).unfocus();
+                          _handleContinue();
+                        },
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: context.textSecondary,
+                            size: 20,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _rememberMe = !_rememberMe),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: Checkbox(
+                                  value: _rememberMe,
+                                  onChanged: (v) =>
+                                      setState(() => _rememberMe = v ?? false),
+                                  activeColor: AppColors.primaryGreenDark,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
                               ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Remember me',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: context.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen(),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Remember me',
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              color: context.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ForgotPasswordScreen(),
-                        ),
-                      ),
-                      child: Text(
-                        'Forgot Password?',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryGreenLight,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                _PrimaryButton(
-                  label: 'Continue',
-                  onPressed: _isLoading ? null : _handleContinue,
-                  isLoading: _isLoading,
-                ),
-                const SizedBox(height: 36),
-                Center(child: _TermsText()),
-                const SizedBox(height: 20),
-                Center(
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SignupScreen(role: widget.role),
-                      ),
-                    ),
-                    child: RichText(
-                      text: TextSpan(
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: context.textSecondary,
-                        ),
-                        children: [
-                          const TextSpan(text: "Don't have an account? "),
-                          TextSpan(
-                            text: 'Sign up',
+                          child: Text(
+                            'Forgot Password?',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: AppColors.primaryGreenLight,
                             ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    _PrimaryButton(
+                      label: 'Continue',
+                      onPressed: _isLoading ? null : _handleContinue,
+                      isLoading: _isLoading,
+                    ),
+                    const SizedBox(height: 36),
+                    Center(child: _TermsText()),
+                    const SizedBox(height: 20),
+                    Center(
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SignupScreen(role: widget.role),
+                          ),
+                        ),
+                        child: RichText(
+                          text: TextSpan(
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: context.textSecondary,
+                            ),
+                            children: [
+                              const TextSpan(text: "Don't have an account? "),
+                              TextSpan(
+                                text: 'Sign up',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryGreenLight,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

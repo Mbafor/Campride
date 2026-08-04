@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../../constants/app_constants.dart';
 import '../../providers/authentication_provider.dart';
 import '../../routes/route_names.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/text_styles.dart';
+import '../../theme/theme_extensions.dart';
+import '../../widgets/common/app_logo_image.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -28,9 +28,10 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 800),
     );
 
-    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
+    _opacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _controller.forward();
 
@@ -65,25 +66,13 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.splashBackground,
+      backgroundColor: context.scaffoldBg,
       body: Center(
         child: FadeTransition(
           opacity: _opacity,
-          child: const _CamprideLogo(),
+          child: const AppLogoImage(height: 72),
         ),
       ),
-    );
-  }
-}
-
-class _CamprideLogo extends StatelessWidget {
-  const _CamprideLogo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      'CAMPRIDE',
-      style: AppTextStyles.splashBrand(),
     );
   }
 }
