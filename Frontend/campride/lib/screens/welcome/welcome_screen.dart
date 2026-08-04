@@ -5,131 +5,106 @@ import '../../routes/route_names.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/auth/google_signin_button.dart';
 
-const _kOnboardingImages = [
-  'assets/images/welcome_handshake.png',
-  'assets/images/welcome_thinking.png',
-];
-
-class WelcomeScreen extends StatefulWidget {
+class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
-
-  @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
-}
-
-class _WelcomeScreenState extends State<WelcomeScreen> {
-  final _pageController = PageController();
-  int _page = 0;
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.scaffoldBg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            Text(
-              'CAMPRIDE',
-              style: GoogleFonts.poppins(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryGreenLight,
-                letterSpacing: 0.5,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.2,
+              child: Image.asset(
+                'assets/images/auth_background.jpg',
+                fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(height: 32),
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _kOnboardingImages.length,
-                onPageChanged: (i) => setState(() => _page = i),
-                itemBuilder: (context, i) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Image.asset(
-                    _kOnboardingImages[i],
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _kOnboardingImages.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _page == i ? 20 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: _page == i
-                        ? AppColors.primaryGreenLight
-                        : context.divider,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
-              child: Column(
-                children: [
-                  const GoogleSignInButton(role: 'student'),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: OutlinedButton(
-                      onPressed: () => context.go(RouteNames.login),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: context.fieldBorder, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(27)),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 24),
+                Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 16,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.mail_outline,
-                              size: 20, color: context.textSecondary),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Continue with Email',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: context.textPrimary,
+                      child: FractionallySizedBox(
+                        widthFactor: 0.64,
+                        child: Image.asset(
+                          'assets/images/app_logo_dark.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
+                  child: Column(
+                    children: [
+                      const GoogleSignInButton(role: 'student'),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: OutlinedButton(
+                          onPressed: () => context.go(RouteNames.login),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: context.fieldBorder,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(27),
                             ),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.mail_outline,
+                                size: 20,
+                                color: context.textSecondary,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Continue with Email',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'Joining our app means you agree with our terms of use and Privacy Policy',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: context.textSecondary,
-                        height: 1.4,
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'Joining our app means you agree with our terms of use and Privacy Policy',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: context.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
