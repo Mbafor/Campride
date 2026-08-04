@@ -133,7 +133,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         timeLimit: const Duration(seconds: 10),
       );
 
-      _debugLog('[LiveMap] Got user location: ${position.latitude}, ${position.longitude}');
+      _debugLog(
+        '[LiveMap] Got user location: ${position.latitude}, ${position.longitude}',
+      );
       if (mounted) {
         setState(() {
           _userLocation = LatLng(position.latitude, position.longitude);
@@ -196,7 +198,10 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
     final dotPaint = Paint()..color = const Color(0xFF2196F3);
     canvas.drawCircle(center, size / 2 - 14, dotPaint);
 
-    final image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final image = await recorder.endRecording().toImage(
+      size.toInt(),
+      size.toInt(),
+    );
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
   }
@@ -221,7 +226,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not determine your location. Check permissions.'),
+            content: Text(
+              'Could not determine your location. Check permissions.',
+            ),
           ),
         );
       }
@@ -237,10 +244,12 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
     try {
       _debugLog('[LiveMap] Fetching shuttles for driver lookup...');
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseHttpUrl}/shuttles'),
-        headers: {'Authorization': 'Bearer ${auth.accessToken}'},
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('${ApiConfig.baseHttpUrl}/shuttles'),
+            headers: {'Authorization': 'Bearer ${auth.accessToken}'},
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final shuttles = jsonDecode(response.body) as List;
@@ -310,19 +319,13 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
     // Draw bus icon using text/paths (simple representation)
     final textPainter = TextPainter(
-      text: TextSpan(
-        text: '🚌',
-        style: const TextStyle(fontSize: 56),
-      ),
+      text: TextSpan(text: '🚌', style: const TextStyle(fontSize: 56)),
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
     textPainter.paint(
       canvas,
-      Offset(
-        (size - textPainter.width) / 2,
-        (size - textPainter.height) / 2,
-      ),
+      Offset((size - textPainter.width) / 2, (size - textPainter.height) / 2),
     );
 
     final picture = recorder.endRecording();
@@ -346,7 +349,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
     }
 
     try {
-      final wsUrl = Uri.parse('${ApiConfig.baseWsUrl}/ws/live-map?token=${auth.accessToken}');
+      final wsUrl = Uri.parse(
+        '${ApiConfig.baseWsUrl}/ws/live-map?token=${auth.accessToken}',
+      );
       _channel = WebSocketChannel.connect(wsUrl);
 
       _channel!.stream.listen(
@@ -414,7 +419,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       // Initial snapshot of all active shuttles
       _debugLog('[LiveMap] Processing initial_snapshot');
       final snapshotData = data['data'] as Map<String, dynamic>? ?? {};
-      _debugLog('[LiveMap] Number of drivers in snapshot: ${snapshotData.length}');
+      _debugLog(
+        '[LiveMap] Number of drivers in snapshot: ${snapshotData.length}',
+      );
 
       final newShuttles = <String, ShuttleData>{};
 
@@ -426,7 +433,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           newShuttles[driverId] = ShuttleData.fromJson(driverWithId);
           _debugLog('[LiveMap] Added shuttle for driver: $driverId');
         } else {
-          _debugLog('[LiveMap] WARNING: Invalid driver data for $driverId: $driverData');
+          _debugLog(
+            '[LiveMap] WARNING: Invalid driver data for $driverId: $driverData',
+          );
         }
       });
 
@@ -490,17 +499,16 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       if (_iconsInitialized) {
         markerIcon = isMatched ? _busIconGreen! : _busIconBlue!;
       } else {
-        final markerHue = isMatched ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueBlue;
+        final markerHue = isMatched
+            ? BitmapDescriptor.hueGreen
+            : BitmapDescriptor.hueBlue;
         markerIcon = BitmapDescriptor.defaultMarkerWithHue(markerHue);
       }
 
       newMarkers[driverId] = Marker(
         markerId: MarkerId(driverId),
         position: LatLng(shuttle.latitude, shuttle.longitude),
-        infoWindow: InfoWindow(
-          title: title,
-          snippet: 'Plate: $plate',
-        ),
+        infoWindow: InfoWindow(title: title, snippet: 'Plate: $plate'),
         icon: markerIcon,
       );
 
@@ -514,7 +522,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       _markers = newMarkers;
       if (widget.matchedShuttleId != null && widget.etaMinutes != null) {
         _matchedShuttleName = matchedShuttleName;
-        final etaText = widget.etaMinutes == 1 ? '1 min away' : '${widget.etaMinutes} mins away';
+        final etaText = widget.etaMinutes == 1
+            ? '1 min away'
+            : '${widget.etaMinutes} mins away';
         _matchedShuttleEta = etaText;
       }
     });
@@ -531,17 +541,16 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
     if (_iconsInitialized) {
       markerIcon = isMatched ? _busIconGreen! : _busIconBlue!;
     } else {
-      final markerHue = isMatched ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueBlue;
+      final markerHue = isMatched
+          ? BitmapDescriptor.hueGreen
+          : BitmapDescriptor.hueBlue;
       markerIcon = BitmapDescriptor.defaultMarkerWithHue(markerHue);
     }
 
     final updatedMarker = Marker(
       markerId: MarkerId(driverId),
       position: LatLng(shuttle.latitude, shuttle.longitude),
-      infoWindow: InfoWindow(
-        title: title,
-        snippet: 'Plate: $plate',
-      ),
+      infoWindow: InfoWindow(title: title, snippet: 'Plate: $plate'),
       icon: markerIcon,
     );
 
@@ -565,20 +574,21 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           zoom: 17,
         );
         _mapController!.animateCamera(CameraUpdate.newCameraPosition(position));
-        _debugLog('[LiveMap] Animated camera to matched shuttle at (${matchedShuttle.latitude}, ${matchedShuttle.longitude})');
+        _debugLog(
+          '[LiveMap] Animated camera to matched shuttle at (${matchedShuttle.latitude}, ${matchedShuttle.longitude})',
+        );
         return;
       }
     }
 
     // Otherwise, if there are shuttles, fit all in view
     if (_shuttles.isNotEmpty) {
-      final positions = _shuttles.values.map((s) => LatLng(s.latitude, s.longitude)).toList();
+      final positions = _shuttles.values
+          .map((s) => LatLng(s.latitude, s.longitude))
+          .toList();
       if (positions.length == 1) {
         // Single shuttle: zoom in on it
-        final position = CameraPosition(
-          target: positions.first,
-          zoom: 16,
-        );
+        final position = CameraPosition(target: positions.first, zoom: 16);
         _mapController!.animateCamera(CameraUpdate.newCameraPosition(position));
       } else {
         // Multiple shuttles: fit bounds
@@ -586,17 +596,18 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         _mapController!.animateCamera(
           CameraUpdate.newLatLngBounds(bounds, 100),
         );
-        _debugLog('[LiveMap] Animated camera to fit ${positions.length} shuttles');
+        _debugLog(
+          '[LiveMap] Animated camera to fit ${positions.length} shuttles',
+        );
       }
       return;
     }
 
     // Fallback: show KNUST campus if no shuttles
-    final defaultPosition = CameraPosition(
-      target: _knustCenter,
-      zoom: 15,
+    final defaultPosition = CameraPosition(target: _knustCenter, zoom: 15);
+    _mapController!.animateCamera(
+      CameraUpdate.newCameraPosition(defaultPosition),
     );
-    _mapController!.animateCamera(CameraUpdate.newCameraPosition(defaultPosition));
     _debugLog('[LiveMap] No shuttles found, showing default KNUST campus');
   }
 
@@ -648,7 +659,10 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
             const SizedBox(height: 16),
             Text(
               'Connection Error',
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -656,7 +670,10 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
               child: Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: context.textSecondary,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -667,7 +684,10 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
               ),
               child: Text(
                 'Retry Connection',
-                style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -682,13 +702,14 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           onMapCreated: (GoogleMapController controller) {
             _mapController = controller;
           },
-          initialCameraPosition: CameraPosition(
-            target: _knustCenter,
-            zoom: 15,
-          ),
-          markers: Set<Marker>.of([..._markers.values, if (_userLocationMarker != null) _userLocationMarker!]),
+          initialCameraPosition: CameraPosition(target: _knustCenter, zoom: 15),
+          markers: Set<Marker>.of([
+            ..._markers.values,
+            if (_userLocationMarker != null) _userLocationMarker!,
+          ]),
           myLocationButtonEnabled: false,
-          zoomControlsEnabled: true,
+          zoomControlsEnabled: false,
+          compassEnabled: false,
           mapType: MapType.normal,
         ),
         // My Location button (recenter to user)
@@ -701,7 +722,9 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
             backgroundColor: Colors.black.withValues(alpha: 0.72),
             foregroundColor: Colors.white,
             elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             onPressed: _recenterToUserLocation,
             child: const Icon(Icons.navigation, size: 22),
           ),
@@ -726,7 +749,10 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
                   Expanded(
                     child: Text(
                       'Reconnecting to live updates...',
-                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.orange[900]),
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.orange[900],
+                      ),
                     ),
                   ),
                 ],
@@ -829,7 +855,9 @@ class ShuttleData {
 
   factory ShuttleData.fromJson(Map<String, dynamic> json) {
     final timestamp = json['timestamp'] as String?;
-    final lastUpdated = timestamp != null ? DateTime.parse(timestamp) : DateTime.now();
+    final lastUpdated = timestamp != null
+        ? DateTime.parse(timestamp)
+        : DateTime.now();
 
     return ShuttleData(
       driverId: json['driver_id'] as String? ?? 'unknown',
