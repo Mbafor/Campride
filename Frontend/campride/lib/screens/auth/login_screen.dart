@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/authentication_provider.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_theme.dart';
@@ -26,6 +27,22 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _rememberMe = false;
   String? _emailError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberMe();
+  }
+
+  Future<void> _loadRememberMe() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getBool('remember_me') ?? false;
+      if (mounted) setState(() => _rememberMe = saved);
+    } catch (_) {
+      // Ignore preference read errors; default to unchecked.
+    }
+  }
 
   @override
   void dispose() {
@@ -53,7 +70,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final auth = context.read<AuthenticationProvider>();
 
-    final ok = await auth.login(email: email, password: password);
+    final ok = await auth.login(
+      email: email,
+      password: password,
+      rememberMe: _rememberMe,
+    );
 
     if (mounted) {
       setState(() => _isLoading = false);

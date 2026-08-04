@@ -144,19 +144,7 @@
       "Bash(bash /tmp/restore_password.sh)",
       "Bash(bash /tmp/test_name_update.sh)",
       "Bash(flutter build *)",
-      "Bash(git checkout *)",
-      "Bash(chmod +x /tmp/test_api.sh)",
-      "Bash(/tmp/test_api.sh)",
-      "Bash(xargs grep -l \"VerificationCode\\\\|class User\")",
-      "Bash(alembic upgrade *)",
-      "Bash(xargs grep -l \"send_verification_email\")",
-      "Bash(python -m py_compile app/api/v1/auth.py app/core/email.py app/models/verification_code.py)",
-      "Bash(python /tmp/check_user.py)",
-      "Bash(python -m py_compile app/api/v1/auth.py)",
-      "Bash(curl -X POST https://campride-production.up.railway.app/api/v1/auth/forgot-password -H 'Content-Type: application/json' -d '{\"email\":\"nanaakwasimpiani@gmail.com\"}' -s)",
-      "Bash(curl -i -X POST https://campride-production.up.railway.app/api/v1/auth/forgot-password -H 'Content-Type: application/json' -d '{\"email\":\"nanaakwasimpiani@gmail.com\"}')",
-      "Bash(PGPASSWORD=CampRide2026SecurePG psql -h centerbeam.proxy.rlwy.net -p 14837 -U postgres -d railway -c ' *)",
-      "Bash(python3 \"C:\\\\Users\\\\ERNEST~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-Ernest-Mpiani-OneDrive-Documents-portfolio-projects-Campride\\\\7e00b14d-fb17-4218-9a97-641b9663d614\\\\scratchpad\\\\test_password_reset_flow.py\")"
+      "Bash(git checkout *)"
     ]
   }
 }

@@ -1,7 +1,10 @@
-# TODO - Add User Location Blip to Live Map
+# TODO - Login Screen Enter Key Fix
 
-## Steps
-- [x] 1. Add Android location permissions to `AndroidManifest.xml`
-- [x] 2. Add iOS location usage description to `Info.plist`
-- [x] 3. Add user-location blip + recenter to `live_shuttles_screen.dart`
-- [ ] 4. Rebuild/run the Flutter app to verify
+- [x] Analyze login screen and plan
+- [x] Get user approval on plan
+- [x] Add FocusNode to _LoginScreenState
+- [x] Add textInputAction and onSubmitted params to _GreyField
+- [x] Wire email field: textInputAction.next -> focus password
+- [x] Wire password field: textInputAction.done -> _handleContinue
+- [x] Dispose FocusNode properly
+- [x] Run flutter analyze to verify

@@ -68,38 +68,52 @@ class _StudentDashboardState extends State<StudentDashboard> {
               bottom: 80,
               left: 16,
               right: 16,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: context.cardBg,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: context.divider,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                  ],
-                ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Where to?',
-                    hintStyle: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: context.textSecondary,
-                    ),
-                    prefixIcon: Icon(Icons.search, color: context.textSecondary, size: 20),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  style: GoogleFonts.poppins(fontSize: 14),
-                  readOnly: true,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const WhereToScreen()),
-                    );
-                  },
-                ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: context.cardBg,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Where to?',
+                        hintStyle: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: context.textSecondary,
+                        ),
+                        prefixIcon: Icon(Icons.search, color: context.textSecondary, size: 20),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      style: GoogleFonts.poppins(fontSize: 14),
+                      readOnly: true,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const WhereToScreen()),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
