@@ -282,22 +282,21 @@ class AuthenticationProvider extends ChangeNotifier {
         await _secureStorage.write(key: 'access_token', value: _accessToken);
         await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
 
-        // Fetch user info
+// Fetch user info
         final userResponse = await _apiService.getCurrentUser(accessToken: _accessToken!);
         if (userResponse.success && userResponse.data != null) {
           _user = userResponse.data;
           _state = AuthState.authenticated;
+          notifyListeners();
 
-          // Register FCM device token for push notifications
-          final deviceToken = await _requestNotificationPermission();
-          if (deviceToken != null) {
-            await _registerDeviceToken(deviceToken);
-          }
+          // Register FCM device token for push notifications (non-blocking,
+          // so login is not delayed or hung if notifications fail to set up).
+          _registerDeviceTokenAfterLogin();
         } else {
           _state = AuthState.error;
           _errorMessage = 'Failed to load user info';
+          notifyListeners();
         }
-        notifyListeners();
         return userResponse.success;
       } else {
         _state = AuthState.error;
@@ -311,6 +310,18 @@ class AuthenticationProvider extends ChangeNotifier {
       _errorMessage = 'Login error: $e';
       notifyListeners();
       return false;
+    }
+  }
+
+  // Fire-and-forget FCM registration so it never blocks the login flow.
+  Future<void> _registerDeviceTokenAfterLogin() async {
+    try {
+      final deviceToken = await _requestNotificationPermission();
+      if (deviceToken != null) {
+        await _registerDeviceToken(deviceToken);
+      }
+    } catch (e) {
+      _debugLog('[FCM] Background device token registration failed: $e');
     }
   }
 
