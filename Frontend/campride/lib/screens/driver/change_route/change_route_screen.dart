@@ -6,7 +6,7 @@ import 'dart:convert';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../config/api_config.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 
 class ChangeRouteScreen extends StatefulWidget {
   const ChangeRouteScreen({super.key});
@@ -187,7 +187,7 @@ class _ChangeRouteScreenState extends State<ChangeRouteScreen> {
                         const SizedBox(height: 8),
                         Text(
                           snapshot.error.toString(),
-                          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                          style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -201,7 +201,7 @@ class _ChangeRouteScreenState extends State<ChangeRouteScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.route_outlined, size: 64, color: AppColors.textSecondaryLight),
+                        Icon(Icons.route_outlined, size: 64, color: context.textSecondary),
                         const SizedBox(height: 16),
                         Text(
                           'No routes available',
@@ -232,7 +232,7 @@ class _ChangeRouteScreenState extends State<ChangeRouteScreen> {
                               border: Border.all(
                                 color: _selectedRoute?.id == route.id
                                     ? AppColors.primaryGreen
-                                    : AppColors.dividerLight,
+                                    : context.divider,
                                 width: _selectedRoute?.id == route.id ? 2 : 1,
                               ),
                               borderRadius: BorderRadius.circular(12),
@@ -268,14 +268,14 @@ class _ChangeRouteScreenState extends State<ChangeRouteScreen> {
                                 Row(
                                   children: [
                                     Icon(Icons.location_on_outlined,
-                                        size: 14, color: AppColors.textSecondaryLight),
+                                        size: 14, color: context.textSecondary),
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
                                         '${route.startName} → ${route.endName}',
                                         style: GoogleFonts.poppins(
                                           fontSize: 12,
-                                          color: AppColors.textSecondaryLight,
+                                          color: context.textSecondary,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -301,9 +301,9 @@ class _ChangeRouteScreenState extends State<ChangeRouteScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: AppColors.dividerLight),
+                              border: Border.all(color: context.divider),
                               borderRadius: BorderRadius.circular(8),
-                              color: Colors.grey[50],
+                              color: context.fieldFill,
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

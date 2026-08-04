@@ -1,13 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum AppearanceMode { system, light, dark }
+
 class ThemeProvider extends ChangeNotifier {
-  static const String _themeKey = 'is_dark_mode';
+  static const String _appearanceKey = 'appearance_mode';
 
-  ThemeMode _themeMode = ThemeMode.light;
+  AppearanceMode _appearanceMode = AppearanceMode.system;
 
-  ThemeMode get themeMode => _themeMode;
-  bool get isDarkMode => _themeMode == ThemeMode.dark;
+  AppearanceMode get appearanceMode => _appearanceMode;
+
+  ThemeMode get themeMode {
+    switch (_appearanceMode) {
+      case AppearanceMode.light:
+        return ThemeMode.light;
+      case AppearanceMode.dark:
+        return ThemeMode.dark;
+      case AppearanceMode.system:
+        return ThemeMode.system;
+    }
+  }
+
+  /// Whether dark colors are currently in effect. For [AppearanceMode.system]
+  /// this follows the platform brightness.
+  bool get isDarkMode {
+    if (_appearanceMode == AppearanceMode.dark) return true;
+    if (_appearanceMode == AppearanceMode.light) return false;
+    final platformBrightness =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    return platformBrightness == Brightness.dark;
+  }
 
   ThemeProvider() {
     _loadTheme();
@@ -15,22 +37,32 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<void> _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    final isDark = prefs.getBool(_themeKey) ?? false;
-    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    final stored = prefs.getString(_appearanceKey);
+    _appearanceMode = _fromStored(stored);
+    notifyListeners();
+  }
+
+  AppearanceMode _fromStored(String? stored) {
+    switch (stored) {
+      case 'light':
+        return AppearanceMode.light;
+      case 'dark':
+        return AppearanceMode.dark;
+      case 'system':
+        return AppearanceMode.system;
+      default:
+        return AppearanceMode.system;
+    }
+  }
+
+  Future<void> setAppearance(AppearanceMode mode) async {
+    _appearanceMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_appearanceKey, mode.name);
     notifyListeners();
   }
 
   Future<void> toggleTheme() async {
-    _themeMode = isDarkMode ? ThemeMode.light : ThemeMode.dark;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_themeKey, isDarkMode);
-    notifyListeners();
-  }
-
-  Future<void> setDarkMode(bool value) async {
-    _themeMode = value ? ThemeMode.dark : ThemeMode.light;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_themeKey, value);
-    notifyListeners();
+    await setAppearance(isDarkMode ? AppearanceMode.light : AppearanceMode.dark);
   }
 }

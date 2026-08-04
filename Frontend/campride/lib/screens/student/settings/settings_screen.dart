@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import '../../../providers/authentication_provider.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../routes/route_names.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 import '../../../config/api_config.dart';
+import '../../../widgets/common/settings_menu_row.dart';
+import '../../common/appearance_screen.dart';
+import '../../common/delete_account_screen.dart';
+import '../../common/logout_screen.dart';
 
 /// Settings screen reached from the Account tab.
-/// Contains: change password, dark mode toggle, and log out.
+/// Contains: change password, appearance, log out, delete account.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -113,12 +114,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -126,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: context.textPrimary,
           ),
         ),
         centerTitle: false,
@@ -148,23 +149,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       'Change Password',
                       style: GoogleFonts.poppins(
-                          fontSize: 16, fontWeight: FontWeight.w600),
+                          fontSize: 16, fontWeight: FontWeight.w600, color: context.textPrimary),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _currentPasswordController,
                       obscureText: true,
+                      style: GoogleFonts.poppins(color: context.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Current password',
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: context.fieldFill,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: context.fieldBorder),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: context.fieldBorder),
                         ),
                       ),
                     ),
@@ -172,17 +174,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     TextField(
                       controller: _newPasswordController,
                       obscureText: true,
+                      style: GoogleFonts.poppins(color: context.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'New password',
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: context.fieldFill,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: context.fieldBorder),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: context.fieldBorder),
                         ),
                       ),
                     ),
@@ -190,17 +193,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     TextField(
                       controller: _confirmPasswordController,
                       obscureText: true,
+                      style: GoogleFonts.poppins(color: context.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Confirm new password',
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: context.fieldFill,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: context.fieldBorder),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: context.fieldBorder),
                         ),
                       ),
                     ),
@@ -245,81 +249,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 32),
               Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: Colors.grey[200])),
+                  child: SettingsDivider()),
               const SizedBox(height: 24),
 
-              // Dark mode toggle
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Consumer<ThemeProvider>(
-                  builder: (ctx, themeProvider, _) => Row(
-                    children: [
-                      Icon(Icons.dark_mode_outlined,
-                          size: 24, color: Colors.black87),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          'Dark Mode',
-                          style: GoogleFonts.poppins(
-                              fontSize: 16, color: Colors.black87),
-                        ),
-                      ),
-                      Switch(
-                        value: themeProvider.isDarkMode,
-                        onChanged: (_) async =>
-                            await themeProvider.toggleTheme(),
-                        activeThumbColor: AppColors.primaryGreenLight,
-                        activeTrackColor:
-                            AppColors.brandGreen.withValues(alpha: 0.4),
-                      ),
-                    ],
-                  ),
+              // Appearance
+              SettingsMenuRow(
+                icon: Icons.brightness_6_outlined,
+                label: 'Appearance',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AppearanceScreen()),
                 ),
               ),
               Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: Colors.grey[200])),
-              const SizedBox(height: 24),
+                  child: SettingsDivider()),
 
               // Logout
+              SettingsMenuRow(
+                icon: Icons.logout,
+                label: 'Log out',
+                iconColor: Colors.red[600],
+                labelColor: Colors.red[600],
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LogoutScreen()),
+                ),
+              ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: InkWell(
-                  onTap: () async {
-                    final auth =
-                        context.read<AuthenticationProvider>();
-                    await auth.signOut();
-                    await Future.delayed(
-                        const Duration(milliseconds: 100));
-                    if (context.mounted) {
-                      context.go(RouteNames.welcome);
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 17),
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout,
-                            size: 24, color: Colors.red[600]),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            'Log out',
-                            style: GoogleFonts.poppins(
-                                fontSize: 16, color: Colors.red[600]),
-                          ),
-                        ),
-                        Icon(Icons.chevron_right,
-                            color: Colors.grey[400], size: 22),
-                      ],
-                    ),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SettingsDivider()),
+
+              // Delete account
+              SettingsMenuRow(
+                icon: Icons.delete_outline,
+                label: 'Delete Account',
+                iconColor: Colors.red[600],
+                labelColor: Colors.red[600],
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
                 ),
               ),
               const SizedBox(height: 32),

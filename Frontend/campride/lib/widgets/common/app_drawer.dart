@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
 import '../../screens/common/coming_soon_screen.dart';
+import '../../screens/common/support_screen.dart';
 import '../../screens/student/rides/rides_screen.dart';
 import '../../screens/student/alerts/alerts_screen.dart';
 import '../../screens/student/settings/settings_screen.dart';
@@ -127,12 +128,7 @@ class AppDrawer extends StatelessWidget {
                           Navigator.pop(context);
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const ComingSoonScreen(
-                                title: 'Support',
-                                icon: Icons.support_agent_outlined,
-                              ),
-                            ),
+                            MaterialPageRoute(builder: (_) => const SupportScreen()),
                           );
                         },
                       ),

@@ -4,8 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/authentication_provider.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 import '../../common/coming_soon_screen.dart';
+import '../../common/support_screen.dart';
 import '../profile/student_profile_screen.dart';
 import '../settings/settings_screen.dart';
 
@@ -17,7 +18,7 @@ class StudentAccountScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,14 +43,14 @@ class StudentAccountScreen extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                                color: context.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: context.divider,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
@@ -62,7 +63,7 @@ class StudentAccountScreen extends StatelessWidget {
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -104,7 +105,7 @@ class StudentAccountScreen extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: context.fieldFill,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -118,7 +119,7 @@ class StudentAccountScreen extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.black87,
+                                color: context.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -126,7 +127,7 @@ class StudentAccountScreen extends StatelessWidget {
                               'Learn ways to make rides safer',
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
-                                color: Colors.black54,
+                                color: context.textSecondary,
                               ),
                             ),
                           ],
@@ -180,12 +181,7 @@ class StudentAccountScreen extends StatelessWidget {
                     label: 'Support',
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const ComingSoonScreen(
-                          title: 'Support',
-                          icon: Icons.support_agent_outlined,
-                        ),
-                      ),
+                      MaterialPageRoute(builder: (_) => const SupportScreen()),
                     ),
                   ),
                 ],
@@ -268,7 +264,7 @@ class _MenuRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
-                Icon(icon, size: 22, color: Colors.black87),
+                Icon(icon, size: 22, color: context.textPrimary),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
@@ -276,7 +272,7 @@ class _MenuRow extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: context.textPrimary,
                     ),
                   ),
                 ),
@@ -284,7 +280,7 @@ class _MenuRow extends StatelessWidget {
             ),
           ),
         ),
-        Divider(height: 1, thickness: 1, color: Colors.grey[200]),
+        Divider(height: 1, thickness: 1, color: context.divider),
       ],
     );
   }

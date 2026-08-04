@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../models/notification_model.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -133,12 +133,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           const SizedBox(height: 4),
                           Text(
                             n.message,
-                            style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                            style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             _formatTime(n.timestamp),
-                            style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                            style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
                           ),
                         ],
                       ),

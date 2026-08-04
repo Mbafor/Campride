@@ -12,7 +12,7 @@ import 'package:http/http.dart' as http;
 
 import '../../config/api_config.dart';
 import '../../providers/authentication_provider.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_theme.dart';
 
 class LiveShuttlesScreen extends StatefulWidget {
   final String? matchedShuttleId;
@@ -656,7 +656,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
               child: Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                style: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
               ),
             ),
             const SizedBox(height: 24),
@@ -698,7 +698,7 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
           child: FloatingActionButton(
             mini: true,
             heroTag: 'recenter_location',
-            backgroundColor: Colors.white,
+            backgroundColor: context.cardBg,
             foregroundColor: const Color(0xFF2196F3),
             elevation: 4,
             onPressed: _recenterToUserLocation,
@@ -784,8 +784,8 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: AppColors.dividerLight),
+                color: context.cardBg,
+                border: Border.all(color: context.divider),
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(

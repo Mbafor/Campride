@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../config/api_config.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 
 class FleetTripData {
   final String rideId;
@@ -240,11 +240,11 @@ class _DriverTripHistoryFullScreenState extends State<DriverTripHistoryFullScree
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.history_outlined, size: 48, color: AppColors.textSecondaryLight),
+                            Icon(Icons.history_outlined, size: 48, color: context.textSecondary),
                             const SizedBox(height: 12),
                             Text(
                               _selectedDate == null ? 'No trips yet' : 'No trips on this date',
-                              style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                              style: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
                             ),
                           ],
                         ),
@@ -292,7 +292,7 @@ class _DriverTripHistoryFullScreenState extends State<DriverTripHistoryFullScree
                                               ),
                                               Text(
                                                 trip.shuttleName,
-                                                style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                                                style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
                                               ),
                                             ],
                                           ),
@@ -302,25 +302,25 @@ class _DriverTripHistoryFullScreenState extends State<DriverTripHistoryFullScree
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
-                                        Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondaryLight),
+                                        Icon(Icons.calendar_today, size: 14, color: context.textSecondary),
                                         const SizedBox(width: 4),
                                         Text(
                                           DateFormat('MMM dd, yyyy').format(trip.boardedAt),
-                                          style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                                          style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
                                         ),
                                         const SizedBox(width: 16),
-                                        Icon(Icons.access_time, size: 14, color: AppColors.textSecondaryLight),
+                                        Icon(Icons.access_time, size: 14, color: context.textSecondary),
                                         const SizedBox(width: 4),
                                         Text(
                                           '${DateFormat('hh:mm a').format(trip.boardedAt)} - ${DateFormat('hh:mm a').format(trip.alightedAt)}',
-                                          style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                                          style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
                                         ),
                                         const SizedBox(width: 16),
-                                        Icon(Icons.timer, size: 14, color: AppColors.textSecondaryLight),
+                                        Icon(Icons.timer, size: 14, color: context.textSecondary),
                                         const SizedBox(width: 4),
                                         Text(
                                           durationStr,
-                                          style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                                          style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
                                         ),
                                       ],
                                     ),

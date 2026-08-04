@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../providers/authentication_provider.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../routes/route_names.dart';
 import '../../../theme/app_colors.dart';
 import '../../../config/api_config.dart';
+import '../../common/appearance_screen.dart';
+import '../../common/delete_account_screen.dart';
+import '../../common/logout_screen.dart';
+import '../../common/support_screen.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
@@ -349,16 +350,24 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
               const SizedBox(height: 24),
 
-              // Dark mode toggle
+              // Appearance
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Consumer<ThemeProvider>(
-                  builder: (ctx, themeProvider, _) => _MenuRowToggle(
-                    icon: Icons.dark_mode_outlined,
-                    label: 'Dark Mode',
-                    value: themeProvider.isDarkMode,
-                    onChanged: (_) async => await themeProvider.toggleTheme(),
-                  ),
+                child: _MenuRow(
+                  icon: Icons.brightness_6_outlined,
+                  label: 'Appearance',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppearanceScreen())),
+                ),
+              ),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
+
+              // Support
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _MenuRow(
+                  icon: Icons.support_agent_outlined,
+                  label: 'Support',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportScreen())),
                 ),
               ),
               Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
@@ -371,13 +380,20 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   label: 'Log out',
                   iconColor: Colors.red[600],
                   labelColor: Colors.red[600],
-                  onTap: () async {
-                    if (!context.mounted) return;
-                    final auth = context.read<AuthenticationProvider>();
-                    await auth.signOut();
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    if (context.mounted) context.go(RouteNames.welcome);
-                  },
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LogoutScreen())),
+                ),
+              ),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
+
+              // Delete account
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _MenuRow(
+                  icon: Icons.delete_outline,
+                  label: 'Delete Account',
+                  iconColor: Colors.red[600],
+                  labelColor: Colors.red[600],
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DeleteAccountScreen())),
                 ),
               ),
               const SizedBox(height: 32),
@@ -465,48 +481,6 @@ class _MenuRow extends StatelessWidget {
             Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _MenuRowToggle extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _MenuRowToggle({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDarkMode ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Icon(icon, size: 24, color: textColor),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              label,
-              style: GoogleFonts.poppins(fontSize: 16, color: textColor),
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.primaryGreenLight,
-            activeTrackColor: AppColors.brandGreen.withValues(alpha: 0.4),
-          ),
-        ],
       ),
     );
   }

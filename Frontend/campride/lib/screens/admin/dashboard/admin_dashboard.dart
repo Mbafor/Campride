@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -122,7 +122,7 @@ class _ShuttlesTabState extends State<_ShuttlesTab> {
               ? Center(
                   child: Text(
                     'No shuttles registered',
-                    style: GoogleFonts.poppins(color: AppColors.textSecondaryLight),
+                    style: GoogleFonts.poppins(color: context.textSecondary),
                   ),
                 )
               : ListView.separated(
@@ -172,7 +172,7 @@ class _AdminShuttleCard extends StatelessWidget {
                       ),
                       Text(
                         shuttle.plateNumber,
-                        style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                        style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                       ),
                     ],
                   ),
@@ -259,7 +259,7 @@ class _InfoRow extends StatelessWidget {
         children: [
           Icon(icon, size: 16, color: AppColors.primaryGreen),
           const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight)),
+          Text(label, style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary)),
           const Spacer(),
           Text(
             value,
@@ -349,7 +349,7 @@ class _RoutesTabState extends State<_RoutesTab> {
               ? Center(
                   child: Text(
                     'No routes created',
-                    style: GoogleFonts.poppins(color: AppColors.textSecondaryLight),
+                    style: GoogleFonts.poppins(color: context.textSecondary),
                   ),
                 )
               : ListView.separated(
@@ -399,7 +399,7 @@ class _RouteCard extends StatelessWidget {
                       ),
                       Text(
                         '${route.startName} → ${route.endName}',
-                        style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                        style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

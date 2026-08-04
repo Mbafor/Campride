@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../providers/authentication_provider.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../routes/route_names.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 import '../../../config/api_config.dart';
+import '../../common/appearance_screen.dart';
+import '../../common/delete_account_screen.dart';
+import '../../common/logout_screen.dart';
+import '../../common/support_screen.dart';
 
 class FleetManagerAccountScreen extends StatefulWidget {
   const FleetManagerAccountScreen({super.key});
@@ -205,9 +206,9 @@ class _FleetManagerAccountScreenState extends State<FleetManagerAccountScreen> {
                       decoration: InputDecoration(
                         hintText: 'Enter your name',
                         filled: true,
-                        fillColor: Colors.grey[50],
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)),
+                        fillColor: context.fieldFill,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.fieldBorder)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.fieldBorder)),
                       ),
                     ),
                     if (_nameError != null) ...[const SizedBox(height: 8), Text(_nameError!, style: GoogleFonts.poppins(fontSize: 12, color: Colors.red[600]))],
@@ -237,11 +238,11 @@ class _FleetManagerAccountScreenState extends State<FleetManagerAccountScreen> {
                   children: [
                     Text('Change Password', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 12),
-                    TextField(controller: _currentPasswordController, obscureText: true, decoration: InputDecoration(hintText: 'Current password', filled: true, fillColor: Colors.grey[50], border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)))),
+                    TextField(controller: _currentPasswordController, obscureText: true, decoration: InputDecoration(hintText: 'Current password', filled: true, fillColor: context.fieldFill, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.fieldBorder)))),
                     const SizedBox(height: 12),
-                    TextField(controller: _newPasswordController, obscureText: true, decoration: InputDecoration(hintText: 'New password', filled: true, fillColor: Colors.grey[50], border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)))),
+                    TextField(controller: _newPasswordController, obscureText: true, decoration: InputDecoration(hintText: 'New password', filled: true, fillColor: context.fieldFill, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.fieldBorder)))),
                     const SizedBox(height: 12),
-                    TextField(controller: _confirmPasswordController, obscureText: true, decoration: InputDecoration(hintText: 'Confirm new password', filled: true, fillColor: Colors.grey[50], border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)))),
+                    TextField(controller: _confirmPasswordController, obscureText: true, decoration: InputDecoration(hintText: 'Confirm new password', filled: true, fillColor: context.fieldFill, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: context.fieldBorder)))),
                     if (_passwordError != null) ...[const SizedBox(height: 8), Text(_passwordError!, style: GoogleFonts.poppins(fontSize: 12, color: Colors.red[600]))],
                     if (_passwordSuccess != null) ...[const SizedBox(height: 8), Text(_passwordSuccess!, style: GoogleFonts.poppins(fontSize: 12, color: Colors.green[600]))],
                     const SizedBox(height: 12),
@@ -261,11 +262,24 @@ class _FleetManagerAccountScreenState extends State<FleetManagerAccountScreen> {
               Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
               const SizedBox(height: 24),
 
-              // Dark mode toggle
+              // Appearance
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Consumer<ThemeProvider>(
-                  builder: (ctx, themeProvider, _) => _MenuRowToggle(icon: Icons.dark_mode_outlined, label: 'Dark Mode', value: themeProvider.isDarkMode, onChanged: (_) async => await themeProvider.toggleTheme()),
+                child: _MenuRow(
+                  icon: Icons.brightness_6_outlined,
+                  label: 'Appearance',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppearanceScreen())),
+                ),
+              ),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
+
+              // Support
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _MenuRow(
+                  icon: Icons.support_agent_outlined,
+                  label: 'Support',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportScreen())),
                 ),
               ),
               Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
@@ -278,13 +292,20 @@ class _FleetManagerAccountScreenState extends State<FleetManagerAccountScreen> {
                   label: 'Log out',
                   iconColor: Colors.red[600],
                   labelColor: Colors.red[600],
-                  onTap: () async {
-                    if (!context.mounted) return;
-                    final auth = context.read<AuthenticationProvider>();
-                    await auth.signOut();
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    if (context.mounted) context.go(RouteNames.welcome);
-                  },
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LogoutScreen())),
+                ),
+              ),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: _RowDivider()),
+
+              // Delete account
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _MenuRow(
+                  icon: Icons.delete_outline,
+                  label: 'Delete Account',
+                  iconColor: Colors.red[600],
+                  labelColor: Colors.red[600],
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DeleteAccountScreen())),
                 ),
               ),
               const SizedBox(height: 32),
@@ -312,15 +333,15 @@ class _AccountHeader extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(userName, style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+                    Text(userName, style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: context.textPrimary)),
                     const SizedBox(height: 4),
-                    Text(userEmail, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
+                    Text(userEmail, style: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary)),
                   ],
                 );
               },
             ),
           ),
-          Container(width: 54, height: 54, decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle), child: Icon(Icons.person, size: 32, color: Colors.grey[600])),
+          Container(width: 54, height: 54, decoration: BoxDecoration(color: context.divider, shape: BoxShape.circle), child: Icon(Icons.person, size: 32, color: context.textSecondary)),
         ],
       ),
     );
@@ -343,37 +364,12 @@ class _MenuRow extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 17),
         child: Row(children: [
-          Icon(icon, size: 24, color: iconColor ?? Colors.black87),
+          Icon(icon, size: 24, color: iconColor ?? context.textPrimary),
           const SizedBox(width: 16),
-          Expanded(child: Text(label, style: GoogleFonts.poppins(fontSize: 16, color: labelColor ?? Colors.black87))),
-          Icon(Icons.chevron_right, color: Colors.grey[400], size: 22),
+          Expanded(child: Text(label, style: GoogleFonts.poppins(fontSize: 16, color: labelColor ?? context.textPrimary))),
+          Icon(Icons.chevron_right, color: context.textSecondary, size: 22),
         ]),
       ),
-    );
-  }
-}
-
-class _MenuRowToggle extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _MenuRowToggle({required this.icon, required this.label, required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDarkMode ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(children: [
-        Icon(icon, size: 24, color: textColor),
-        const SizedBox(width: 16),
-        Expanded(child: Text(label, style: GoogleFonts.poppins(fontSize: 16, color: textColor))),
-        Switch(value: value, onChanged: onChanged, activeThumbColor: AppColors.primaryGreenLight, activeTrackColor: AppColors.brandGreen.withValues(alpha: 0.4)),
-      ]),
     );
   }
 }
@@ -381,7 +377,6 @@ class _MenuRowToggle extends StatelessWidget {
 class _RowDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Divider(height: 1, thickness: 1, color: isDarkMode ? Colors.grey[800] : Colors.grey[200]);
+    return Divider(height: 1, thickness: 1, color: context.divider);
   }
 }
