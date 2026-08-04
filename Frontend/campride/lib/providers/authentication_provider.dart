@@ -187,6 +187,80 @@ class AuthenticationProvider extends ChangeNotifier {
     }
   }
 
+  // Request a password reset code be sent to the given email
+  Future<bool> forgotPassword({required String email}) async {
+    _state = AuthState.loading;
+    _errorMessage = null;
+    _errorCode = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.forgotPassword(email: email);
+      _state = AuthState.unauthenticated;
+      if (!response.success) {
+        _errorMessage = response.message ?? 'Failed to send reset code';
+        _errorCode = response.errorCode;
+      }
+      notifyListeners();
+      return response.success;
+    } catch (e) {
+      _state = AuthState.error;
+      _errorMessage = 'Forgot password error: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Verify a password reset code; returns a short-lived reset token on success
+  Future<String?> verifyResetCode({required String email, required String code}) async {
+    _state = AuthState.loading;
+    _errorMessage = null;
+    _errorCode = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.verifyResetCode(email: email, code: code);
+      _state = AuthState.unauthenticated;
+      if (response.success && response.data != null) {
+        notifyListeners();
+        return response.data;
+      }
+      _errorMessage = response.message ?? 'Invalid or expired code';
+      _errorCode = response.errorCode;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _state = AuthState.error;
+      _errorMessage = 'Verify code error: $e';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  // Set a new password using the reset token from verifyResetCode
+  Future<bool> resetPassword({required String resetToken, required String newPassword}) async {
+    _state = AuthState.loading;
+    _errorMessage = null;
+    _errorCode = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.resetPassword(resetToken: resetToken, newPassword: newPassword);
+      _state = AuthState.unauthenticated;
+      if (!response.success) {
+        _errorMessage = response.message ?? 'Failed to reset password';
+        _errorCode = response.errorCode;
+      }
+      notifyListeners();
+      return response.success;
+    } catch (e) {
+      _state = AuthState.error;
+      _errorMessage = 'Reset password error: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Login with email/password
   Future<bool> login({
     required String email,

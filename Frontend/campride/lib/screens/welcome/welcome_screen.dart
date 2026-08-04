@@ -6,9 +6,8 @@ import '../../theme/app_theme.dart';
 import '../../widgets/auth/google_signin_button.dart';
 
 const _kOnboardingImages = [
-  'assets/images/welcome.png',
-  'assets/images/welcome.png',
-  'assets/images/welcome.png',
+  'assets/images/welcome_handshake.png',
+  'assets/images/welcome_thinking.png',
 ];
 
 class WelcomeScreen extends StatefulWidget {
