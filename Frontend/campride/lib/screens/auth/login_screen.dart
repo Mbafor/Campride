@@ -21,6 +21,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _passwordFocus = FocusNode();
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _rememberMe = false;
@@ -30,6 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
@@ -39,7 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     String? emailErr;
 
-    final validEmail = RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$').hasMatch(email);
+    final validEmail = RegExp(
+      r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$',
+    ).hasMatch(email);
     if (!validEmail) emailErr = 'Enter a valid email address';
 
     setState(() => _emailError = emailErr);
@@ -92,8 +96,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: context.fieldFill,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.arrow_back,
-                        size: 20, color: context.textPrimary),
+                    child: Icon(
+                      Icons.arrow_back,
+                      size: 20,
+                      color: context.textPrimary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -121,6 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     hint: 'Enter your email',
                     keyboardType: TextInputType.emailAddress,
                     errorText: _emailError,
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) => _passwordFocus.requestFocus(),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -130,6 +139,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordCtrl,
                     hint: 'Enter your password',
                     obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) {
+                      if (_isLoading) return;
+                      FocusScope.of(context).unfocus();
+                      _handleContinue();
+                    },
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -162,14 +177,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4)),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'Remember me',
                             style: GoogleFonts.poppins(
-                                fontSize: 13, color: context.textSecondary),
+                              fontSize: 13,
+                              color: context.textSecondary,
+                            ),
                           ),
                         ],
                       ),
@@ -177,7 +195,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordScreen(),
+                        ),
                       ),
                       child: Text(
                         'Forgot Password?',
@@ -204,12 +224,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => SignupScreen(role: widget.role)),
+                        builder: (_) => SignupScreen(role: widget.role),
+                      ),
                     ),
                     child: RichText(
                       text: TextSpan(
                         style: GoogleFonts.poppins(
-                            fontSize: 13, color: context.textSecondary),
+                          fontSize: 13,
+                          color: context.textSecondary,
+                        ),
                         children: [
                           const TextSpan(text: "Don't have an account? "),
                           TextSpan(
@@ -267,6 +290,8 @@ class _GreyField extends StatelessWidget {
   final bool obscureText;
   final Widget? suffixIcon;
   final String? errorText;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
 
   const _GreyField({
     required this.controller,
@@ -275,6 +300,8 @@ class _GreyField extends StatelessWidget {
     this.obscureText = false,
     this.suffixIcon,
     this.errorText,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   @override
@@ -294,16 +321,25 @@ class _GreyField extends StatelessWidget {
             controller: controller,
             keyboardType: keyboardType,
             obscureText: obscureText,
-            style: GoogleFonts.poppins(fontSize: 15, color: context.textPrimary),
+            textInputAction: textInputAction,
+            onSubmitted: onSubmitted,
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              color: context.textPrimary,
+            ),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: GoogleFonts.poppins(
-                  fontSize: 15, color: context.textSecondary),
+                fontSize: 15,
+                color: context.textSecondary,
+              ),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 16),
+                horizontal: 16,
+                vertical: 16,
+              ),
               suffixIcon: suffixIcon,
             ),
           ),
@@ -314,8 +350,7 @@ class _GreyField extends StatelessWidget {
             padding: const EdgeInsets.only(left: 4),
             child: Text(
               errorText!,
-              style: GoogleFonts.poppins(
-                  fontSize: 12, color: Colors.red[600]),
+              style: GoogleFonts.poppins(fontSize: 12, color: Colors.red[600]),
             ),
           ),
         ],
@@ -346,7 +381,8 @@ class _PrimaryButton extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
         child: isLoading
             ? const SizedBox(
@@ -360,9 +396,10 @@ class _PrimaryButton extends StatelessWidget {
             : Text(
                 label,
                 style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
       ),
     );
@@ -396,7 +433,10 @@ class _TermsTextState extends State<_TermsText> {
 
   @override
   Widget build(BuildContext context) {
-    final base = GoogleFonts.poppins(fontSize: 12, color: context.textSecondary);
+    final base = GoogleFonts.poppins(
+      fontSize: 12,
+      color: context.textSecondary,
+    );
     final link = GoogleFonts.poppins(
       fontSize: 12,
       color: AppColors.primaryGreenLight,
@@ -411,12 +451,16 @@ class _TermsTextState extends State<_TermsText> {
         children: [
           const TextSpan(text: 'By continuing, you agree to our '),
           TextSpan(
-              text: 'Terms & Conditions',
-              style: link,
-              recognizer: _termsTap),
+            text: 'Terms & Conditions',
+            style: link,
+            recognizer: _termsTap,
+          ),
           const TextSpan(text: ' and '),
           TextSpan(
-              text: 'Privacy Policy', style: link, recognizer: _privacyTap),
+            text: 'Privacy Policy',
+            style: link,
+            recognizer: _privacyTap,
+          ),
           const TextSpan(text: '.'),
         ],
       ),
