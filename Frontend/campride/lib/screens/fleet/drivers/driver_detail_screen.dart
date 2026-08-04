@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../config/api_config.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 import 'driver_trip_history_full_screen.dart';
 
 class FleetRoute {
@@ -148,7 +148,7 @@ class _DriverDetailScreenState extends State<DriverDetailScreen> {
         body: Center(
           child: Text(
             'Driver not found',
-            style: GoogleFonts.poppins(color: AppColors.textSecondaryLight),
+            style: GoogleFonts.poppins(color: context.textSecondary),
           ),
         ),
       );
@@ -230,13 +230,13 @@ class _PersonalInfoCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     driver.email,
-                    style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                    style: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            Divider(color: AppColors.dividerLight),
+            Divider(color: context.divider),
             const SizedBox(height: 16),
             Text(
               'Assignment Info',
@@ -340,11 +340,11 @@ class _RoutesHistorySection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Column(
                 children: [
-                  Icon(Icons.route_outlined, size: 48, color: AppColors.textSecondaryLight),
+                  Icon(Icons.route_outlined, size: 48, color: context.textSecondary),
                   const SizedBox(height: 12),
                   Text(
                     'No routes yet',
-                    style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                    style: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
                   ),
                 ],
               ),
@@ -393,7 +393,7 @@ class _RouteCard extends StatelessWidget {
                       ),
                       Text(
                         '${route.startName} → ${route.endName}',
-                        style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                        style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -405,18 +405,18 @@ class _RouteCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.repeat, size: 14, color: AppColors.textSecondaryLight),
+                Icon(Icons.repeat, size: 14, color: context.textSecondary),
                 const SizedBox(width: 4),
                 Text(
                   '${route.tripCount} trips',
-                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondaryLight),
+                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: context.textSecondary),
                 ),
                 const Spacer(),
-                Icon(Icons.schedule, size: 14, color: AppColors.textSecondaryLight),
+                Icon(Icons.schedule, size: 14, color: context.textSecondary),
                 const SizedBox(width: 4),
                 Text(
                   'Last: ${DateFormat('MMM dd').format(route.lastUsed)}',
-                  style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondaryLight),
+                  style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
                 ),
               ],
             ),
@@ -448,7 +448,7 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+          style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
         ),
         const Spacer(),
         Text(

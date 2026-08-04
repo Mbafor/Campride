@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../providers/authentication_provider.dart';
 import '../../../config/api_config.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 
 class RoutesManagementScreen extends StatefulWidget {
   const RoutesManagementScreen({super.key});
@@ -254,7 +254,7 @@ class _RoutesManagementScreenState extends State<RoutesManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.route_outlined, size: 48, color: AppColors.textSecondaryLight),
+            Icon(Icons.route_outlined, size: 48, color: context.textSecondary),
             const SizedBox(height: 16),
             Text(
               'No Routes Yet',
@@ -263,7 +263,7 @@ class _RoutesManagementScreenState extends State<RoutesManagementScreen> {
             const SizedBox(height: 8),
             Text(
               'Create a route to get started',
-              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
+              style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -378,7 +378,7 @@ class _RouteCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Delete — coming in Phase 5',
-              style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight),
+              style: GoogleFonts.poppins(fontSize: 10, color: context.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -555,11 +555,11 @@ class _StopsDialogState extends State<_StopsDialog> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.stop_circle_outlined, size: 32, color: AppColors.textSecondaryLight),
+                        Icon(Icons.stop_circle_outlined, size: 32, color: context.textSecondary),
                         const SizedBox(height: 12),
                         Text(
                           'No stops yet',
-                          style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
+                          style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary),
                         ),
                       ],
                     ),
@@ -618,7 +618,7 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+          style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
         ),
         const Spacer(),
         Text(

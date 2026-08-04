@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
 import '../../routes/route_names.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_theme.dart';
 import 'otp_screen.dart';
 import 'signup_screen.dart';
 
@@ -74,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -88,11 +88,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: context.fieldFill,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.arrow_back,
-                        size: 20, color: Colors.black87),
+                    child: Icon(Icons.arrow_back,
+                        size: 20, color: context.textPrimary),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -101,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: context.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   'Sign in to your account',
                   style: GoogleFonts.poppins(
                     fontSize: 15,
-                    color: Colors.grey[600],
+                    color: context.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -134,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         _obscurePassword
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
-                        color: Colors.grey[500],
+                        color: context.textSecondary,
                         size: 20,
                       ),
                       onPressed: () =>
@@ -168,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             'Remember me',
                             style: GoogleFonts.poppins(
-                                fontSize: 13, color: Colors.grey[700]),
+                                fontSize: 13, color: context.textSecondary),
                           ),
                         ],
                       ),
@@ -205,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: RichText(
                       text: TextSpan(
                         style: GoogleFonts.poppins(
-                            fontSize: 13, color: Colors.grey[600]),
+                            fontSize: 13, color: context.textSecondary),
                         children: [
                           const TextSpan(text: "Don't have an account? "),
                           TextSpan(
@@ -246,7 +246,7 @@ class _LabeledField extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -282,19 +282,19 @@ class _GreyField extends StatelessWidget {
         Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: context.fieldFill,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!, width: 1.5),
+            border: Border.all(color: context.fieldBorder, width: 1.5),
           ),
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
             obscureText: obscureText,
-            style: GoogleFonts.poppins(fontSize: 15, color: Colors.black87),
+            style: GoogleFonts.poppins(fontSize: 15, color: context.textPrimary),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: GoogleFonts.poppins(
-                  fontSize: 15, color: Colors.grey[500]),
+                  fontSize: 15, color: context.textSecondary),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
@@ -392,7 +392,7 @@ class _TermsTextState extends State<_TermsText> {
 
   @override
   Widget build(BuildContext context) {
-    final base = GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500]);
+    final base = GoogleFonts.poppins(fontSize: 12, color: context.textSecondary);
     final link = GoogleFonts.poppins(
       fontSize: 12,
       color: AppColors.primaryGreenLight,

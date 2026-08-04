@@ -5,7 +5,7 @@ import '../alerts/alerts_screen.dart';
 import '../account/student_account_screen.dart';
 import '../where_to/where_to_screen.dart';
 import '../../../widgets/common/app_drawer.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -20,7 +20,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       drawer: const AppDrawer(),
       body: Stack(
         children: [
@@ -44,7 +44,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.cardBg,
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
@@ -54,7 +54,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.menu, size: 22, color: Colors.black87),
+                      child: Icon(Icons.menu, size: 22, color: context.textPrimary),
                     ),
                   ),
                 ),
@@ -68,7 +68,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               right: 16,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.cardBg,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
@@ -83,9 +83,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     hintText: 'Where to?',
                     hintStyle: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.grey[500],
+                      color: context.textSecondary,
                     ),
-                    prefixIcon: Icon(Icons.search, color: Colors.grey[600], size: 20),
+                    prefixIcon: Icon(Icons.search, color: context.textSecondary, size: 20),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
@@ -120,8 +120,8 @@ class _BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
+        color: context.cardBg,
+        border: Border(top: BorderSide(color: context.divider, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -175,7 +175,7 @@ class _NavTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primaryGreen : Colors.grey[500]!;
+    final color = isActive ? AppColors.primaryGreen : context.textSecondary;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

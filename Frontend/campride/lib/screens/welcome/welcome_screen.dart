@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../routes/route_names.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/auth/google_signin_button.dart';
 import '../../widgets/common/app_logo.dart';
 
@@ -32,7 +32,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -81,7 +81,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   decoration: BoxDecoration(
                     color: _page == i
                         ? AppColors.primaryGreenLight
-                        : Colors.grey[300],
+                        : context.divider,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -99,7 +99,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     child: OutlinedButton(
                       onPressed: () => context.go(RouteNames.login),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+                        side: BorderSide(color: context.fieldBorder, width: 1.5),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(27)),
                       ),
@@ -107,14 +107,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.mail_outline,
-                              size: 20, color: Colors.grey[700]),
+                              size: 20, color: context.textSecondary),
                           const SizedBox(width: 12),
                           Text(
                             'Continue with Email',
                             style: GoogleFonts.poppins(
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black87,
+                              color: context.textPrimary,
                             ),
                           ),
                         ],
@@ -129,7 +129,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: AppColors.textSecondaryLight,
+                        color: context.textSecondary,
                         height: 1.4,
                       ),
                     ),

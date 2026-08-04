@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 
 class ShuttlesListScreen extends StatefulWidget {
   const ShuttlesListScreen({super.key});
@@ -153,7 +153,7 @@ class _ShuttlesListScreenState extends State<ShuttlesListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.airport_shuttle, size: 48, color: AppColors.textSecondaryLight),
+            Icon(Icons.airport_shuttle, size: 48, color: context.textSecondary),
             const SizedBox(height: 16),
             Text(
               'No Shuttles Yet',
@@ -162,7 +162,7 @@ class _ShuttlesListScreenState extends State<ShuttlesListScreen> {
             const SizedBox(height: 8),
             Text(
               'Create a shuttle to get started',
-              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
+              style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -404,7 +404,7 @@ class _ShuttleCardState extends State<_ShuttleCard> {
                       ),
                       Text(
                         widget.shuttle.plateNumber,
-                        style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                        style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                       ),
                     ],
                   ),
@@ -433,7 +433,7 @@ class _ShuttleCardState extends State<_ShuttleCard> {
                 const SizedBox(width: 8),
                 Text(
                   'Capacity',
-                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                  style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                 ),
                 const Spacer(),
                 Text(
@@ -449,7 +449,7 @@ class _ShuttleCardState extends State<_ShuttleCard> {
                 const SizedBox(width: 8),
                 Text(
                   'Driver',
-                  style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                  style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                 ),
                 const Spacer(),
                 Text(

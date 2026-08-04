@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../config/api_config.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 import '../../student/live_shuttles_screen.dart';
 import '../staff/staff_management_screen.dart';
 import '../../fleet/shuttles/shuttles_list_screen.dart';
@@ -360,7 +360,7 @@ class _StatCard extends StatelessWidget {
             ),
             Text(
               label,
-              style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight),
+              style: GoogleFonts.poppins(fontSize: 10, color: context.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -389,7 +389,7 @@ class _NavigationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = isPlaceholder ? Colors.grey : color;
+    final effectiveColor = isPlaceholder ? context.textSecondary : color;
 
     return Card(
       elevation: 2,
@@ -402,12 +402,12 @@ class _NavigationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isPlaceholder ? Colors.grey[200] : effectiveColor.withOpacity(0.15),
+                  color: isPlaceholder ? context.fieldFill : effectiveColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
-                  color: isPlaceholder ? AppColors.textSecondaryLight : effectiveColor,
+                  color: isPlaceholder ? context.textSecondary : effectiveColor,
                   size: 24,
                 ),
               ),
@@ -423,7 +423,7 @@ class _NavigationCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                      style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                     ),
                   ],
                 ),
@@ -431,7 +431,7 @@ class _NavigationCard extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: isPlaceholder ? AppColors.textSecondaryLight : effectiveColor,
+                color: isPlaceholder ? context.textSecondary : effectiveColor,
               ),
             ],
           ),

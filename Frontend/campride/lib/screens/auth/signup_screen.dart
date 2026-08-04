@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_theme.dart';
 import 'otp_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -85,7 +85,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -99,11 +99,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: context.fieldFill,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.arrow_back,
-                        size: 20, color: Colors.black87),
+                    child: Icon(Icons.arrow_back,
+                        size: 20, color: context.textPrimary),
                   ),
                 ),
                 const SizedBox(height: 36),
@@ -112,7 +112,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: context.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -139,7 +139,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       _obscurePassword
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
-                      color: Colors.grey[500],
+                      color: context.textSecondary,
                       size: 20,
                     ),
                     onPressed: () =>
@@ -156,7 +156,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       _obscureConfirm
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
-                      color: Colors.grey[500],
+                      color: context.textSecondary,
                       size: 20,
                     ),
                     onPressed: () =>
@@ -173,7 +173,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     child: RichText(
                       text: TextSpan(
                         style: GoogleFonts.poppins(
-                            fontSize: 13, color: Colors.grey[600]),
+                            fontSize: 13, color: context.textSecondary),
                         children: [
                           const TextSpan(text: 'Already have an account? '),
                           TextSpan(
@@ -224,19 +224,19 @@ class _GreyField extends StatelessWidget {
         Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: context.fieldFill,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!, width: 1.5),
+            border: Border.all(color: context.fieldBorder, width: 1.5),
           ),
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
             obscureText: obscureText,
-            style: GoogleFonts.poppins(fontSize: 15, color: Colors.black87),
+            style: GoogleFonts.poppins(fontSize: 15, color: context.textPrimary),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle:
-                  GoogleFonts.poppins(fontSize: 15, color: Colors.grey[500]),
+                  GoogleFonts.poppins(fontSize: 15, color: context.textSecondary),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,

@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 import '../../student/live_shuttles_screen.dart';
 
 class FleetManagerDashboard extends StatelessWidget {
@@ -36,7 +36,7 @@ class FleetManagerDashboard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Manage your fleet operations',
-                    style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textSecondaryLight),
+                    style: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
                   ),
                 ],
               ),
@@ -229,7 +229,7 @@ class _StatCard extends StatelessWidget {
               ),
               Text(
                 label,
-                style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight),
+                style: GoogleFonts.poppins(fontSize: 10, color: context.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -267,12 +267,12 @@ class _NavigationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isPlaceholder ? Colors.grey[200] : AppColors.primaryGreen.withOpacity(0.1),
+                  color: isPlaceholder ? context.fieldFill : AppColors.primaryGreen.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
-                  color: isPlaceholder ? AppColors.textSecondaryLight : AppColors.primaryGreen,
+                  color: isPlaceholder ? context.textSecondary : AppColors.primaryGreen,
                   size: 24,
                 ),
               ),
@@ -288,7 +288,7 @@ class _NavigationCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                      style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                     ),
                   ],
                 ),
@@ -296,7 +296,7 @@ class _NavigationCard extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: isPlaceholder ? AppColors.textSecondaryLight : AppColors.primaryGreen,
+                color: isPlaceholder ? context.textSecondary : AppColors.primaryGreen,
               ),
             ],
           ),
@@ -360,7 +360,7 @@ class _TabButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 12),
         side: BorderSide(
-          color: isActive ? AppColors.primaryGreen : AppColors.dividerLight,
+          color: isActive ? AppColors.primaryGreen : context.divider,
           width: isActive ? 2 : 1,
         ),
         backgroundColor: isActive ? AppColors.primaryGreen.withOpacity(0.05) : Colors.transparent,
@@ -370,7 +370,7 @@ class _TabButton extends StatelessWidget {
         label,
         style: GoogleFonts.poppins(
           fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-          color: isActive ? AppColors.primaryGreen : AppColors.textSecondaryLight,
+          color: isActive ? AppColors.primaryGreen : context.textSecondary,
         ),
       ),
     );

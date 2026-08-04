@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../providers/authentication_provider.dart';
+import '../../../theme/app_theme.dart';
 
 class RidesScreen extends StatefulWidget {
   const RidesScreen({super.key});
@@ -66,12 +67,12 @@ class _RidesScreenState extends State<RidesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -79,7 +80,7 @@ class _RidesScreenState extends State<RidesScreen> {
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: context.textPrimary,
           ),
         ),
       ),
@@ -105,7 +106,7 @@ class _RidesScreenState extends State<RidesScreen> {
                                 'No rides yet',
                                 style: GoogleFonts.poppins(
                                   fontSize: 16,
-                                  color: Colors.grey[600],
+                                  color: context.textSecondary,
                                 ),
                               ),
                             )
@@ -179,9 +180,9 @@ class _RideCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: context.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,10 +192,10 @@ class _RideCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: context.fieldFill,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.directions_bus_outlined, size: 22, color: Colors.grey[700]),
+                child: Icon(Icons.directions_bus_outlined, size: 22, color: context.textSecondary),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -206,7 +207,7 @@ class _RideCard extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -214,7 +215,7 @@ class _RideCard extends StatelessWidget {
                       '$shuttleName ($shuttlePlate)',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: context.textSecondary,
                       ),
                     ),
                   ],
@@ -225,7 +226,7 @@ class _RideCard extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
+                  color: context.textSecondary,
                 ),
               ),
             ],
@@ -241,7 +242,7 @@ class _RideCard extends StatelessWidget {
                       'Boarded',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: Colors.grey[500],
+                        color: context.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -250,7 +251,7 @@ class _RideCard extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black87,
+                        color: context.textPrimary,
                       ),
                     ),
                   ],
@@ -264,7 +265,7 @@ class _RideCard extends StatelessWidget {
                       'Alighted',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: Colors.grey[500],
+                        color: context.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -273,7 +274,7 @@ class _RideCard extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: alightedAt == null ? Colors.orange : Colors.black87,
+                        color: alightedAt == null ? Colors.orange : context.textPrimary,
                       ),
                     ),
                   ],

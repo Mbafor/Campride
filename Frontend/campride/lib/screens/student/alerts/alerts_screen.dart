@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../providers/authentication_provider.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -89,13 +89,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBg,
         elevation: 0,
         leading: Navigator.canPop(context)
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                icon: Icon(Icons.arrow_back, color: context.textPrimary),
                 onPressed: () => Navigator.pop(context),
               )
             : null,
@@ -104,7 +104,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: context.textPrimary,
           ),
         ),
         centerTitle: false,
@@ -121,7 +121,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: context.textPrimary,
                 ),
               ),
             ),
@@ -143,7 +143,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                 'No notifications yet',
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
-                                  color: Colors.grey[500],
+                                  color: context.textSecondary,
                                 ),
                               ),
                             )
@@ -209,9 +209,9 @@ class _NotificationTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isRead ? Colors.white : AppColors.primaryGreen.withValues(alpha: 0.08),
+          color: isRead ? context.cardBg : AppColors.primaryGreen.withValues(alpha: 0.08),
           border: Border.all(
-            color: isRead ? Colors.grey[200]! : AppColors.primaryGreen,
+            color: isRead ? context.divider : AppColors.primaryGreen,
             width: isRead ? 1 : 1.5,
           ),
           borderRadius: BorderRadius.circular(8),
@@ -222,12 +222,12 @@ class _NotificationTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isRead ? Colors.grey[200] : AppColors.primaryGreen,
+                color: isRead ? context.divider : AppColors.primaryGreen,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 _getIconForType(type),
-                color: isRead ? Colors.grey[600] : Colors.white,
+                color: isRead ? context.textSecondary : Colors.white,
                 size: 20,
               ),
             ),
@@ -241,7 +241,7 @@ class _NotificationTile extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: isRead ? FontWeight.w400 : FontWeight.w500,
-                      color: isRead ? Colors.black54 : Colors.black87,
+                      color: isRead ? context.textSecondary : context.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -251,7 +251,7 @@ class _NotificationTile extends StatelessWidget {
                     '$formattedTime • $type',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: Colors.grey[500],
+                      color: context.textSecondary,
                     ),
                   ),
                 ],

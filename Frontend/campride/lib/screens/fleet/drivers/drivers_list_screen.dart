@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 import 'driver_detail_screen.dart';
 
 class DriversListScreen extends StatefulWidget {
@@ -157,7 +157,7 @@ class _DriversListScreenState extends State<DriversListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_outline, size: 48, color: AppColors.textSecondaryLight),
+            Icon(Icons.person_outline, size: 48, color: context.textSecondary),
             const SizedBox(height: 16),
             Text(
               'No Drivers Yet',
@@ -166,7 +166,7 @@ class _DriversListScreenState extends State<DriversListScreen> {
             const SizedBox(height: 8),
             Text(
               'Create a driver to get started',
-              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
+              style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -240,7 +240,7 @@ class _DriverCardState extends State<_DriverCard> {
               if (widget.shuttles.isEmpty)
                 Text(
                   'No shuttles available',
-                  style: GoogleFonts.poppins(color: AppColors.textSecondaryLight),
+                  style: GoogleFonts.poppins(color: context.textSecondary),
                 )
               else
                 ...widget.shuttles.map((shuttle) => ListTile(
@@ -327,7 +327,7 @@ class _DriverCardState extends State<_DriverCard> {
                         ),
                         Text(
                           widget.driver.email,
-                          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                          style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                         ),
                       ],
                     ),
@@ -398,7 +398,7 @@ class _DriverCardState extends State<_DriverCard> {
               const SizedBox(height: 4),
               Text(
                 'Delete — coming in Phase 5',
-                style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight),
+                style: GoogleFonts.poppins(fontSize: 10, color: context.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -428,7 +428,7 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+          style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
         ),
         const Spacer(),
         Text(

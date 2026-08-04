@@ -7,6 +7,9 @@ class ApiConfig {
   /// Note: Must use wss:// (secure WebSocket) for HTTPS connections
   static const String baseWsUrl = 'wss://campride-production.up.railway.app/api/v1';
 
+  /// Support inbox shown on the Contact Support screen.
+  static const String supportEmail = 'support@campride.app';
+
   // Individual endpoint URLs can be constructed using these constants
   // Example: '$baseHttpUrl/auth/login'
 }

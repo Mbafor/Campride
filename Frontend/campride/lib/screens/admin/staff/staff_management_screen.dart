@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
-import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 
 class StaffManagementScreen extends StatefulWidget {
   const StaffManagementScreen({super.key});
@@ -263,7 +263,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline, size: 48, color: AppColors.textSecondaryLight),
+            Icon(Icons.people_outline, size: 48, color: context.textSecondary),
             const SizedBox(height: 16),
             Text(
               'No Staff Yet',
@@ -272,7 +272,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
             const SizedBox(height: 8),
             Text(
               'Create a driver or fleet manager to get started',
-              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondaryLight),
+              style: GoogleFonts.poppins(fontSize: 13, color: context.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -382,7 +382,7 @@ class _StaffCard extends StatelessWidget {
                       ),
                       Text(
                         driver.email,
-                        style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+                        style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
                       ),
                     ],
                   ),
@@ -466,7 +466,7 @@ class _StaffCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Delete — coming in Phase 5',
-              style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondaryLight),
+              style: GoogleFonts.poppins(fontSize: 10, color: context.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -495,7 +495,7 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondaryLight),
+          style: GoogleFonts.poppins(fontSize: 12, color: context.textSecondary),
         ),
         const Spacer(),
         Text(

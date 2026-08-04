@@ -9,7 +9,7 @@ import 'package:google_sign_in_web/web_only.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
 import '../../routes/route_names.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_theme.dart';
 
 /// Reusable Google Sign-In entry point shared by the Welcome and Login
 /// screens, so the (finicky, previously buggy) web button rendering and
@@ -88,7 +88,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
     }
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     return _isLoading
         ? const SizedBox(
             width: 20,
@@ -105,7 +105,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
                 style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black87),
+                    color: context.textPrimary),
               ),
             ],
           );
@@ -146,7 +146,9 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
                     )
                   : renderButton(
                       configuration: GSIButtonConfiguration(
-                        theme: GSIButtonTheme.outline,
+                        theme: context.isDark
+                            ? GSIButtonTheme.filledBlack
+                            : GSIButtonTheme.outline,
                         size: GSIButtonSize.large,
                         shape: GSIButtonShape.pill,
                         text: GSIButtonText.continueWith,
@@ -169,11 +171,11 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
                   GoogleSignIn().signIn();
                 },
           style: OutlinedButton.styleFrom(
-            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+            side: BorderSide(color: context.fieldBorder, width: 1.5),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(27)),
           ),
-          child: _buildContent(),
+          child: _buildContent(context),
         ),
       );
     }
