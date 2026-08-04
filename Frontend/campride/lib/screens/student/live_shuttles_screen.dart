@@ -694,15 +694,16 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
         // My Location button (recenter to user)
         Positioned(
           right: 16,
-          bottom: 16,
+          bottom: 150,
           child: FloatingActionButton(
             mini: true,
             heroTag: 'recenter_location',
-            backgroundColor: context.cardBg,
-            foregroundColor: const Color(0xFF2196F3),
+            backgroundColor: Colors.black.withValues(alpha: 0.72),
+            foregroundColor: Colors.white,
             elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             onPressed: _recenterToUserLocation,
-            child: const Icon(Icons.my_location, size: 22),
+            child: const Icon(Icons.navigation, size: 22),
           ),
         ),
         // Connection warning banner
