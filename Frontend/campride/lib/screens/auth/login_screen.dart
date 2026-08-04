@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../providers/authentication_provider.dart';
 import '../../routes/route_names.dart';
 import '../../theme/app_theme.dart';
+import 'forgot_password_screen.dart';
 import 'otp_screen.dart';
 import 'signup_screen.dart';
 
@@ -174,7 +175,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                      ),
                       child: Text(
                         'Forgot Password?',
                         style: GoogleFonts.poppins(

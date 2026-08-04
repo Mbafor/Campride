@@ -158,6 +158,102 @@ class AuthApiService {
     }
   }
 
+  // Request a password reset code be sent to the given email
+  Future<AuthApiResponse<void>> forgotPassword({
+    required String email,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseHttpUrl}/auth/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      if (response.statusCode == 200) {
+        return AuthApiResponse(success: true);
+      } else {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final error = _extractErrorDetail(json);
+        return AuthApiResponse(
+          success: false,
+          message: error['message'] ?? 'Failed to send reset code',
+          errorCode: error['error_code'] ?? 'UNKNOWN',
+        );
+      }
+    } catch (e) {
+      return AuthApiResponse(
+        success: false,
+        message: 'Network error: $e',
+        errorCode: 'NETWORK_ERROR',
+      );
+    }
+  }
+
+  // Verify a password reset code; on success returns a short-lived reset token
+  Future<AuthApiResponse<String>> verifyResetCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseHttpUrl}/auth/verify-reset-code'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'code': code}),
+      );
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200) {
+        return AuthApiResponse(success: true, data: json['reset_token'] as String);
+      } else {
+        final error = _extractErrorDetail(json);
+        return AuthApiResponse(
+          success: false,
+          message: error['message'] ?? 'Invalid or expired code',
+          errorCode: error['error_code'] ?? 'UNKNOWN',
+        );
+      }
+    } catch (e) {
+      return AuthApiResponse(
+        success: false,
+        message: 'Network error: $e',
+        errorCode: 'NETWORK_ERROR',
+      );
+    }
+  }
+
+  // Set a new password using the reset token from verifyResetCode
+  Future<AuthApiResponse<void>> resetPassword({
+    required String resetToken,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseHttpUrl}/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'reset_token': resetToken, 'new_password': newPassword}),
+      );
+
+      if (response.statusCode == 200) {
+        return AuthApiResponse(success: true);
+      } else {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final error = _extractErrorDetail(json);
+        return AuthApiResponse(
+          success: false,
+          message: error['message'] ?? 'Failed to reset password',
+          errorCode: error['error_code'] ?? 'UNKNOWN',
+        );
+      }
+    } catch (e) {
+      return AuthApiResponse(
+        success: false,
+        message: 'Network error: $e',
+        errorCode: 'NETWORK_ERROR',
+      );
+    }
+  }
+
   // Login with email/password
   Future<AuthApiResponse<Map<String, dynamic>>> login({
     required String email,
