@@ -254,20 +254,22 @@ class AuthApiService {
     }
   }
 
-  // Login with email/password
+// Login with email/password
   Future<AuthApiResponse<Map<String, dynamic>>> login({
     required String email,
     required String password,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseHttpUrl}/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseHttpUrl}/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'email': email,
+              'password': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -336,15 +338,17 @@ class AuthApiService {
     }
   }
 
-  // Get current user info
+// Get current user info
   Future<AuthApiResponse<UserModel>> getCurrentUser({
     required String accessToken,
   }) async {
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseHttpUrl}/auth/me'),
-        headers: {'Authorization': 'Bearer $accessToken'},
-      );
+      final response = await http
+          .get(
+            Uri.parse('${ApiConfig.baseHttpUrl}/auth/me'),
+            headers: {'Authorization': 'Bearer $accessToken'},
+          )
+          .timeout(const Duration(seconds: 15));
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
