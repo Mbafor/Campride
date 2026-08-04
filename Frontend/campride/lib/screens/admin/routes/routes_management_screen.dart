@@ -5,6 +5,7 @@ import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common/empty_state_widget.dart';
+import '../../../widgets/search_location_picker.dart';
 import 'route_form_screen.dart';
 
 class RoutesManagementScreen extends StatefulWidget {
@@ -434,70 +435,20 @@ class _StopsDialogState extends State<_StopsDialog> {
     }
   }
 
-  void _showAddStopDialog() {
-    final nameController = TextEditingController();
-    final latController = TextEditingController();
-    final lngController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('Add Stop', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Stop Name',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  isDense: true,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: latController,
-                decoration: InputDecoration(
-                  labelText: 'Latitude',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  isDense: true,
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: lngController,
-                decoration: InputDecoration(
-                  labelText: 'Longitude',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  isDense: true,
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-              ),
-            ],
-          ),
+  Future<void> _showAddStopDialog() async {
+    final location = await Navigator.push<LocationSearchResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SearchLocationPicker(
+          title: 'Select Stop Location',
+          hint: 'Search for a stop location...',
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final lat = double.tryParse(latController.text.trim());
-              final lng = double.tryParse(lngController.text.trim());
-              final name = nameController.text.trim();
-              if (name.isEmpty || lat == null || lng == null) return;
-              Navigator.pop(dialogContext);
-              await _addStop(name, lat, lng);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-            child: const Text('Add', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
+
+    if (location != null && mounted) {
+      await _addStop(location.name, location.latitude, location.longitude);
+    }
   }
 
   @override

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/authentication_provider.dart';
 import '../../../services/shuttle_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/search_location_picker.dart';
 
 /// Dedicated Add/Edit Route screen, reached from Routes Management.
 /// Pass [route] to edit an existing route, or leave it null to create one.
@@ -19,12 +20,8 @@ class RouteFormScreen extends StatefulWidget {
 class _RouteFormScreenState extends State<RouteFormScreen> {
   final _shuttleService = ShuttleService();
   late final TextEditingController _nameController;
-  late final TextEditingController _startNameController;
-  late final TextEditingController _startLatController;
-  late final TextEditingController _startLngController;
-  late final TextEditingController _endNameController;
-  late final TextEditingController _endLatController;
-  late final TextEditingController _endLngController;
+  LocationSearchResult? _startLocation;
+  LocationSearchResult? _endLocation;
   bool _isLoading = false;
   String? _error;
 
@@ -35,41 +32,71 @@ class _RouteFormScreenState extends State<RouteFormScreen> {
     super.initState();
     final r = widget.route;
     _nameController = TextEditingController(text: r?.name ?? '');
-    _startNameController = TextEditingController(text: r?.startName ?? '');
-    _startLatController = TextEditingController(text: r != null ? r.startLat.toString() : '');
-    _startLngController = TextEditingController(text: r != null ? r.startLng.toString() : '');
-    _endNameController = TextEditingController(text: r?.endName ?? '');
-    _endLatController = TextEditingController(text: r != null ? r.endLat.toString() : '');
-    _endLngController = TextEditingController(text: r != null ? r.endLng.toString() : '');
+    if (r != null) {
+      _startLocation = LocationSearchResult(
+        name: r.startName,
+        latitude: r.startLat,
+        longitude: r.startLng,
+      );
+      _endLocation = LocationSearchResult(
+        name: r.endName,
+        latitude: r.endLat,
+        longitude: r.endLng,
+      );
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _startNameController.dispose();
-    _startLatController.dispose();
-    _startLngController.dispose();
-    _endNameController.dispose();
-    _endLatController.dispose();
-    _endLngController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectStartLocation() async {
+    final result = await Navigator.push<LocationSearchResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchLocationPicker(
+          title: 'Select Start Point',
+          hint: 'Search for start location...',
+          initialLocation: _startLocation,
+        ),
+      ),
+    );
+    if (result != null) {
+      setState(() => _startLocation = result);
+    }
+  }
+
+  Future<void> _selectEndLocation() async {
+    final result = await Navigator.push<LocationSearchResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchLocationPicker(
+          title: 'Select End Point',
+          hint: 'Search for end location...',
+          initialLocation: _endLocation,
+        ),
+      ),
+    );
+    if (result != null) {
+      setState(() => _endLocation = result);
+    }
   }
 
   Future<void> _submit() async {
     final name = _nameController.text.trim();
-    final startName = _startNameController.text.trim();
-    final endName = _endNameController.text.trim();
-    final startLat = double.tryParse(_startLatController.text.trim());
-    final startLng = double.tryParse(_startLngController.text.trim());
-    final endLat = double.tryParse(_endLatController.text.trim());
-    final endLng = double.tryParse(_endLngController.text.trim());
 
-    if (name.isEmpty || startName.isEmpty || endName.isEmpty) {
-      setState(() => _error = 'Please fill in the route and location names');
+    if (name.isEmpty) {
+      setState(() => _error = 'Please fill in the route name');
       return;
     }
-    if (startLat == null || startLng == null || endLat == null || endLng == null) {
-      setState(() => _error = 'Please enter valid coordinates');
+    if (_startLocation == null) {
+      setState(() => _error = 'Please select a start point');
+      return;
+    }
+    if (_endLocation == null) {
+      setState(() => _error = 'Please select an end point');
       return;
     }
 
@@ -85,22 +112,22 @@ class _RouteFormScreenState extends State<RouteFormScreen> {
               accessToken: auth.accessToken!,
               routeId: widget.route!.id,
               name: name,
-              startName: startName,
-              endName: endName,
-              startLat: startLat,
-              startLng: startLng,
-              endLat: endLat,
-              endLng: endLng,
+              startName: _startLocation!.name,
+              endName: _endLocation!.name,
+              startLat: _startLocation!.latitude,
+              startLng: _startLocation!.longitude,
+              endLat: _endLocation!.latitude,
+              endLng: _endLocation!.longitude,
             )
           : await _shuttleService.createRoute(
               accessToken: auth.accessToken!,
               name: name,
-              startName: startName,
-              endName: endName,
-              startLat: startLat,
-              startLng: startLng,
-              endLat: endLat,
-              endLng: endLng,
+              startName: _startLocation!.name,
+              endName: _endLocation!.name,
+              startLat: _startLocation!.latitude,
+              startLng: _startLocation!.longitude,
+              endLat: _endLocation!.latitude,
+              endLng: _endLocation!.longitude,
             );
 
       if (!mounted) return;
@@ -158,27 +185,17 @@ class _RouteFormScreenState extends State<RouteFormScreen> {
 
               Text('Start Point', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary)),
               const SizedBox(height: 8),
-              _FormField(controller: _startNameController, hint: 'Location name'),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: _FormField(controller: _startLatController, hint: 'Latitude', keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true))),
-                  const SizedBox(width: 12),
-                  Expanded(child: _FormField(controller: _startLngController, hint: 'Longitude', keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true))),
-                ],
+              _LocationSelector(
+                location: _startLocation,
+                onTap: _selectStartLocation,
               ),
               const SizedBox(height: 20),
 
               Text('End Point', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary)),
               const SizedBox(height: 8),
-              _FormField(controller: _endNameController, hint: 'Location name'),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: _FormField(controller: _endLatController, hint: 'Latitude', keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true))),
-                  const SizedBox(width: 12),
-                  Expanded(child: _FormField(controller: _endLngController, hint: 'Longitude', keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true))),
-                ],
+              _LocationSelector(
+                location: _endLocation,
+                onTap: _selectEndLocation,
               ),
 
               if (_error != null) ...[
@@ -239,13 +256,92 @@ class _FormField extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
-        keyboardType: keyboardType,
         style: GoogleFonts.poppins(fontSize: 14, color: context.textPrimary),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
+}
+
+class _LocationSelector extends StatelessWidget {
+  final LocationSearchResult? location;
+  final VoidCallback onTap;
+
+  const _LocationSelector({
+    required this.location,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (location == null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: context.fieldFill,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.fieldBorder),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(Icons.location_on_outlined, size: 18, color: context.textSecondary),
+              const SizedBox(width: 12),
+              Text(
+                'Select location',
+                style: GoogleFonts.poppins(fontSize: 14, color: context.textSecondary),
+              ),
+              const Spacer(),
+              Icon(Icons.arrow_forward, size: 18, color: context.textSecondary),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.fieldFill,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primaryGreen),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(Icons.location_on, size: 18, color: AppColors.primaryGreen),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    location!.name,
+                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: context.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Lat: ${location!.latitude.toStringAsFixed(4)}, Lng: ${location!.longitude.toStringAsFixed(4)}',
+                    style: GoogleFonts.poppins(fontSize: 11, color: context.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.edit_outlined, size: 18, color: AppColors.primaryGreen),
+          ],
         ),
       ),
     );
