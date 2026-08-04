@@ -164,6 +164,40 @@ class StopsRepository {
         routes.map<Future<List<StopInfo>>>((route) async {
           final routeId = route['id'];
           final routeName = route['name'] as String? ?? 'Unknown route';
+          final stops = <StopInfo>[];
+
+          // Add route's start point as a selectable location
+          final startName = route['start_name'] as String?;
+          final startLat = route['start_lat'];
+          final startLng = route['start_lng'];
+          if (startName != null && startLat != null && startLng != null) {
+            stops.add(
+              StopInfo(
+                id: 'start-$routeId',
+                name: 'Start: $startName',
+                routeName: routeName,
+                lat: (startLat as num).toDouble(),
+                lng: (startLng as num).toDouble(),
+              ),
+            );
+          }
+
+          // Add route's end point as a selectable location
+          final endName = route['end_name'] as String?;
+          final endLat = route['end_lat'];
+          final endLng = route['end_lng'];
+          if (endName != null && endLat != null && endLng != null) {
+            stops.add(
+              StopInfo(
+                id: 'end-$routeId',
+                name: 'End: $endName',
+                routeName: routeName,
+                lat: (endLat as num).toDouble(),
+                lng: (endLng as num).toDouble(),
+              ),
+            );
+          }
+
           try {
             final stopsResponse = await http
                 .get(
@@ -172,28 +206,27 @@ class StopsRepository {
                 )
                 .timeout(const Duration(seconds: 10));
 
-            if (stopsResponse.statusCode != 200) return <StopInfo>[];
-
-            final stopsJson = jsonDecode(stopsResponse.body) as List;
-            final stops = <StopInfo>[];
-            for (final stop in stopsJson) {
-              final lat = stop['lat'];
-              final lng = stop['lng'];
-              if (lat == null || lng == null) continue;
-              stops.add(
-                StopInfo(
-                  id: stop['id'] as String,
-                  name: stop['name'] as String? ?? 'Unknown stop',
-                  routeName: routeName,
-                  lat: (lat as num).toDouble(),
-                  lng: (lng as num).toDouble(),
-                ),
-              );
+            if (stopsResponse.statusCode == 200) {
+              final stopsJson = jsonDecode(stopsResponse.body) as List;
+              for (final stop in stopsJson) {
+                final lat = stop['lat'];
+                final lng = stop['lng'];
+                if (lat == null || lng == null) continue;
+                stops.add(
+                  StopInfo(
+                    id: stop['id'] as String,
+                    name: stop['name'] as String? ?? 'Unknown stop',
+                    routeName: routeName,
+                    lat: (lat as num).toDouble(),
+                    lng: (lng as num).toDouble(),
+                  ),
+                );
+              }
             }
             return stops;
           } catch (_) {
-            // Skip a single route's stops on failure; keep the rest.
-            return <StopInfo>[];
+            // Return start/end points even if stops fetch fails
+            return stops;
           }
         }),
       );
