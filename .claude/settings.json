@@ -179,7 +179,10 @@
       "Bash(git check-ignore *)",
       "Bash(echo \"exit:$?\")",
       "Bash(git pull *)",
-      "Bash(python -m compileall -q app)"
+      "Bash(python -m compileall -q app)",
+      "Bash(python -c \"import psycopg2; print\\('psycopg2 ok'\\)\")",
+      "Bash(python -c \"import psycopg; print\\('psycopg3 ok'\\)\")",
+      "Bash(pip install *)"
     ]
   }
 }
