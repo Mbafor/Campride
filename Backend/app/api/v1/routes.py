@@ -4,7 +4,7 @@ from uuid import UUID
 from geoalchemy2.elements import WKTElement
 
 from app.database import SessionLocal
-from app.models import Route, Stop, User
+from app.models import Route, Stop, Trip, User
 from app.schemas.route import RouteCreate, RouteResponse, StopCreate, StopResponse
 from app.api.deps import get_db, get_current_user, require_role
 
@@ -99,6 +99,17 @@ def delete_route(
     if not route:
         raise HTTPException(status_code=404, detail={"error_code": "ROUTE_001", "message": "Route not found"})
 
+    trip_count = db.query(Trip).filter(Trip.route_id == route_id).count()
+    if trip_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error_code": "ROUTE_002",
+                "message": f"Cannot delete route: {trip_count} trip(s) reference it. Remove or reassign trip history first.",
+            },
+        )
+
+    db.query(Stop).filter(Stop.route_id == route_id).delete()
     db.delete(route)
     db.commit()
     return {"message": "Route deleted successfully"}
