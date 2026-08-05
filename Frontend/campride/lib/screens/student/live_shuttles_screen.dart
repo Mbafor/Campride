@@ -12,7 +12,9 @@ import 'package:http/http.dart' as http;
 
 import '../../config/api_config.dart';
 import '../../providers/authentication_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/map_styles.dart';
 
 class LiveShuttlesScreen extends StatefulWidget {
   final String? matchedShuttleId;
@@ -74,6 +76,33 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
 
   // KNUST campus center coordinates
   static const LatLng _knustCenter = LatLng(6.7041, -1.5637);
+
+  // Tracks the currently applied map brightness so we only push a new style
+  // to the GoogleMapController when dark/light actually changes.
+  bool? _lastIsDark;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Register a dependency on ThemeProvider. When the user toggles dark mode,
+    // this fires again and we immediately re-apply the map style.
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
+    if (_lastIsDark != isDark) {
+      _lastIsDark = isDark;
+      _applyMapStyle(isDark);
+    }
+  }
+
+  void _applyMapStyle(bool isDark) {
+    final controller = _mapController;
+    if (controller == null) return;
+    if (isDark) {
+      controller.setMapStyle(kDarkMapStyle);
+    } else {
+      controller.setMapStyle(null);
+    }
+  }
 
   @override
   void initState() {
@@ -695,12 +724,22 @@ class _LiveShuttlesScreenState extends State<LiveShuttlesScreen> {
       );
     }
 
+    // React to theme changes so the map can switch to a dark style.
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
+
     return Stack(
       children: [
         // Google Map
         GoogleMap(
           onMapCreated: (GoogleMapController controller) {
             _mapController = controller;
+            // Apply the dark style when dark mode is active.
+            if (isDark) {
+              controller.setMapStyle(kDarkMapStyle);
+            } else {
+              controller.setMapStyle(null);
+            }
           },
           initialCameraPosition: CameraPosition(target: _knustCenter, zoom: 15),
           markers: Set<Marker>.of([
