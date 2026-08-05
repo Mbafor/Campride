@@ -192,6 +192,31 @@ async def telemetry_websocket(
                 })
                 continue
 
+            # Re-check for an active trip on every update instead of trusting the
+            # in-memory `trip` object, since the stale-driver cleanup task (a
+            # separate DB session/task) may have closed it out from under this
+            # open socket after a GPS gap. Keep matching working by starting a
+            # fresh trip rather than writing forever to one already completed.
+            db.expire(trip)
+            active_trip = db.query(Trip).filter(
+                Trip.driver_id == driver.id,
+                Trip.status == "active"
+            ).first()
+            if active_trip:
+                trip = active_trip
+            else:
+                trip = Trip(
+                    id=uuid.uuid4(),
+                    driver_id=driver.id,
+                    shuttle_id=shuttle.id,
+                    route_id=driver_route.route_id,
+                    status="active",
+                    started_at=datetime.utcnow()
+                )
+                db.add(trip)
+                db.commit()
+                db.refresh(trip)
+
             # Distance filtering: check against last known position
             driver_id_str = str(driver.id)
             last_location = get_driver_location(driver_id_str)
