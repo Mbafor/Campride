@@ -24,7 +24,7 @@ class _FleetDashboardState extends State<FleetDashboard> {
       onShuttlesTap: () => _goToTab(2),
     ),
     const DriversListScreen(),
-    const ShuttlesListScreen(),
+const ShuttlesListScreen(embedded: true),
     const FleetManagerAccountScreen(),
   ];
 

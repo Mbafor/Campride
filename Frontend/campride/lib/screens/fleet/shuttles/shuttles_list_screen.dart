@@ -11,7 +11,14 @@ import 'shuttle_form_screen.dart';
 enum _ShuttleFilter { all, active, idle, offline }
 
 class ShuttlesListScreen extends StatefulWidget {
-  const ShuttlesListScreen({super.key});
+  /// When true, renders just the list body (no Scaffold/AppBar) for use as
+  /// a tab inside another Scaffold, e.g. FleetDashboard's bottom-navigation tab.
+  /// When false (default), it renders with its own Scaffold + AppBar (with a
+  /// back button), suitable for being pushed as a standalone route — e.g. from
+  /// the Admin dashboard's "Shuttles" card.
+  final bool embedded;
+
+  const ShuttlesListScreen({super.key, this.embedded = false});
 
   @override
   State<ShuttlesListScreen> createState() => _ShuttlesListScreenState();
@@ -140,8 +147,28 @@ class _ShuttlesListScreenState extends State<ShuttlesListScreen> {
     );
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
+    final content = _buildContent();
+    if (widget.embedded) {
+      return content;
+    }
+    return Scaffold(
+      backgroundColor: context.scaffoldBg,
+      appBar: AppBar(
+        backgroundColor: context.scaffoldBg,
+        elevation: 0,
+        iconTheme: IconThemeData(color: context.textPrimary),
+        title: Text(
+          'Shuttles',
+          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: context.textPrimary),
+        ),
+      ),
+      body: SafeArea(top: false, child: content),
+    );
+  }
+
+  Widget _buildContent() {
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
