@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../config/api_config.dart';
+import '../config/firebase_config.dart';
 
 class ApiResponse<T> {
   final bool success;
@@ -1107,7 +1109,7 @@ class ShuttleService {
     }
   }
 
-  /// Get student's ride history
+/// Get student's ride history
   Future<ApiResponse<List<Map<String, dynamic>>>> getRideHistory({
     required String accessToken,
   }) async {
@@ -1130,5 +1132,87 @@ class ShuttleService {
     } catch (e) {
       return ApiResponse(success: false, message: 'Network error: $e');
     }
+  }
+
+  // ROUTE PATH (Google Directions API)
+  /// Fetches a road-following route path from the Google Directions API
+  /// for a chain of points (origin -> waypoints -> destination). Returns the
+  /// decoded list of LatLng points, or null if the request fails.
+  ///
+  /// The route's own start/stop geometry is only points, so we rely on the
+  /// Directions API to produce a Google-Maps-style driving line. If it is
+  /// unavailable, the caller falls back to a straight-line polyline.
+  Future<List<LatLng>?> fetchRoutePath({
+    required List<LatLng> points,
+  }) async {
+    if (points.length < 2) return null;
+    try {
+      final origin = points.first;
+      final destination = points.last;
+      final waypoints = points.length > 2
+          ? points.sublist(1, points.length - 1).map((p) => '${p.latitude},${p.longitude}').join('|')
+          : null;
+
+      final url = Uri.parse('https://maps.googleapis.com/maps/api/directions/json')
+          .replace(queryParameters: {
+        'origin': '${origin.latitude},${origin.longitude}',
+        'destination': '${destination.latitude},${destination.longitude}',
+        if (waypoints != null && waypoints.isNotEmpty) 'waypoints': 'optimize:false|$waypoints',
+        'mode': 'driving',
+        'key': FirebaseConfig.googleMapsApiKey,
+      });
+
+      final response = await http.get(url);
+      if (response.statusCode != 200) return null;
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      if (json['status'] != 'OK') return null;
+
+      final routes = json['routes'] as List<dynamic>? ?? [];
+      if (routes.isEmpty) return null;
+
+      final route = routes.first as Map<String, dynamic>;
+      final overviewPolyline = route['overview_polyline'] as Map<String, dynamic>?;
+      final encoded = overviewPolyline?['points'] as String?;
+      if (encoded == null || encoded.isEmpty) return null;
+
+      return _decodePolyline(encoded);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Decode a Google Directions "enc" polyline string into LatLng points.
+  List<LatLng> _decodePolyline(String encoded) {
+    final points = <LatLng>[];
+    int index = 0;
+    int lat = 0;
+    int lng = 0;
+
+    while (index < encoded.length) {
+      int result = 0;
+      int shift = 0;
+      int b;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      final dlat = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      final dlng = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+      lng += dlng;
+
+      points.add(LatLng(lat / 1e5, lng / 1e5));
+    }
+    return points;
   }
 }

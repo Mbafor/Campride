@@ -38,9 +38,12 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   BitmapDescriptor? _busIcon;
   bool _hasAutoFocused = false;
 
-  DriverRoute? _route;
+DriverRoute? _route;
   List<Stop> _stops = [];
   bool _loadingRoute = true;
+
+  List<LatLng>? _routePath;
+  bool _loadingRoutePath = false;
 
   LatLng? _myPosition;
   DateTime? _lastUpdate;
@@ -110,22 +113,93 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     final routeResult = await _shuttleService.getDriverRoute(accessToken: auth.accessToken!);
 
     List<Stop> stops = [];
+    DriverRoute? route;
     if (routeResult.success && routeResult.data != null) {
+      route = routeResult.data;
       final stopsResult = await _shuttleService.getRouteStops(
         accessToken: auth.accessToken!,
-        routeId: routeResult.data!.id,
+        routeId: route!.id,
       );
       stops = stopsResult.data ?? [];
     }
 
     if (mounted) {
       setState(() {
-        _route = routeResult.data;
+        _route = route;
         _stops = stops;
         _loadingRoute = false;
       });
-      _autoFocusIfNeeded();
     }
+
+    await _loadRoutePath();
+    if (mounted) _autoFocusIfNeeded();
+  }
+
+  /// Builds the ordered list of LatLng points for the route (start -> stops ->
+  /// end) and fetches a road-following path from the Google Directions API.
+  /// If the Directions API is unavailable, falls back to a straight-line
+  /// polyline through the ordered stops so the driver still sees the route.
+  Future<void> _loadRoutePath() async {
+    final route = _route;
+    if (route == null) return;
+
+    final points = <LatLng>[];
+    points.add(LatLng(route.startLat, route.startLng));
+    final sortedStops = [..._stops]..sort((a, b) => a.order.compareTo(b.order));
+    points.addAll(sortedStops.map((s) => LatLng(s.lat, s.lng)));
+    points.add(LatLng(route.endLat, route.endLng));
+
+    if (mounted) setState(() => _loadingRoutePath = true);
+    final path = await _shuttleService.fetchRoutePath(points: points);
+    if (!mounted) return;
+
+    setState(() {
+      _routePath = path;
+      _loadingRoutePath = false;
+    });
+  }
+
+  /// Builds the Google-Maps-style route polylines: a subtle wide casing line
+  /// behind a brighter driving line, plus a short "remaining" segment if a
+  /// route path exists. Falls back to a straight line through the ordered
+  /// stops when the Directions API returned nothing.
+  Set<Polyline> _buildPolylines() {
+    final polylines = <Polyline>[];
+    final route = _route;
+    if (route == null) return polylines.toSet();
+
+    List<LatLng> routePoints;
+    if (_routePath != null && _routePath!.isNotEmpty) {
+      routePoints = _routePath!;
+    } else {
+      // Fallback: draw a straight line start -> stops -> end.
+      routePoints = [LatLng(route.startLat, route.startLng)];
+      final sortedStops = [..._stops]..sort((a, b) => a.order.compareTo(b.order));
+      routePoints.addAll(sortedStops.map((s) => LatLng(s.lat, s.lng)));
+      routePoints.add(LatLng(route.endLat, route.endLng));
+    }
+
+    if (routePoints.length < 2) return polylines.toSet();
+
+// Dark outline "casing" for a polished look.
+    polylines.add(Polyline(
+      polylineId: const PolylineId('route_casing'),
+      points: routePoints,
+      color: Colors.black.withValues(alpha: 0.25),
+      width: 12,
+      visible: routePoints.length > 1,
+    ));
+
+    // Bright driving line on top of the casing.
+    polylines.add(Polyline(
+      polylineId: const PolylineId('route_main'),
+      points: routePoints,
+      color: AppColors.primaryGreen,
+      width: 7,
+      visible: routePoints.length > 1,
+    ));
+
+    return polylines.toSet();
   }
 
   Future<void> _connect() async {
@@ -214,13 +288,15 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     _autoFocusIfNeeded();
   }
 
-  /// Centers the camera exactly once, as soon as we have something worth
+/// Centers the camera exactly once, as soon as we have something worth
   /// centering on (the driver's own position, or failing that, their route's
-  /// stops). Never re-centers automatically after that, so it doesn't fight
-  /// the driver's own panning/zooming.
+  /// path/stops). Never re-centers automatically after that, so it doesn't
+  /// fight the driver's own panning/zooming. Waits for the route + path to
+  /// finish loading so the whole route is framed.
   void _autoFocusIfNeeded() {
     if (_hasAutoFocused || _mapController == null) return;
-    if (_myPosition != null || _stops.isNotEmpty) {
+    if (_loadingRoute || _loadingRoutePath) return;
+    if (_myPosition != null || _route != null || _stops.isNotEmpty) {
       _hasAutoFocused = true;
       _focusCamera();
     }
@@ -237,14 +313,14 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       return;
     }
 
-    if (_stops.isNotEmpty) {
-      final positions = _stops.map((s) => LatLng(s.lat, s.lng)).toList();
-      if (positions.length == 1) {
+    final framePoints = _frameRoutePoints();
+    if (framePoints.isNotEmpty) {
+      if (framePoints.length == 1) {
         await controller.animateCamera(
-          CameraUpdate.newCameraPosition(CameraPosition(target: positions.first, zoom: 15)),
+          CameraUpdate.newCameraPosition(CameraPosition(target: framePoints.first, zoom: 15)),
         );
       } else {
-        await controller.animateCamera(CameraUpdate.newLatLngBounds(_bounds(positions), 80));
+        await controller.animateCamera(CameraUpdate.newLatLngBounds(_bounds(framePoints), 80));
       }
       return;
     }
@@ -252,6 +328,24 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     await controller.animateCamera(
       CameraUpdate.newCameraPosition(const CameraPosition(target: _knustCenter, zoom: 15)),
     );
+  }
+
+  /// Builds the ordered points used to frame the whole route on screen: the
+  /// road-following path when available, otherwise the start -> stops -> end
+  /// chain (matching the polyline fallback).
+  List<LatLng> _frameRoutePoints() {
+    if (_routePath != null && _routePath!.isNotEmpty) {
+      return _routePath!;
+    }
+    if (_route == null) {
+      return _stops.map((s) => LatLng(s.lat, s.lng)).toList();
+    }
+    final route = _route!;
+    final points = <LatLng>[LatLng(route.startLat, route.startLng)];
+    final sortedStops = [..._stops]..sort((a, b) => a.order.compareTo(b.order));
+    points.addAll(sortedStops.map((s) => LatLng(s.lat, s.lng)));
+    points.add(LatLng(route.endLat, route.endLng));
+    return points;
   }
 
   LatLngBounds _bounds(List<LatLng> positions) {
@@ -360,8 +454,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             _mapController = controller;
             _autoFocusIfNeeded();
           },
-          initialCameraPosition: const CameraPosition(target: _knustCenter, zoom: 15),
+initialCameraPosition: const CameraPosition(target: _knustCenter, zoom: 15),
           markers: _buildMarkers(),
+          polylines: _buildPolylines(),
           myLocationButtonEnabled: false,
           zoomControlsEnabled: false,
           mapType: MapType.normal,
